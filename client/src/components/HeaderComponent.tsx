@@ -41,7 +41,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
 
   return (
     <nav className="w-full border-b bg-primary text-primary-foreground">
-      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-xl font-semibold">R2R</Link>
           <Link to="/" className="text-sm font-medium text-muted-foreground">Home</Link>
