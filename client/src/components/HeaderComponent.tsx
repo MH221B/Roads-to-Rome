@@ -53,7 +53,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
             </Button>
           )}
           {isAuthenticated ? (
-            <Button onClick={handleLogout}>Logout</Button>
+            <Button onClick={handleLogout} variant="outline" className="text-primary">Logout</Button>
           ) : (
             <Button asChild variant="outline">
               <Link to="/login" className="text-primary">Login</Link>

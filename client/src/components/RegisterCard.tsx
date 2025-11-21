@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+// Import Controller
+import { useForm, Controller } from "react-hook-form";
 import {
   Card,
   CardAction,
@@ -13,6 +14,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+// Import Shadcn Select components
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Swal from 'sweetalert2'
 import { registerUser } from "@/services/authService";
 
@@ -20,17 +29,21 @@ type FormValues = {
   email: string;
   password: string;
   confirmPassword: string;
+  role: string;
 };
 
 const RegisterCard = () => {
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>();
+  // Destructure 'control' here and set default role
+  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormValues>({
+    defaultValues: { role: 'student' }
+  });
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {
-      const result = await registerUser(data.email, data.password);
+      const result = await registerUser(data.email, data.password, data.role);
       console.log("Registration successful:", result);
       await Swal.fire({
         title: 'Account created!',
@@ -104,6 +117,27 @@ const RegisterCard = () => {
                 {errors.password && (
                   <span className="text-sm text-red-600">{String(errors.password.message)}</span>
                 )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Controller
+                  name="role"
+                  control={control}
+                  rules={{ required: 'Role is required' }}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger id="role" className="w-full">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="instructor">Instructor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.role && <span className="text-sm text-red-600">{String(errors.role.message)}</span>}
               </div>
 
               <div className="grid gap-2">

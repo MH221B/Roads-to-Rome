@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Use centralized axios instance so interceptors/queueing apply
       const res = await api.post(`/api/auth/refresh-token`);
       const data = res.data;
-      // backend returns the access token in the `token` field
-      const token = data?.token ?? null;
+      // backend may return the access token in `token` or `accessToken`
+      const token = data?.accessToken ?? null;
       if (!token) {
         setAccessToken(null);
         clearRefresh();
@@ -86,8 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.post(`/api/auth/login`, { email, password });
       const data = res.data;
-      // backend returns the access token in the `token` field
-      const token = data?.token ?? null;
+      // backend may return the access token in `token` or `accessToken`
+      const token = data?.accessToken ?? null;
       // clear logged-out flag when login succeeds
       isLoggedOutRef.current = false;
       setAccessToken(token);

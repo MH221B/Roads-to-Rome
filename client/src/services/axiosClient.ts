@@ -30,7 +30,8 @@ async function doRefresh(): Promise<string | null> {
   const url = `${API_URL}/api/auth/refresh-token`;
   const resp = await axios.post(url, {}, { withCredentials: true });
   if (resp.status !== 200) return null;
-  const token = resp.data?.token ?? null;
+  // server may return `token` or `accessToken` depending on implementation
+  const token = resp.data?.accessToken ?? null;
   return token;
 }
 
