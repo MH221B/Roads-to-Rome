@@ -94,6 +94,9 @@ const LoginCard = () => {
             <Button type="submit" className="w-full" disabled={mutation.status === 'pending'}>
               {mutation.status === 'pending' ? 'Logging in...' : 'Login'}
             </Button>
+            <Button type="button" variant="link" onClick={() => navigate('/forgot-password')}>
+              Forgot password?
+            </Button>
           </CardFooter>
         </form>
       </Card>

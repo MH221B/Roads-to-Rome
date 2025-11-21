@@ -114,7 +114,8 @@ const authService: IAuthService = {
 			{ expiresIn: "1h" } as SignOptions
 		);
 		// Send email with reset link
-		const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+		// Use path param so it matches client route `/reset-password/:token`
+		const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 		const emailText = `You requested a password reset. Click the link to reset your password: ${resetLink}`;
 		await sendEmail(email, "Password Reset Request", emailText);
 		return { message: "Password reset link has been sent to your email" };
