@@ -27,7 +27,7 @@ function onRefreshed(token: string | null) {
 
 async function doRefresh(): Promise<string | null> {
   // Call refresh endpoint using a plain axios call to avoid interceptor loops
-  const url = `${API_URL}/user/refresh`;
+  const url = `${API_URL}/api/auth/refresh-token`;
   const resp = await axios.post(url, {}, { withCredentials: true });
   if (resp.status !== 200) return null;
   const token = resp.data?.token ?? null;

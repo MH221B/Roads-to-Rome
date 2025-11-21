@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const silentRefresh = useCallback(async (): Promise<void> => {
     try {
       // Use centralized axios instance so interceptors/queueing apply
-      const res = await api.post(`/user/refresh`);
+      const res = await api.post(`/api/auth/refresh-token`);
       const data = res.data;
       // backend returns the access token in the `token` field
       const token = data?.token ?? null;
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const res = await api.post(`/user/login`, { email, password });
+      const res = await api.post(`/api/auth/login`, { email, password });
       const data = res.data;
       // backend returns the access token in the `token` field
       const token = data?.token ?? null;
@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
-      await api.post(`/user/logout`);
+      await api.post(`/api/auth/logout`);
     } finally {
       // mark explicit logout so background refresh attempts are skipped
       isLoggedOutRef.current = true;
