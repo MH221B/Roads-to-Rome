@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
 import sendEmail from "./email.service";
 import { User } from "../models/user.model";
-const saltRounds = 15;
+const saltRounds = process.env.NODE_ENV === 'test' ? 1 : 10;
 
 interface IAuthService {
 	Login(
