@@ -2,6 +2,7 @@
 import express from "express";
 import cors from "cors";
 import session from "express-session";
+import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import { authRouter } from "./routes/auth.route";
 
@@ -12,18 +13,9 @@ app.use(cors({
 	credentials: true
 }));
 
-// Connect to MongoDB
-const MONGO_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/roads-to-rome";
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
-    process.exit(1);
-  });
-
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(cookieParser());
 
 // Session Middleware
 app.use(

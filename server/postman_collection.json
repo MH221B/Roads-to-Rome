@@ -68,7 +68,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"userId\": \"REPLACE_WITH_VALID_USER_ID\"\n}"
+					"raw": "{\n  \"refreshToken\": \"REPLACE_WITH_REFRESH_TOKEN\"\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/refresh-token",
