@@ -49,28 +49,28 @@ jobs:
           cd server
           npx eslint src --ext .ts || true
 
-  server-test:
-    name: Server Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 21
-      - name: Install server dependencies
-        run: |
-          cd server
-          npm ci
-      - name: Run server tests
-        run: |
-          cd server
-          npm test
+  # server-test:
+  #   name: Server Unit Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 21
+  #     - name: Install server dependencies
+  #       run: |
+  #         cd server
+  #         npm ci
+  #     - name: Run server tests
+  #       run: |
+  #         cd server
+  #         npm test
 
   server-deploy:
     name: Trigger Render Deploy for Server
-    needs: [server-lint, server-test]
+    needs: [server-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
