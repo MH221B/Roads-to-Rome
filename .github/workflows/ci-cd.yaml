@@ -7,8 +7,47 @@ on:
     branches: [ main, dev ]
 
 jobs:
+  lint:
+    name: Lint (client)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm ci
+      - name: Run client lint
+        run: |
+          cd client
+          npm run lint
+
+  server-test:
+    name: Server Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm ci
+      - name: Run server tests
+        run: |
+          cd server
+          npm test
+
   server-deploy:
     name: Trigger Render Deploy for Server
+    needs: [lint, server-test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
