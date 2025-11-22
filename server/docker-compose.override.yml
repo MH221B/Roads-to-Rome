@@ -1,0 +1,13 @@
+services:
+  server:
+    container_name: roads-to-rome-server-dev
+    command: npm run dev
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app:delegated
+      - /app/node_modules
