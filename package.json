@@ -12,7 +12,7 @@
     "client/**/*.{ts,tsx}": [
       "eslint --config client/eslint.config.js"
     ],
-    "server/**/*.{ts}": [
+    "server/**/*.ts": [
       "eslint --config server/eslint.config.mjs"
     ]
   },

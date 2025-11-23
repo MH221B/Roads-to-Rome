@@ -1,4 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { vi } from 'vitest';
+import authService from '../services/auth.service';
+import sendEmail from '../services/email.service';
+import { User } from '../models/user.model';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import app from '../app';
 
@@ -8,14 +13,12 @@ describe('Auth Routes', () => {
   const testUser = {
     email: 'test@example.com',
     password: 'password123',
-    role: 'student'
+    role: 'student',
   };
 
   it('should register a new user', async () => {
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send(testUser);
-    
+    const res = await request(app).post('/api/auth/register').send(testUser);
+
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('message', 'User registered successfully');
   });
@@ -25,10 +28,8 @@ describe('Auth Routes', () => {
     await request(app).post('/api/auth/register').send(testUser);
 
     // Try to register again
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send(testUser);
-    
+    const res = await request(app).post('/api/auth/register').send(testUser);
+
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error', 'User already exists');
   });
@@ -37,16 +38,14 @@ describe('Auth Routes', () => {
     // Register first
     await request(app).post('/api/auth/register').send(testUser);
 
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-    
+    const res = await request(app).post('/api/auth/login').send({
+      email: testUser.email,
+      password: testUser.password,
+    });
+
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
-    
+
     // Check for httpOnly cookie
     const cookies = res.headers['set-cookie'] as unknown as string[];
     expect(cookies).toBeDefined();
@@ -56,20 +55,18 @@ describe('Auth Routes', () => {
   it('should refresh token', async () => {
     // Register and Login first
     await request(app).post('/api/auth/register').send(testUser);
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-    
+    const loginRes = await request(app).post('/api/auth/login').send({
+      email: testUser.email,
+      password: testUser.password,
+    });
+
     const cookies = loginRes.headers['set-cookie'] as unknown as string[];
     const refreshTokenCookie = cookies.find((c: string) => c.startsWith('refreshToken='));
 
     const res = await request(app)
       .post('/api/auth/refresh-token')
       .set('Cookie', [refreshTokenCookie as string]);
-    
+
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
   });
@@ -77,25 +74,61 @@ describe('Auth Routes', () => {
   it('should logout', async () => {
     // Register and Login first
     await request(app).post('/api/auth/register').send(testUser);
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-      
+    const loginRes = await request(app).post('/api/auth/login').send({
+      email: testUser.email,
+      password: testUser.password,
+    });
+
     const cookies = loginRes.headers['set-cookie'] as unknown as string[];
     const refreshTokenCookie = cookies.find((c: string) => c.startsWith('refreshToken='));
 
     const res = await request(app)
       .post('/api/auth/logout')
       .set('Cookie', [refreshTokenCookie as string]);
-    
+
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message', 'Logged out successfully');
-    
+
     // Check if cookie is cleared (expires in the past)
     const logoutCookies = res.headers['set-cookie'] as unknown as string[];
     expect(logoutCookies.some((c: string) => c.includes('refreshToken=;'))).toBe(true);
+  });
+
+  it('should create a user and store email and hashed password when using GithubLogin', async () => {
+    // No sendEmail mock: keep original; the auth service catches errors on email sending.
+
+    // Mock global.fetch used inside GithubLogin
+    const originalFetch = global.fetch;
+    (global as any).fetch = vi.fn().mockImplementation(async (url: string, options?: any) => {
+      if (url.includes('access_token')) {
+        return {
+          ok: true,
+          json: async () => ({ access_token: 'gh_test_token' }),
+        };
+      }
+      if (url.includes('user/emails')) {
+        return {
+          ok: true,
+          json: async () => [{ email: 'gituser@example.com', primary: true, verified: true }],
+        };
+      }
+      return { ok: false };
+    });
+
+    // Call the GithubLogin flow
+    const res = await authService.GithubLogin('fake_code');
+    expect(res).toHaveProperty('accessToken');
+    expect(res).toHaveProperty('refreshToken');
+
+    // Assert user created in DB
+    const user = await User.findOne({ email: 'gituser@example.com' });
+    expect(user).toBeDefined();
+    expect(user?.githubAutoGenerated).toBe(true);
+    expect(user?.password).toBeDefined();
+    expect(typeof user?.password).toBe('string');
+    expect(user?.password.length).toBeGreaterThan(0);
+
+    // Restore fetch
+    (global as any).fetch = originalFetch;
   });
 });

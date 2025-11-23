@@ -1,8 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 // Import Controller
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller } from 'react-hook-form';
+import { FaGithub } from 'react-icons/fa';
 import {
   Card,
   CardAction,
@@ -11,9 +12,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 // Import Shadcn Select components
 import {
   Select,
@@ -21,9 +22,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import Swal from 'sweetalert2'
-import { registerUser } from "@/services/authService";
+} from '@/components/ui/select';
+import Swal from 'sweetalert2';
+import { registerUser } from '@/services/authService';
 
 type FormValues = {
   email: string;
@@ -35,8 +36,14 @@ type FormValues = {
 const RegisterCard = () => {
   const navigate = useNavigate();
   // Destructure 'control' here and set default role
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { role: 'student' }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: { role: 'student' },
   });
   const [loading, setLoading] = useState(false);
 
@@ -44,12 +51,12 @@ const RegisterCard = () => {
     setLoading(true);
     try {
       const result = await registerUser(data.email, data.password, data.role);
-      console.log("Registration successful:", result);
+      console.log('Registration successful:', result);
       await Swal.fire({
         title: 'Account created!',
         text: 'Your account has been created successfully.',
         icon: 'success',
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
       });
       navigate('/login');
     } catch (error: any) {
@@ -88,7 +95,6 @@ const RegisterCard = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent>
             <div className="flex flex-col gap-6">
-
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -110,7 +116,8 @@ const RegisterCard = () => {
                     minLength: { value: 8, message: 'Password must be at least 8 characters!' },
                     pattern: {
                       value: /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+/,
-                      message: 'Password must include uppercase, lowercase, number and special character!',
+                      message:
+                        'Password must include uppercase, lowercase, number and special character!',
                     },
                   })}
                 />
@@ -137,7 +144,9 @@ const RegisterCard = () => {
                     </Select>
                   )}
                 />
-                {errors.role && <span className="text-sm text-red-600">{String(errors.role.message)}</span>}
+                {errors.role && (
+                  <span className="text-sm text-red-600">{String(errors.role.message)}</span>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -150,13 +159,26 @@ const RegisterCard = () => {
                     validate: (value) => value === watch('password') || 'Passwords do not match!',
                   })}
                 />
-                {errors.confirmPassword && <span className="text-sm text-red-600">{String(errors.confirmPassword.message ?? 'Confirm your password')}</span>}
+                {errors.confirmPassword && (
+                  <span className="text-sm text-red-600">
+                    {String(errors.confirmPassword.message ?? 'Confirm your password')}
+                  </span>
+                )}
               </div>
             </div>
           </CardContent>
           <CardFooter className="flex-col gap-2 mt-5">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing up...' : 'Sign Up'}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              type="button"
+              onClick={() => (window.location.href = `${import.meta.env.VITE_API_URL}/github`)}
+            >
+              <FaGithub className="mr-2 h-4 w-4" />
+              Login with GitHub
             </Button>
           </CardFooter>
         </form>
