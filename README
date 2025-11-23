@@ -8,6 +8,12 @@
 - **`client-deploy` job:** also waits for `server-lint`, installs the client dependencies, builds the Vite app via `npm run build`, and then runs `npx vercel --prod --token "$VERCEL_TOKEN" --confirm`. The `VERCEL_TOKEN` repository secret must be configured for the deployment to trigger.
 - **Future jobs (optional):** there are commented-out steps for client linting/testing and server unit tests in the workflow; they can be enabled once the commands are stable or required.
 
+## Render Deployment Configuration
+
+- **Deploy hook:** create a HTTP webhook in Render (e.g., on the server service's "Manual Deploy -> Deploy Hooks") and copy the full URL into the `RENDER_DEPLOY_HOOK` GitHub secret that the workflow uses. The hook only needs the `POST` method with no payload – CI calls it after the server build succeeds.
+- **Environment variables:** mirror the values you use locally (database connection string, `JWT_SECRET`, mail credentials, etc.) inside Render's "Environment" tab for the server service so the Docker deployment has everything it needs. Keep the names identical to what `server/.env` expects.
+- **Service health:** once the workflow pushes to the hook, Render will queue a deploy; verify it by checking the service's deploy logs, confirming the build step, and hitting the public URL it exposes.
+
 ## Running the Server Locally in Docker
 
 1. **Prepare environment variables:** copy or create `server/.env` with the same variables your Render deployment expects (`MONGO_URI`, `JWT_SECRET`, mail credentials, etc.). The Docker Compose files rely on that file (`env_file: - .env`).
