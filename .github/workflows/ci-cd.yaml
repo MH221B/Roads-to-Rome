@@ -1,116 +1,116 @@
 name: CI / CD
 
 on:
-  push:
-    branches: [ main, dev ]
-  pull_request:
-    branches: [ main, dev ]
+    push:
+        branches: [main, dev]
+    pull_request:
+        branches: [main, dev]
 
 jobs:
-  # lint:
-  #   name: Lint (client)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 21
-  #     - name: Install client dependencies
-  #       run: |
-  #         cd client
-  #         npm ci
-  #     - name: Run client lint
-  #       run: |
-  #         cd client
-  #         npm run lint
+    # lint:
+    #   name: Lint (client)
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - name: Checkout
+    #       uses: actions/checkout@v4
+    #     - name: Setup Node.js
+    #       uses: actions/setup-node@v4
+    #       with:
+    #         node-version: 21
+    #     - name: Install client dependencies
+    #       run: |
+    #         cd client
+    #         npm ci
+    #     - name: Run client lint
+    #       run: |
+    #         cd client
+    #         npm run lint
 
-  server-lint:
-    name: Lint (server)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 21
-      - name: Install server dependencies
-        run: |
-          cd server
-          npm ci
-      - name: Install ESLint for CI
-        run: |
-          cd server
-          npm i -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
-      - name: Run server lint
-        run: |
-          cd server
-          npx eslint src --ext .ts || true
+    server-lint:
+        name: Lint (server)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 21
+            - name: Install server dependencies
+              run: |
+                  cd server
+                  npm ci
+            - name: Install ESLint for CI
+              run: |
+                  cd server
+                  npm i -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
+            - name: Run server lint
+              run: |
+                  cd server
+                  npx eslint src --ext .ts || true
 
-  # server-test:
-  #   name: Server Unit Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 21
-  #     - name: Install server dependencies
-  #       run: |
-  #         cd server
-  #         npm ci
-  #     - name: Run server tests
-  #       run: |
-  #         cd server
-  #         npm test
+    server-test:
+        name: Server Unit Tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - name: Install server dependencies
+              run: |
+                  cd server
+                  npm ci --include=dev
+            - name: Run server tests
+              run: |
+                  cd server
+                  npm test
 
-  server-deploy:
-    name: Trigger Render Deploy for Server
-    needs: [server-lint]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Trigger Render deployment (via Deploy Hook)
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-          if [ -z "${RENDER_DEPLOY_HOOK}" ]; then
-            echo "RENDER_DEPLOY_HOOK is not set. Skipping Render deploy.";
-            exit 1;
-          fi
-          curl -fsS -X POST "${RENDER_DEPLOY_HOOK}" || true
+    server-deploy:
+        name: Trigger Render Deploy for Server
+        needs: [server-lint, server-test]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Trigger Render deployment (via Deploy Hook)
+              env:
+                  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+              run: |
+                  if [ -z "${RENDER_DEPLOY_HOOK}" ]; then
+                    echo "RENDER_DEPLOY_HOOK is not set. Skipping Render deploy.";
+                    exit 1;
+                  fi
+                  curl -fsS -X POST "${RENDER_DEPLOY_HOOK}" || true
 
-  client-deploy:
-    name: Deploy Client to Vercel
-    needs: [server-lint]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 21
-      - name: Install client dependencies
-        run: |
-          cd client
-          npm ci
-      - name: Build client
-        run: |
-          cd client
-          npm run build
-      - name: Trigger Vercel deployment
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          if [ -z "${VERCEL_TOKEN}" ]; then
-            echo "VERCEL_TOKEN is not set. Skipping Vercel deploy.";
-            exit 1;
-          fi
-          cd client
-          npx vercel --prod --token "${VERCEL_TOKEN}" --confirm || true
+    # client-deploy:
+    #     name: Deploy Client to Vercel
+    #     needs: [server-lint]
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - name: Checkout
+    #           uses: actions/checkout@v4
+    #         - name: Setup Node.js
+    #           uses: actions/setup-node@v4
+    #           with:
+    #               node-version: 22
+    #         - name: Install client dependencies
+    #           run: |
+    #               cd client
+    #               npm ci
+    #         - name: Build client
+    #           run: |
+    #               cd client
+    #               npm run build
+    #         - name: Trigger Vercel deployment
+    #           env:
+    #               VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    #           run: |
+    #               if [ -z "${VERCEL_TOKEN}" ]; then
+    #                 echo "VERCEL_TOKEN is not set. Skipping Vercel deploy.";
+    #                 exit 1;
+    #               fi
+    #               cd client
+    #               npx vercel --prod --token "${VERCEL_TOKEN}" --confirm || true
