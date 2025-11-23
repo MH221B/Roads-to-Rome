@@ -1,101 +1,144 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import request from 'supertest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import request, { Response } from 'supertest';
 import app from '../app';
+import authService from '../services/auth.service';
+import { User } from '../models/user.model';
+
+const testUser = {
+  email: 'test@example.com',
+  password: 'password123',
+  role: 'student',
+};
+
+const registerTestUser = () => request(app).post('/api/auth/register').send(testUser);
+const loginTestUser = () =>
+  request(app).post('/api/auth/login').send({ email: testUser.email, password: testUser.password });
+
+const normalizeCookieHeader = (header: string | string[] | undefined): string[] | undefined => {
+  if (!header) {
+    return undefined;
+  }
+
+  return Array.isArray(header) ? header : [header];
+};
+
+const extractRefreshTokenCookie = (response: Response) => {
+  const cookies = normalizeCookieHeader(response.headers['set-cookie']);
+  expect(cookies).toBeDefined();
+  const refreshCookie = cookies!.find((cookie) => cookie.startsWith('refreshToken='));
+  expect(refreshCookie).toBeDefined();
+  return refreshCookie!;
+};
 
 describe('Auth Routes', () => {
-  let accessToken: string;
-  let refreshTokenCookie: string;
-  const testUser = {
-    email: 'test@example.com',
-    password: 'password123',
-    role: 'student'
-  };
+  describe('Registration', () => {
+    it('creates a user when given valid credentials', async () => {
+      const res = await registerTestUser();
 
-  it('should register a new user', async () => {
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send(testUser);
-    
-    expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('message', 'User registered successfully');
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('message', 'User registered successfully');
+    });
+
+    it('rejects duplicate registrations', async () => {
+      await registerTestUser();
+      const res = await registerTestUser();
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'User already exists');
+    });
   });
 
-  it('should not register an existing user', async () => {
-    // Register first
-    await request(app).post('/api/auth/register').send(testUser);
+  describe('Session management', () => {
+    it('issues tokens and a refresh cookie when logging in', async () => {
+      await registerTestUser();
+      const res = await loginTestUser();
 
-    // Try to register again
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send(testUser);
-    
-    expect(res.status).toBe(400);
-    expect(res.body).toHaveProperty('error', 'User already exists');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('accessToken');
+
+      const refreshCookie = extractRefreshTokenCookie(res);
+      expect(refreshCookie).toContain('HttpOnly');
+    });
+
+    it('returns a fresh access token when the refresh cookie is presented', async () => {
+      await registerTestUser();
+      const loginRes = await loginTestUser();
+      const refreshCookie = extractRefreshTokenCookie(loginRes);
+
+      const refreshRes = await request(app)
+        .post('/api/auth/refresh-token')
+        .set('Cookie', [refreshCookie]);
+
+      expect(refreshRes.status).toBe(200);
+      expect(refreshRes.body).toHaveProperty('accessToken');
+    });
+
+    it('clears the refresh cookie on logout', async () => {
+      await registerTestUser();
+      const loginRes = await loginTestUser();
+      const refreshCookie = extractRefreshTokenCookie(loginRes);
+
+      const logoutRes = await request(app).post('/api/auth/logout').set('Cookie', [refreshCookie]);
+
+      expect(logoutRes.status).toBe(200);
+      expect(logoutRes.body).toHaveProperty('message', 'Logged out successfully');
+
+      const logoutCookies = normalizeCookieHeader(logoutRes.headers['set-cookie']);
+      expect(logoutCookies).toBeDefined();
+      expect(logoutCookies!.some((cookie) => cookie.includes('refreshToken=;'))).toBe(true);
+    });
   });
 
-  it('should login the user', async () => {
-    // Register first
-    await request(app).post('/api/auth/register').send(testUser);
+  describe('GitHub OAuth flow', () => {
+    const githubEmail = 'gituser@example.com';
+    const originalClientId = process.env.GITHUB_CLIENT_ID;
+    const originalClientSecret = process.env.GITHUB_CLIENT_SECRET;
 
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-    
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('accessToken');
-    
-    // Check for httpOnly cookie
-    const cookies = res.headers['set-cookie'] as unknown as string[];
-    expect(cookies).toBeDefined();
-    expect(cookies.some((c: string) => c.includes('refreshToken'))).toBe(true);
-  });
+    beforeAll(() => {
+      process.env.GITHUB_CLIENT_ID = 'test-client-id';
+      process.env.GITHUB_CLIENT_SECRET = 'test-client-secret';
+    });
 
-  it('should refresh token', async () => {
-    // Register and Login first
-    await request(app).post('/api/auth/register').send(testUser);
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-    
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[];
-    const refreshTokenCookie = cookies.find((c: string) => c.startsWith('refreshToken='));
+    afterAll(() => {
+      process.env.GITHUB_CLIENT_ID = originalClientId;
+      process.env.GITHUB_CLIENT_SECRET = originalClientSecret;
+    });
 
-    const res = await request(app)
-      .post('/api/auth/refresh-token')
-      .set('Cookie', [refreshTokenCookie as string]);
-    
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('accessToken');
-  });
+    afterEach(() => {
+      vi.resetAllMocks();
+      vi.unstubAllGlobals();
+    });
 
-  it('should logout', async () => {
-    // Register and Login first
-    await request(app).post('/api/auth/register').send(testUser);
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: testUser.email,
-        password: testUser.password
-      });
-      
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[];
-    const refreshTokenCookie = cookies.find((c: string) => c.startsWith('refreshToken='));
+    it('creates a GitHub-linked user with a hashed password', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'gh_test_token' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [
+            {
+              email: githubEmail,
+              primary: true,
+              verified: true,
+            },
+          ],
+        });
 
-    const res = await request(app)
-      .post('/api/auth/logout')
-      .set('Cookie', [refreshTokenCookie as string]);
-    
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Logged out successfully');
-    
-    // Check if cookie is cleared (expires in the past)
-    const logoutCookies = res.headers['set-cookie'] as unknown as string[];
-    expect(logoutCookies.some((c: string) => c.includes('refreshToken=;'))).toBe(true);
+      vi.stubGlobal('fetch', fetchMock);
+
+      const tokens = await authService.GithubLogin('fake_code');
+      expect(tokens).toHaveProperty('accessToken');
+      expect(tokens).toHaveProperty('refreshToken');
+
+      const user = await User.findOne({ email: githubEmail });
+      expect(user).toBeDefined();
+      expect(user?.githubAutoGenerated).toBe(true);
+      expect(user?.password).toBeDefined();
+      expect(typeof user?.password).toBe('string');
+      expect(user?.password.length).toBeGreaterThan(0);
+    });
   });
 });

@@ -8,6 +8,8 @@ interface IAuthController {
   RefreshToken(req: Request, res: Response): Promise<void>; // Refresh access token
   ForgotPassword(req: Request, res: Response): Promise<void>;
   ResetPassword(req: Request, res: Response): Promise<void>;
+  InitiateGithubLogin(req: Request, res: Response): Promise<void>;
+  GithubCallback(req: Request, res: Response): Promise<void>;
 }
 
 const authController: IAuthController = {
@@ -15,13 +17,13 @@ const authController: IAuthController = {
     try {
       const { email, password } = req.body;
       const { accessToken, refreshToken } = await authService.Login(email, password);
-      
+
       // Set refresh token in httpOnly cookie
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         sameSite: 'strict', // Prevent CSRF
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
       res.status(200).json({ accessToken });
@@ -33,12 +35,12 @@ const authController: IAuthController = {
   Logout: async (req: Request, res: Response): Promise<void> => {
     try {
       res.clearCookie('refreshToken');
-      res.status(200).json({ message: "Logged out successfully" });
+      res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   },
-  
+
   Register: async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password, role } = req.body;
@@ -53,7 +55,7 @@ const authController: IAuthController = {
     try {
       const refreshToken = req.cookies.refreshToken;
       if (!refreshToken) {
-        throw new Error("Refresh token not found");
+        throw new Error('Refresh token not found');
       }
       const token = await authService.RefreshToken(refreshToken);
       res.status(200).json(token);
@@ -71,7 +73,7 @@ const authController: IAuthController = {
       res.status(400).json({ error: (error as Error).message });
     }
   },
-  
+
   ResetPassword: async (req: Request, res: Response): Promise<void> => {
     try {
       const { token, newPassword } = req.body;
@@ -81,6 +83,44 @@ const authController: IAuthController = {
       res.status(400).json({ error: (error as Error).message });
     }
   },
-}
+
+  InitiateGithubLogin: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const redirectUrl = authService.GetGithubOAuthUrl();
+      res.redirect(redirectUrl);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+
+  GithubCallback: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { code } = req.query;
+
+      if (!code || typeof code !== 'string') {
+        throw new Error('Invalid code from GitHub');
+      }
+
+      const { accessToken, refreshToken } = await authService.GithubLogin(code);
+
+      // Set refresh token in httpOnly cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        sameSite: 'strict', // Prevent CSRF
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production)
+        sameSite: 'strict', // Prevent CSRF
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+      res.redirect(process.env.CLIENT_URL || 'http://localhost:3000');
+    } catch (error) {
+      res.redirect(`${process.env.CLIENT_URL}?error=${(error as Error).message}`);
+    }
+  },
+};
 
 export default authController;
