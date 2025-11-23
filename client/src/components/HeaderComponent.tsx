@@ -69,7 +69,9 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
                   className="inline-flex items-center gap-2 rounded px-2 py-1 border border-transparent bg-transparent hover:opacity-90"
                   aria-label="Profile"
                 >
-                  <FaUserCircle size={20} className="text-primary-foreground" aria-hidden />
+                  <span className="w-8 h-8 rounded-full bg-primary-foreground text-primary flex items-center justify-center shadow-sm">
+                    <FaUserCircle size={18} aria-hidden />
+                  </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

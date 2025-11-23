@@ -7,8 +7,10 @@ type Props = {
 };
 
 const RequireAuth: React.FC<Props> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, initialized } = useAuth();
   const location = useLocation();
+
+  if (!initialized) return null;
 
   if (isAuthenticated) return children;
 
