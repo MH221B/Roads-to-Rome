@@ -122,16 +122,8 @@ const mockTags: string[] = [
   "deployment",
 ];
 import HeaderComponent from "@/components/HeaderComponent";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import CourseCard from "@/components/CourseCard";
 import { Badge } from "@/components/ui/badge";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useAuth } from "@/contexts/AuthProvider";
 
 function decodeJwtPayload(token: string | null): any | null {
@@ -171,39 +163,7 @@ const HomePage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mockCourses.map((course) => (
-                  <Card key={course.id} className="overflow-hidden p-0 h-auto flex flex-col gap-2">
-                    <AspectRatio ratio={16 / 9}>
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </AspectRatio>
-
-                    <CardHeader className="p-0 pt-2 pb-1 px-3">
-                      <div>
-                        <CardTitle className="leading-tight">{course.title}</CardTitle>
-                        <CardDescription className="mt-0 text-sm text-muted-foreground">
-                          {course.instructor}
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="p-0 py-0 px-3">
-                      <div className="text-sm text-muted-foreground">
-                        {course.shortDescription}
-                      </div>
-                    </CardContent>
-
-                    <CardFooter className="p-0 pt-2 pb-5 px-3 mt-auto">
-                      <div className="flex flex-wrap gap-2">
-                        {course.tags.map((tag) => (
-                          <Badge key={tag}>#{tag}</Badge>
-                        ))}
-                      </div>
-                    </CardFooter>
-
-                  </Card>
+                  <CourseCard key={course.id} course={course} />
                 ))}
               </div>
 
