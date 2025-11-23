@@ -553,6 +553,50 @@
 				opacity: 0.5;
 				z-index: 100;
 			}
+
+			/* PRINT OVERRIDES: make each slide a separate printed page */
+			@media print {
+				/* 1. Reset container for print */
+				body, html, #slide-deck {
+					width: 100% !important;
+					height: auto !important;
+					overflow: visible !important;
+					background: #050505 !important;
+				}
+
+				/* 2. Unstack slides and force page breaks */
+				.slide-container {
+					position: relative !important;
+					opacity: 1 !important;
+					visibility: visible !important;
+					transform: none !important;
+					display: block !important;
+					width: 100% !important;
+					height: 100vh !important;
+					page-break-after: always !important;
+					page-break-inside: avoid !important;
+					box-shadow: none !important;
+					border: none !important;
+					margin: 0 !important;
+					border-radius: 0 !important;
+				}
+
+				/* 3. Hide transient UI */
+				.page-counter, .modal-overlay, .arch-line::after {
+					display: none !important;
+				}
+
+				/* 4. Ensure animations reveal content */
+				h2, .content-anim, .delay-1, .delay-2, .delay-3 {
+					opacity: 1 !important;
+					animation: none !important;
+					transform: none !important;
+					filter: none !important;
+				}
+
+				/* Respect CSS page size if provided */
+				@page { margin: 0; }
+			}
 		</style>
 	</head>
 	<body>

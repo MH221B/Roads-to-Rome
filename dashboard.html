@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Learning | Udemy Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
+        .udemy-header { background-color: #1C1D1F; }
+        .progress-bar-bg { background-color: #D1D7DC; }
+        .progress-bar-fill { background-color: #A435F0; } /* Udemy Purple */
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="udemy-header text-white h-16 flex items-center px-6 shadow-md">
+        <div class="text-xl font-bold mr-8">My learning</div>
+        <div class="hidden md:flex space-x-6 text-sm font-medium text-gray-300">
+            <a href="#" class="text-white border-b-2 border-white pb-4 mt-4">All courses</a>
+            <a href="#" class="hover:text-white pb-4 mt-4">Wishlist</a>
+        </div>
+        <div class="ml-auto flex items-center space-x-4">
+             <!-- User Icon Placeholder -->
+             <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs">AB</div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-[1340px] mx-auto px-6 py-8">
+        <!-- Filters -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
+            <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                <!-- Sort By -->
+                <div class="relative group">
+                    <button class="flex items-center justify-between w-48 px-4 py-3 border border-black hover:bg-gray-50 text-sm font-bold bg-white">
+                        <span>Recently Accessed</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                </div>
+                
+                <!-- Filter By -->
+                <button class="flex items-center justify-between px-4 py-3 border border-gray-800 hover:bg-gray-50 text-sm font-bold bg-white min-w-[120px]">
+                    <span>Categories</span>
+                    <i class="fas fa-chevron-down text-xs ml-2"></i>
+                </button>
+                <button class="flex items-center justify-between px-4 py-3 border border-gray-800 hover:bg-gray-50 text-sm font-bold bg-white min-w-[120px]">
+                    <span>Progress</span>
+                    <i class="fas fa-chevron-down text-xs ml-2"></i>
+                </button>
+                <button class="flex items-center justify-between px-4 py-3 border border-gray-800 hover:bg-gray-50 text-sm font-bold bg-white min-w-[120px]">
+                    <span>Instructor</span>
+                    <i class="fas fa-chevron-down text-xs ml-2"></i>
+                </button>
+                <button class="text-sm text-gray-500 font-bold hover:text-gray-800 px-2">Reset</button>
+            </div>
+
+            <!-- Search -->
+            <div class="flex w-full md:w-auto">
+                <input type="text" placeholder="Search my courses" class="border border-black px-4 py-3 text-sm w-full md:w-64 outline-none focus:ring-1 focus:ring-black">
+                <button class="bg-[#2D2F31] hover:bg-gray-700 text-white px-4 py-3">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Course Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+            <!-- Card 1 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <div class="absolute top-2 right-2 bg-white p-1 rounded shadow opacity-0 group-hover:opacity-100 transition">
+                        <i class="fas fa-ellipsis-v text-gray-600 px-1"></i>
+                    </div>
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">Learn JAVA Programming - Beginner to Master</h3>
+                <p class="text-xs text-gray-500 mb-2">Abdul Bari</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 3%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">3% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                            <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1516116216624-53e697fedbea?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <div class="absolute top-2 right-2 bg-white p-1 rounded shadow opacity-0 group-hover:opacity-100 transition">
+                        <i class="fas fa-ellipsis-v text-gray-600 px-1"></i>
+                    </div>
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">Mastering Data Structures & Algorithms using C and C++</h3>
+                <p class="text-xs text-gray-500 mb-2">Abdul Bari</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 16%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">16% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                            <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <div class="absolute top-2 right-2 bg-white p-1 rounded shadow opacity-0 group-hover:opacity-100 transition">
+                        <i class="fas fa-ellipsis-v text-gray-600 px-1"></i>
+                    </div>
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">ISTQB Foundation Level V4.0 Complete Training</h3>
+                <p class="text-xs text-gray-500 mb-2">Tarek Roshdy, Nezam Team</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 16%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">16% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                            <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <div class="absolute top-2 right-2 bg-white p-1 rounded shadow opacity-0 group-hover:opacity-100 transition">
+                        <i class="fas fa-ellipsis-v text-gray-600 px-1"></i>
+                    </div>
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">The Complete Full-Stack Web Development Bootcamp</h3>
+                <p class="text-xs text-gray-500 mb-2">Dr. Angela Yu</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 86%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">86% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                            <i class="fas fa-star text-yellow-500"></i><i class="fas fa-star text-yellow-500"></i><i class="fas fa-star text-yellow-500"></i><i class="fas fa-star text-yellow-500"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Card 5 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">Learn C++ Programming - Beginner to Advance - Deep Dive</h3>
+                <p class="text-xs text-gray-500 mb-2">Abdul Bari</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 18%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">18% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                             <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                     <img src="https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">Android Java Masterclass - Become an App Developer</h3>
+                <p class="text-xs text-gray-500 mb-2">Tim Buchalka</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <div class="h-1 progress-bar-fill" style="width: 6%"></div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs text-gray-500">6% complete</span>
+                    <div class="text-right">
+                        <div class="flex text-yellow-500 text-xs">
+                             <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                        </div>
+                        <span class="text-xs text-gray-500">Leave a rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 7 -->
+            <div class="group cursor-pointer">
+                <div class="relative bg-gray-200 aspect-video mb-2 overflow-hidden border border-gray-200">
+                    <img src="https://images.unsplash.com/photo-1547658719-da2b51169166?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Course" class="w-full h-full object-cover group-hover:opacity-90 transition">
+                </div>
+                <h3 class="font-bold text-gray-900 leading-tight mb-1 h-10 overflow-hidden line-clamp-2">Web Design for Web Developers: Build Beautiful Websites!</h3>
+                <p class="text-xs text-gray-500 mb-2">Jonas Schmedtmann</p>
+                <div class="w-full h-1 progress-bar-bg mb-2">
+                    <!-- No progress -->
+                </div>
+                <div class="flex justify-between items-end">
+                    <span class="text-xs font-bold text-gray-800">START COURSE</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
