@@ -84,10 +84,10 @@ const CourseCard: React.FC<Props> = ({ course, showProgress = false, progress = 
         />
       </AspectRatio>
 
-      <CardHeader className="p-0 pt-2 pb-1 px-3">
+      <CardHeader className="p-0 pt-2 pb-0 px-3">
         <div>
           <CardTitle className="leading-tight">{course.title}</CardTitle>
-          <CardDescription className="mt-0 text-sm text-muted-foreground">
+          <CardDescription className="mt-1 text-sm text-muted-foreground">
             {course.instructor}
           </CardDescription>
         </div>
