@@ -40,11 +40,8 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
     }
   }, [accessToken]);
 
-  const roles: string[] = Array.isArray(payload?.roles)
-    ? payload.roles
-    : payload?.roles
-    ? [payload.roles]
-    : [];
+  const rawRoles = payload?.roles ?? payload?.role;
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
 
   const isAdmin = roles.includes('ADMIN');
 

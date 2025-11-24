@@ -26,7 +26,8 @@ const AdminPage: React.FC = () => {
   const { accessToken } = useAuth();
 
   const payload = React.useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
-  const roles: string[] = Array.isArray(payload?.roles) ? payload.roles : payload?.roles ? [payload.roles] : [];
+  const rawRoles = payload?.roles ?? payload?.role;
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
   const email: string | undefined = payload?.username ?? payload?.sub ?? undefined;
 
   return (
