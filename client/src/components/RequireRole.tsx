@@ -28,11 +28,8 @@ const RequireRole: React.FC<Props> = ({ children, roles }) => {
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
 
   const payload = decodeJwtPayload(accessToken);
-  const userRoles: string[] = Array.isArray(payload?.roles)
-    ? payload.roles
-    : payload?.roles
-    ? [payload.roles]
-    : [];
+  const rawRoles = payload?.roles ?? payload?.role;
+  const userRoles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
 
   const required = Array.isArray(roles) ? roles : [roles];
 
