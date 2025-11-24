@@ -20,5 +20,3 @@ declare global {
     }
   }
 }
-
-import { Profile } from 'passport-github2';

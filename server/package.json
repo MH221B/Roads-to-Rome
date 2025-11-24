@@ -7,7 +7,8 @@
     "prestart": "npm run build",
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "build": "tsc",
     "test": "vitest"
   },

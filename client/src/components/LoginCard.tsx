@@ -66,7 +66,7 @@ const LoginCard = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 p-4 min-h-screen">
+    <div className="flex min-h-screen flex-1 flex-col items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>
@@ -114,7 +114,7 @@ const LoginCard = () => {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex-col gap-2 mt-5">
+          <CardFooter className="mt-5 flex-col gap-2">
             <Button type="submit" className="w-full" disabled={mutation.status === 'pending'}>
               {mutation.status === 'pending' ? 'Logging in...' : 'Login'}
             </Button>
