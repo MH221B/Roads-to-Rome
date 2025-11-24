@@ -3,6 +3,7 @@ import RegisterCard from '@/components/RegisterCard'
 import HomePage from '@/components/HomePage'
 import AdminPage from '@/components/AdminPage'
 import RequireRole from '@/components/RequireRole'
+import RequireAuth from '@/components/RequireAuth'
 
 import {
   BrowserRouter as Router,
@@ -12,6 +13,7 @@ import {
 } from "react-router-dom";
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
+import Dashboard from './components/Dashboard'
 
 function App() {
   
@@ -25,6 +27,7 @@ function App() {
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
           <Route path="/admin" element={<RequireRole roles="ADMIN"><AdminPage /></RequireRole>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

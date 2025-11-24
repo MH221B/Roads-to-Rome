@@ -26,6 +26,7 @@ jobs:
     #         cd client
     #         npm run lint
 
+
     server-lint:
         name: Lint (server)
         runs-on: ubuntu-latest

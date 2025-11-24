@@ -7,6 +7,8 @@ import { broadcast, subscribe } from "../lib/broadcast";
 type AuthContextType = {
   accessToken: string | null;
   isAuthenticated: boolean;
+  /** true once the initial silent refresh/rehydration attempt has finished */
+  initialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   getAccessToken: () => string | null;
@@ -130,18 +132,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Attempt a single background silent refresh on initial mount if we don't
   // already have an access token (e.g. user reloads page but httpOnly
   // refresh cookie still exists). Also, if we do have a token on mount,
-  // ensure the refresh timer is scheduled.
+  // ensure the refresh timer is scheduled. We expose `initialized` so
+  // route guards can avoid redirecting before the first background attempt
+  // completes.
+  const [initialized, setInitialized] = useState(false);
   const initialRefreshTried = useRef(false);
   useEffect(() => {
     if (!initialRefreshTried.current) {
       initialRefreshTried.current = true;
-      if (!accessToken && !isLoggedOutRef.current) {
-        // background attempt; failures are swallowed inside silentRefresh
-        silentRefresh().catch(() => {});
-      } else {
-        // ensure we have a scheduled refresh for an existing token
-        scheduleRefresh(accessToken);
-      }
+      (async () => {
+        try {
+          if (!accessToken && !isLoggedOutRef.current) {
+            // background attempt; failures are swallowed inside silentRefresh
+            await silentRefresh().catch(() => {});
+          } else {
+            // ensure we have a scheduled refresh for an existing token
+            scheduleRefresh(accessToken);
+          }
+        } finally {
+          setInitialized(true);
+        }
+      })();
+    } else {
+      // not the first mount - ensure refresh timer remains accurate
+      scheduleRefresh(accessToken);
     }
 
     return () => clearRefresh();
@@ -201,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: AuthContextType = {
     accessToken,
     isAuthenticated: !!accessToken,
+    initialized,
     login,
     logout,
     getAccessToken,

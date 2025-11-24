@@ -1,6 +1,13 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthProvider";
 
 type Props = {
@@ -18,6 +25,8 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
       navigate('/login');
     }
   };
+
+
 
   const payload = React.useMemo(() => {
     if (!accessToken) return null;
@@ -53,7 +62,27 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
             </Button>
           )}
           {isAuthenticated ? (
-            <Button onClick={handleLogout} variant="outline" className="text-primary">Logout</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded px-2 py-1 border border-transparent bg-transparent hover:opacity-90"
+                  aria-label="Profile"
+                >
+                  <span className="w-8 h-8 rounded-full bg-primary-foreground text-primary flex items-center justify-center shadow-sm">
+                    <FaUserCircle size={18} aria-hidden />
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard" className="block w-full">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { handleLogout(); }}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Button asChild variant="outline">
               <Link to="/login" className="text-primary">Login</Link>
