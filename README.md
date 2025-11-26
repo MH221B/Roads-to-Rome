@@ -19,19 +19,37 @@
 1. **Prepare environment variables:** copy or create `server/.env` with the same variables your Render deployment expects (`MONGO_URI`, `JWT_SECRET`, mail credentials, etc.). The Docker Compose files rely on that file (`env_file: - .env`).
 
 2. **Production-like container:**
-	```powershell
-	cd server
-	docker compose -f docker-compose.yml up --build
-	```
-	This builds the multi-stage image, publishes port `3000`, sets `NODE_ENV=production`, and runs the compiled `dist/index.js`. The container is named `roads-to-rome-server` and can be stopped with `docker compose -f docker-compose.yml down`.
+
+   ```powershell
+   cd server
+   docker compose -f docker-compose.yml up --build
+   ```
+
+   This builds the multi-stage image, publishes port `3000`, sets `NODE_ENV=production`, and runs the compiled `dist/index.js`. The container is named `roads-to-rome-server` and can be stopped with `docker compose -f docker-compose.yml down`.
 
 3. **Development container (with hot reload):**
-	```powershell
-	cd server
-	docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
-	```
-	The override switches to `npm run dev` (watch mode), mounts the repo into the container so code changes are reflected immediately, and exposes the same port. It also names the container `roads-to-rome-server-dev` and still loads `NODE_ENV` from the override.
+
+   ```powershell
+   cd server
+   docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
+   ```
+
+   The override switches to `npm run dev` (watch mode), mounts the repo into the container so code changes are reflected immediately, and exposes the same port. It also names the container `roads-to-rome-server-dev` and still loads `NODE_ENV` from the override.
 
 4. **Inspect/logs:** use `docker compose -f docker-compose.yml logs -f server` (or include the override file) to follow the server output. Finish the session with `docker compose down` to remove containers (+volumes if you add `-v`).
 
 5. **Verify:** hit `http://localhost:3000` (or any exposed API path) from your browser or an HTTP client such as `curl`/Postman.
+
+## Running the Frontend Locally
+
+- **Prerequisites:** have Node.js and `npm` installed.
+
+- **Install and run (PowerShell):**
+
+  ```powershell
+  cd client
+  npm install
+  npm run dev
+  ```
+
+- **Access:** the Vite dev server typically runs at `http://localhost:5173`. Open that URL in your browser.
