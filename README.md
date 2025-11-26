@@ -46,10 +46,73 @@
 
 - **Install and run (PowerShell):**
 
+# Roads to Rome
+
+Roads to Rome is a full-stack sample app with a TypeScript/Node backend and a Vite + React frontend. This README focuses on quick setup, local development options, environment requirements, and where to look for deployment/configuration details.
+
+## Quick Start — Local (recommended)
+
+- Prerequisites: Node.js, npm, and (optionally) Docker.
+- Run backend and frontend locally in separate terminals:
+
+  Server (development):
+
+  ```powershell
+  cd server
+  npm install
+  npm run dev
+  ```
+
+  Client (development):
+
   ```powershell
   cd client
   npm install
   npm run dev
   ```
 
-- **Access:** the Vite dev server typically runs at `http://localhost:5173`. Open that URL in your browser.
+  - Frontend: typically at `http://localhost:5173`.
+  - Backend: typically at `http://localhost:3000`.
+
+## Quick Start — Docker (production-like / dev with hot reload)
+
+- Ensure `server/.env` exists with required variables (see "Environment").
+
+Production-like container:
+
+```powershell
+cd server
+docker compose -f docker-compose.yml up --build
+```
+
+Development container (hot reload):
+
+```powershell
+cd server
+docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
+```
+
+Use `docker compose down` to stop and remove containers. Tail logs with `docker compose logs -f server`.
+
+## Environment
+
+Create `server/.env` (copy from any example you maintain) and set at minimum:
+
+- `MONGO_URI` — MongoDB connection string
+- `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `RESET_PASSWORD_SECRET`
+- `CLIENT_URL` — frontend origin (e.g., `http://localhost:5173`)
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` (if using GitHub OAuth)
+
+For email in development the server uses Ethereal (no external setup). For production, configure a real SMTP provider.
+
+## CI / Deployment (summary)
+
+- The repository contains a GitHub Actions workflow that runs on pushes/PRs to `main` and `dev`. It lints the server and can deploy the server (via a Render deploy hook) and the client (via Vercel) when configured with the appropriate secrets (`RENDER_DEPLOY_HOOK`, `VERCEL_TOKEN`).
+- For Render deployments: create a deploy hook, add it to the `RENDER_DEPLOY_HOOK` repo secret, and configure service environment variables to match `server/.env`.
+
+## Authentication (high level)
+
+- Access tokens: short-lived JWTs (signed with `ACCESS_TOKEN_SECRET`).
+- Refresh tokens: longer-lived JWTs (signed with `REFRESH_TOKEN_SECRET`) stored in an `HttpOnly` cookie.
+- Roles: handled via a `Role` enum; `authenticateToken` and `authorizeRoles` middleware enforce access controls.
+- OAuth: GitHub OAuth is implemented; new GitHub users are created with `Role.STUDENT` by default.
