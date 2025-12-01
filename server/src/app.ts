@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth.route';
 import { adminRouter } from './routes/admin.route';
 import { courseRouter } from './routes/course.route';
+import { enrollmentRouter } from './routes/enrollment.route';
 
 const app = express();
 
@@ -36,5 +37,6 @@ app.use(
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/courses', courseRouter);
+app.use('/api/enrollments', enrollmentRouter);
 
 export default app;
