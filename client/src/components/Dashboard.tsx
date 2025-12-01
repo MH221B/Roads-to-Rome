@@ -16,6 +16,17 @@ type Course = {
   shortDescription: string;
 };
 
+export type UserCourseProgress = {
+  id: string;
+  user_id: string;
+  course_id: string;
+  progress: number | null; // 0-100, allow null for not-enrolled/not-available
+  last_lesson_id?: string | null;
+  completed: boolean;
+  rating?: number | null; // decimal like 4.5
+  updated_at?: string | null;
+};
+
 function decodeJwtPayload(token: string | null): any | null {
   if (!token) return null;
   try {
@@ -37,7 +48,8 @@ const mockCourses: Course[] = [
     category: 'Web Development',
     tags: ['react', 'components', 'performance'],
     instructor: 'Aisha Khan',
-    shortDescription: 'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
+    shortDescription:
+      'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
   },
   {
     id: 'course-2',
@@ -55,7 +67,8 @@ const mockCourses: Course[] = [
     category: 'UI/UX',
     tags: ['design', 'components'],
     instructor: 'Clara Romano',
-    shortDescription: 'Learn how to create and maintain a robust design system that teams can trust.',
+    shortDescription:
+      'Learn how to create and maintain a robust design system that teams can trust.',
   },
 ];
 
@@ -64,30 +77,43 @@ const Dashboard: React.FC = () => {
 
   const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
   const rawRoles = payload?.roles ?? payload?.role;
-  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
 
   const isStudent = roles.includes('STUDENT');
 
   // helper to create stable pseudo progress/rating for demo purposes
-  const stableFromId = useCallback((id: string) => {
+  const stableFromId = useCallback((id: string): Partial<UserCourseProgress> => {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (h << 5) - h + id.charCodeAt(i);
     const progress = Math.abs(h) % 101; // 0-100
     const rating = ((Math.abs(h) % 50) / 10) % 5; // 0-5 (one decimal)
-    return { progress, rating: Number(rating.toFixed(1)) };
+    const completed = progress === 100;
+    return {
+      id,
+      progress,
+      rating: Number(rating.toFixed(1)),
+      completed,
+      last_lesson_id: null,
+      updated_at: new Date().toISOString(),
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <HeaderComponent showAdmin={roles.includes('ADMIN')} />
       <main>
         <CourseFilterBar />
 
         <div className="mx-auto w-full max-w-7xl px-4 py-6">
-          <h2 className="text-2xl font-semibold mb-4">My Courses</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="mb-4 text-2xl font-semibold">My Courses</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {mockCourses.map((course) => {
-              const extra = isStudent && isAuthenticated ? stableFromId(course.id) : { progress: null, rating: null };
+              const extra: Partial<UserCourseProgress> =
+                isStudent && isAuthenticated
+                  ? stableFromId(course.id)
+                  : { progress: null, rating: null };
               return (
                 <CourseCard
                   key={course.id}
