@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { CiCircleRemove } from 'react-icons/ci';
 import { FaSearch } from 'react-icons/fa';
 
@@ -192,7 +193,11 @@ export default function CourseList() {
 
           <h2 className="mb-4 text-2xl font-semibold">Courses</h2>
 
-          {loading && <div>Loading courses...</div>}
+          {loading && (
+            <div className="flex min-h-[40vh] w-full items-center justify-center">
+              <Spinner className="size-16" />
+            </div>
+          )}
           {error && <div className="text-destructive">{error}</div>}
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
