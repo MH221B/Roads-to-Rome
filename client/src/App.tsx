@@ -14,6 +14,9 @@ import {
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import Dashboard from './components/Dashboard'
+import CourseDetail from '@/components/CourseDetail'
+import Enrolment from '@/components/Enrolment'
+import LessonViewer from '@/components/LessonViewer'
 
 function App() {
   
@@ -28,6 +31,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/enrolment" element={<Enrolment />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />
           <Route path="/admin" element={<RequireRole roles="ADMIN"><AdminPage /></RequireRole>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
