@@ -1,14 +1,14 @@
-import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { FaUserCircle } from "react-icons/fa";
-import { useAuth } from "@/contexts/AuthProvider";
+} from '@/components/ui/dropdown-menu';
+import { FaUserCircle } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthProvider';
 
 type Props = {
   showAdmin?: boolean;
@@ -17,6 +17,7 @@ type Props = {
 const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   const { accessToken, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -25,8 +26,6 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
       navigate('/login');
     }
   };
-
-
 
   const payload = React.useMemo(() => {
     if (!accessToken) return null;
@@ -41,16 +40,39 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   }, [accessToken]);
 
   const rawRoles = payload?.roles ?? payload?.role;
-  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
 
   const isAdmin = roles.includes('ADMIN');
 
+  const isActive = (path: string) => {
+    if (!location) return false;
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <nav className="w-full border-b bg-primary text-primary-foreground">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center">
+    <nav className="bg-primary text-primary-foreground w-full border-b">
+      <div className="mx-auto flex max-w-7xl items-center px-4 py-3">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-xl font-semibold">R2R</Link>
-          <Link to="/" className="text-sm font-medium text-muted-foreground">Home</Link>
+          <Link to="/" className="text-xl font-semibold">
+            R2R
+          </Link>
+          <Link
+            to="/"
+            className={`text-sm font-medium ${isActive('/') ? '' : 'text-muted-foreground'}`}
+            aria-current={isActive('/') ? 'page' : undefined}
+          >
+            Home
+          </Link>
+          <Link
+            to="/courses"
+            className={`text-sm font-medium ${isActive('/courses') ? '' : 'text-muted-foreground'}`}
+            aria-current={isActive('/courses') ? 'page' : undefined}
+          >
+            Courses
+          </Link>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {showAdmin && isAdmin && (
@@ -63,26 +85,34 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded px-2 py-1 border border-transparent bg-transparent hover:opacity-90"
+                  className="inline-flex items-center gap-2 rounded border border-transparent bg-transparent px-2 py-1 hover:opacity-90"
                   aria-label="Profile"
                 >
-                  <span className="w-8 h-8 rounded-full bg-primary-foreground text-primary flex items-center justify-center shadow-sm">
+                  <span className="bg-primary-foreground text-primary flex h-8 w-8 items-center justify-center rounded-full shadow-sm">
                     <FaUserCircle size={18} aria-hidden />
                   </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard" className="block w-full">Dashboard</Link>
+                  <Link to="/dashboard" className="block w-full">
+                    Dashboard
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { handleLogout(); }}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    handleLogout();
+                  }}
+                >
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Button asChild variant="outline">
-              <Link to="/login" className="text-primary">Login</Link>
+              <Link to="/login" className="text-primary">
+                Login
+              </Link>
             </Button>
           )}
         </div>
