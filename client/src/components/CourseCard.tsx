@@ -19,7 +19,7 @@ type Course = {
   category?: string;
   tags: string[];
   /** e.g. 'Beginner' | 'Intermediate' | 'Advanced' */
-  difficulty?: string;
+  difficulty?: string | null;
   instructor: string;
   shortDescription: string;
 };
