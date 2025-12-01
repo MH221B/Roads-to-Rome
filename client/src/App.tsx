@@ -1,34 +1,43 @@
-import LoginCard from '@/components/LoginCard'
-import RegisterCard from '@/components/RegisterCard'
-import HomePage from '@/components/HomePage'
-import AdminPage from '@/components/AdminPage'
-import RequireRole from '@/components/RequireRole'
-import RequireAuth from '@/components/RequireAuth'
+import LoginCard from '@/components/LoginCard';
+import RegisterCard from '@/components/RegisterCard';
+import HomePage from '@/components/HomePage';
+import AdminPage from '@/components/AdminPage';
+import RequireRole from '@/components/RequireRole';
+import RequireAuth from '@/components/RequireAuth';
 
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import ForgotPassword from './components/ForgotPassword'
-import ResetPassword from './components/ResetPassword'
-import Dashboard from './components/Dashboard'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import Dashboard from './components/Dashboard';
+import CourseList from './components/CourseList';
 
 function App() {
-  
-
   return (
     <Router>
-      <div className='flex flex-col grow'>
+      <div className="flex grow flex-col">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginCard />} />
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/admin" element={<RequireRole roles="ADMIN"><AdminPage /></RequireRole>} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route path="/courses" element={<CourseList />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireRole roles="ADMIN">
+                <AdminPage />
+              </RequireRole>
+            }
+          />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
@@ -36,4 +45,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
