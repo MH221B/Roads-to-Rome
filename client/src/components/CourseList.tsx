@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CiCircleRemove } from 'react-icons/ci';
+import { FaSearch } from 'react-icons/fa';
 
 import {
   Select,
@@ -59,6 +60,7 @@ const mockCourses: Course[] = [
 export default function CourseList() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -81,7 +83,6 @@ export default function CourseList() {
   const addTagFromQuery = (q?: string) => {
     const val = (q ?? tagQuery).trim();
     if (!val) return;
-    // Prefer exact match from allTags (case-insensitive), otherwise add raw value
     const match = allTags.find((t) => t.toLowerCase() === val.toLowerCase());
     const tagToAdd = match ?? val;
     setSelectedTags((prev) => (prev.includes(tagToAdd) ? prev : [...prev, tagToAdd]));
@@ -97,9 +98,17 @@ export default function CourseList() {
     return mockCourses.filter((c) => {
       const categoryMatch = !selectedCategory || c.category === selectedCategory;
       const tagsMatch = selectedTags.length === 0 || selectedTags.every((t) => c.tags.includes(t));
-      return categoryMatch && tagsMatch;
+      const q = searchQuery.trim().toLowerCase();
+      const queryMatch =
+        !q ||
+        c.title.toLowerCase().includes(q) ||
+        c.shortDescription.toLowerCase().includes(q) ||
+        c.instructor.toLowerCase().includes(q) ||
+        c.tags.some((t) => t.toLowerCase().includes(q));
+
+      return categoryMatch && tagsMatch && queryMatch;
     });
-  }, [selectedCategory, selectedTags]);
+  }, [selectedCategory, selectedTags, searchQuery]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -152,6 +161,21 @@ export default function CourseList() {
               <Button variant="ghost" onClick={resetFilters} className="ml-2">
                 Reset
               </Button>
+            </div>
+
+            <div className="flex w-full items-center justify-end md:w-auto">
+              <div className="flex w-full max-w-sm items-center space-x-0">
+                <Input
+                  type="text"
+                  placeholder="Search courses"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                  className="w-full rounded-r-none border-r-0 focus-visible:ring-0 focus-visible:ring-offset-0 md:w-64"
+                />
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-l-none px-4">
+                  <FaSearch className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
