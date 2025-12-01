@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-// import { api } from '../services/axiosClient';
+import { api } from '../services/axiosClient';
 import RequireRole from './RequireRole';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -25,43 +25,26 @@ interface Course {
   lessons: Lesson[];
 }
 
-const MOCK_COURSE_VIEWER: Course = {
-  id: "1",
-  title: "The Complete 2024 Web Development Bootcamp",
-  lessons: [
-    { id: "l1", course_id: "1", title: "Introduction to HTML", content_type: "video", content: "video_url", duration: 10 },
-    { id: "l2", course_id: "1", title: "CSS Basics", content_type: "video", content: "video_url", duration: 15 },
-    { id: "l3", course_id: "1", title: "Javascript Fundamentals", content_type: "article", content: "article_content", duration: 20 },
-    { id: "l4", course_id: "1", title: "React Hooks", content_type: "video", content: "video_url", duration: 25 },
-  ]
-};
-
-const MOCK_LESSONS_DATA: Record<string, Lesson> = {
-  "l1": { id: "l1", course_id: "1", title: "Introduction to HTML", content_type: "video", content: "This is a placeholder for the HTML video content.", duration: 10 },
-  "l2": { id: "l2", course_id: "1", title: "CSS Basics", content_type: "video", content: "This is a placeholder for the CSS video content.", duration: 15 },
-  "l3": { id: "l3", course_id: "1", title: "Javascript Fundamentals", content_type: "article", content: "# JavaScript Fundamentals\n\nJavaScript is a versatile language...\n\n## Variables\n\n`let` and `const` are used to declare variables.", duration: 20 },
-  "l4": { id: "l4", course_id: "1", title: "React Hooks", content_type: "video", content: "This is a placeholder for the React Hooks video content.", duration: 25 },
-};
-
 // --- API Functions ---
-const fetchCourseForViewer = async (courseId: string) => {
+const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
   console.log("Fetching course:", courseId);
-  // const response = await api.get<Course>(`/api/courses/${courseId}`);
-  // return response.data;
-  return new Promise<Course>((resolve) => {
-    setTimeout(() => resolve(MOCK_COURSE_VIEWER), 500);
-  });
+  const response = await api.get(`/api/lessons/course/${courseId}`);
+  const lessons: Lesson[] = response.data.map((l: any) => ({
+    ...l,
+    content_type: l.contentType,
+    duration: l.duration ? Math.round(l.duration / 60) : undefined // convert seconds to minutes
+  }));
+  return { id: courseId, title: `Course ${courseId}`, lessons };
 };
 
-const fetchLessonDetails = async (lessonId: string) => {
-  // const response = await api.get<Lesson>(`/api/lessons/${lessonId}`);
-  // return response.data;
-  return new Promise<Lesson>((resolve) => {
-    setTimeout(() => {
-      const lesson = MOCK_LESSONS_DATA[lessonId] || MOCK_LESSONS_DATA["l1"];
-      resolve(lesson);
-    }, 500);
-  });
+const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<Lesson> => {
+  const response = await api.get(`/api/lessons/${lessonId}?courseId=${courseId}`);
+  const data = response.data;
+  return {
+    ...data,
+    content_type: data.contentType,
+    duration: data.duration ? Math.round(data.duration / 60) : undefined
+  };
 };
 
 export default function LessonViewer() {
@@ -114,9 +97,9 @@ export default function LessonViewer() {
 
   // Fetch Current Lesson Details (Cached for 5 minutes)
   const { data: lesson, isLoading: isLessonLoading, error: lessonError } = useQuery({
-    queryKey: ['lesson', lessonId],
-    queryFn: () => fetchLessonDetails(lessonId!),
-    enabled: !!lessonId,
+    queryKey: ['lesson', courseId, lessonId],
+    queryFn: () => fetchLessonDetails(courseId!, lessonId!),
+    enabled: !!courseId && !!lessonId,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -160,8 +143,7 @@ export default function LessonViewer() {
   }
 
   return (
-    <RequireRole roles={['STUDENT', 'INSTRUCTOR', 'ADMIN']}>
-      <div className="flex flex-col h-screen bg-slate-50 text-slate-900 overflow-hidden">
+    <div className="flex flex-col h-screen bg-slate-50 text-slate-900 overflow-hidden">
         <HeaderComponent />
         
         {/* Top Navigation Bar */}
@@ -341,6 +323,5 @@ export default function LessonViewer() {
           </main>
         </div>
       </div>
-    </RequireRole>
   );
 }

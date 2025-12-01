@@ -7,5 +7,9 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     testTimeout: 20000,
     hookTimeout: 20000,
+    tsconfig: './tsconfig.test.json',
+  },
+  esbuild: {
+    target: 'node18',
   },
 });

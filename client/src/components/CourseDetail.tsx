@@ -237,7 +237,7 @@ export default function CourseDetail() {
               <Card>
                 <div className="divide-y">
                   {course.lessons?.map((lesson) => (
-                    <div key={lesson.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer">
+                    <div key={lesson.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/courses/${id}/lessons/${lesson.id}`)}>
                       <div className="flex items-center gap-3">
                         <FaPlayCircle className="h-5 w-5 text-slate-400" />
                         <span className="font-medium">{lesson.title}</span>
