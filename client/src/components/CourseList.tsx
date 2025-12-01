@@ -1,6 +1,6 @@
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,62 +15,30 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 
-type Course = {
-  id: string;
-  title: string;
-  thumbnail: string;
-  category?: string;
-  tags: string[];
-  instructor: string;
-  shortDescription: string;
-};
+import type { Course as CourseType } from '@/services/courseService';
+import { getCourses } from '@/services/courseService';
 
-const mockCourses: Course[] = [
-  {
-    id: 'course-1',
-    title: 'Modern React Patterns',
-    thumbnail: 'https://picsum.photos/seed/modern-react-patterns/640/360',
-    category: 'Web Development',
-    tags: ['react', 'components', 'performance'],
-    instructor: 'Aisha Khan',
-    shortDescription:
-      'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
-  },
-  {
-    id: 'course-2',
-    title: 'TypeScript Deep Dive',
-    thumbnail: 'https://picsum.photos/seed/typescript-deep-dive/640/360',
-    category: 'Programming',
-    tags: ['typescript', 'nodejs'],
-    instructor: 'Marcus Lee',
-    shortDescription: 'Master TypeScript features and typing strategies for real-world codebases.',
-  },
-  {
-    id: 'course-3',
-    title: 'Design Systems in Practice',
-    thumbnail: 'https://picsum.photos/seed/design-systems/640/360',
-    category: 'UI/UX',
-    tags: ['design', 'components'],
-    instructor: 'Clara Romano',
-    shortDescription:
-      'Learn how to create and maintain a robust design system that teams can trust.',
-  },
-];
+type Course = Omit<CourseType, 'difficulty'> & { difficulty?: string | null };
+
+const mockCourses: Course[] = [];
 
 export default function CourseList() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [courses, setCourses] = useState<Course[]>(mockCourses);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
-    mockCourses.forEach((c) => c.category && set.add(c.category));
+    courses.forEach((c) => c.category && set.add(c.category));
     return Array.from(set);
-  }, []);
+  }, [courses]);
 
   const allTags = useMemo(() => {
-    return Array.from(new Set(mockCourses.flatMap((c) => c.tags)));
-  }, []);
+    return Array.from(new Set(courses.flatMap((c) => c.tags)));
+  }, [courses]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -95,7 +63,7 @@ export default function CourseList() {
   };
 
   const filtered = useMemo(() => {
-    return mockCourses.filter((c) => {
+    return courses.filter((c) => {
       const categoryMatch = !selectedCategory || c.category === selectedCategory;
       const tagsMatch = selectedTags.length === 0 || selectedTags.every((t) => c.tags.includes(t));
       const q = searchQuery.trim().toLowerCase();
@@ -108,7 +76,30 @@ export default function CourseList() {
 
       return categoryMatch && tagsMatch && queryMatch;
     });
-  }, [selectedCategory, selectedTags, searchQuery]);
+  }, [courses, selectedCategory, selectedTags, searchQuery]);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+    getCourses()
+      .then((data) => {
+        if (!mounted) return;
+        setCourses(data);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setError(err?.message ?? 'Failed to load courses');
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="bg-background min-h-screen">
@@ -201,10 +192,14 @@ export default function CourseList() {
 
           <h2 className="mb-4 text-2xl font-semibold">Courses</h2>
 
+          {loading && <div>Loading courses...</div>}
+          {error && <div className="text-destructive">{error}</div>}
+
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
+            {!loading && filtered.length === 0 && <div>No courses found.</div>}
           </div>
         </div>
       </main>
