@@ -1,14 +1,14 @@
-import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { FaUserCircle } from "react-icons/fa";
-import { useAuth } from "@/contexts/AuthProvider";
+} from '@/components/ui/dropdown-menu';
+import { FaUserCircle } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthProvider';
 
 type Props = {
   showAdmin?: boolean;
@@ -17,6 +17,7 @@ type Props = {
 const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   const { accessToken, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -25,8 +26,6 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
       navigate('/login');
     }
   };
-
-
 
   const payload = React.useMemo(() => {
     if (!accessToken) return null;
@@ -41,9 +40,17 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   }, [accessToken]);
 
   const rawRoles = payload?.roles ?? payload?.role;
-  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
 
   const isAdmin = roles.includes('ADMIN');
+
+  const isActive = (path: string) => {
+    if (!location) return false;
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <nav className="w-full border-b bg-primary text-primary-foreground shadow-sm">

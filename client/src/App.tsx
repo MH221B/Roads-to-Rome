@@ -1,9 +1,9 @@
-import LoginCard from '@/components/LoginCard'
-import RegisterCard from '@/components/RegisterCard'
-import HomePage from '@/components/HomePage'
-import AdminPage from '@/components/AdminPage'
-import RequireRole from '@/components/RequireRole'
-import RequireAuth from '@/components/RequireAuth'
+import LoginCard from '@/components/LoginCard';
+import RegisterCard from '@/components/RegisterCard';
+import HomePage from '@/components/HomePage';
+import AdminPage from '@/components/AdminPage';
+import RequireRole from '@/components/RequireRole';
+import RequireAuth from '@/components/RequireAuth';
 
 import {
   BrowserRouter as Router,
@@ -19,11 +19,9 @@ import Enrolment from '@/components/Enrolment'
 import LessonViewer from '@/components/LessonViewer'
 
 function App() {
-  
-
   return (
     <Router>
-      <div className='flex flex-col grow'>
+      <div className="flex grow flex-col">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginCard />} />
@@ -42,4 +40,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
