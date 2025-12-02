@@ -4,7 +4,9 @@ import courseService from '../services/course.service';
 const courseController = {
   async List(req: Request, res: Response) {
     try {
-      const courses = await courseService.listCourses();
+      // accept a query param `q` for full-text search ex: /api/courses?q=javascript
+      const q = typeof req.query.q === 'string' ? req.query.q.trim() : undefined;
+      const courses = await courseService.listCourses(q);
       // return courses directly
       res.status(200).json(courses);
     } catch (error) {
