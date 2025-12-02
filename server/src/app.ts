@@ -4,7 +4,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth.route';
 import { adminRouter } from './routes/admin.route';
-import { courseRouter } from './routes/course.route';
+import { lessonRouter } from './routes/lesson.route';
 
 const app = express();
 
@@ -35,6 +35,10 @@ app.use(
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/courses', courseRouter);
+app.use('/api/lessons', lessonRouter);
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date() });
+});
 
 export default app;
