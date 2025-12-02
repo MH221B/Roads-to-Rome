@@ -12,13 +12,6 @@ import { FaSpinner, FaTrash, FaBookOpen, FaChalkboardTeacher, FaSearch } from 'r
 import Swal from 'sweetalert2';
 import HeaderComponent from './HeaderComponent';
 
-// Types based on EERD and typical API response
-interface Instructor {
-  id: string;
-  name: string;
-  email: string;
-}
-
 interface Course {
   id: string;
   title: string;
@@ -26,7 +19,7 @@ interface Course {
   level: string;
   is_premium: boolean;
   status: string;
-  instructor: Instructor;
+  instructor: string;
 }
 
 interface Enrollment {
@@ -38,83 +31,15 @@ interface Enrollment {
   created_at?: string;
 }
 
-const MOCK_ENROLLMENTS: Enrollment[] = [
-  {
-    id: "enr_1",
-    student_id: "user_123",
-    course_id: "1",
-    status: "active",
-    created_at: "2023-01-15T10:00:00Z",
-    course: {
-      id: "1",
-      title: "Complete React Developer in 2025",
-      description: "Learn React, Redux, Hooks, GraphQL, and more!",
-      level: "Intermediate",
-      is_premium: true,
-      status: "published",
-      instructor: {
-        id: "inst_1",
-        name: "Andrei Neagoie",
-        email: "andrei@example.com"
-      }
-    }
-  },
-  {
-    id: "enr_2",
-    student_id: "user_123",
-    course_id: "2",
-    status: "completed",
-    created_at: "2023-02-20T14:30:00Z",
-    course: {
-      id: "2",
-      title: "Python for Data Science and Machine Learning",
-      description: "Master Python for Data Science and Machine Learning with this comprehensive course.",
-      level: "Beginner",
-      is_premium: false,
-      status: "published",
-      instructor: {
-        id: "inst_2",
-        name: "Jose Portilla",
-        email: "jose@example.com"
-      }
-    }
-  },
-  {
-    id: "enr_3",
-    student_id: "user_123",
-    course_id: "3",
-    status: "active",
-    created_at: "2023-03-10T09:15:00Z",
-    course: {
-      id: "3",
-      title: "The Web Developer Bootcamp 2025",
-      description: "The only course you need to learn web development - HTML, CSS, JS, Node, and more!",
-      level: "Beginner",
-      is_premium: true,
-      status: "published",
-      instructor: {
-        id: "inst_3",
-        name: "Colt Steele",
-        email: "colt@example.com"
-      }
-    }
-  }
-];
-
 // API Functions
 const fetchEnrollments = async () => {
-  // const response = await api.get<Enrollment[]>('/api/enrollments');
-  // return response.data;
-  return new Promise<Enrollment[]>((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_ENROLLMENTS);
-    }, 800);
-  });
+  const response = await api.get<Enrollment[]>('/api/enrollments');
+  return response.data;
 };
 
 const unenrollCourse = async (enrollmentId: string) => {
-  const response = await api.delete(`/api/enrollments/${enrollmentId}`);
-  return response.data;
+  await api.delete(`/api/enrollments/${enrollmentId}`);
+  return enrollmentId;
 };
 
 export default function Enrolment() {
@@ -185,7 +110,7 @@ export default function Enrolment() {
 
   const filteredEnrollments = Array.isArray(enrollments) ? enrollments.filter(enrollment => 
     enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    enrollment.course?.instructor?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    enrollment.course?.instructor?.toLowerCase().includes(searchTerm.toLowerCase())
   ) : [];
 
   return (
@@ -236,7 +161,7 @@ export default function Enrolment() {
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
                     <FaChalkboardTeacher className="h-4 w-4" />
-                    {enrollment.course.instructor?.name || 'Unknown Instructor'}
+                    {enrollment.course.instructor || 'Unknown Instructor'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grow">
