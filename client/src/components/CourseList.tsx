@@ -1,9 +1,10 @@
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { CiCircleRemove } from 'react-icons/ci';
 import { FaSearch } from 'react-icons/fa';
 
@@ -29,6 +30,73 @@ export default function CourseList() {
   const [courses, setCourses] = useState<Course[]>(mockCourses);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const isMountedRef = useRef(true);
+
+  const loadPage = useCallback(
+    async (targetPage = 1, replace = false) => {
+      const limit = 6;
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getCourses(targetPage, limit, {
+          category: selectedCategory,
+          tags: selectedTags,
+          search: searchQuery,
+        });
+        if (!isMountedRef.current) return;
+        if (replace) {
+          setCourses(data);
+        } else {
+          setCourses((prev) => [...prev, ...data]);
+        }
+
+        // if fewer results than a full page, there are no more pages
+        if (data.length < limit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        // advance the next page pointer
+        setPage(targetPage + 1);
+      } catch (err: any) {
+        if (!isMountedRef.current) return;
+        setError(err?.message ?? 'Failed to load courses');
+      } finally {
+        if (isMountedRef.current) setLoading(false);
+      }
+    },
+    [selectedCategory, selectedTags, searchQuery]
+  );
+
+  const resetAndLoad = useCallback(() => {
+    setCourses([]);
+    setPage(1);
+    setHasMore(true);
+    loadPage(1, true);
+  }, [loadPage]);
+
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore) return;
+    loadPage(page);
+  }, [loading, hasMore, page, loadPage]);
+
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  const bottomRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [hasMore, loadMore]
+  );
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -79,27 +147,17 @@ export default function CourseList() {
   }, [courses, selectedCategory, selectedTags, searchQuery]);
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-    getCourses()
-      .then((data) => {
-        if (!mounted) return;
-        setCourses(data);
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        setError(err?.message ?? 'Failed to load courses');
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
-
+    isMountedRef.current = true;
+    resetAndLoad();
     return () => {
-      mounted = false;
+      isMountedRef.current = false;
     };
-  }, []);
+  }, [resetAndLoad]);
+
+  // Reload courses whenever filters change (category, tags, search)
+  useEffect(() => {
+    resetAndLoad();
+  }, [resetAndLoad]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -192,15 +250,39 @@ export default function CourseList() {
 
           <h2 className="mb-4 text-2xl font-semibold">Courses</h2>
 
-          {loading && <div>Loading courses...</div>}
           {error && <div className="text-destructive">{error}</div>}
+
+          {loading && courses.length === 0 && (
+            <div className="flex min-h-[40vh] w-full items-center justify-center">
+              <Spinner className="size-16" />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
-            {!loading && filtered.length === 0 && <div>No courses found.</div>}
+            {!loading && filtered.length === 0 && courses.length > 0 && (
+              <div>No courses match your filters.</div>
+            )}
           </div>
+
+          {/* SPINNER 2: LOAD MORE ONLY (Small Spinner at the bottom) */}
+          {loading && courses.length > 0 && (
+            <div className="flex w-full items-center justify-center py-4">
+              <Spinner />
+            </div>
+          )}
+
+          {/* End of list message */}
+          {!loading && !hasMore && courses.length > 0 && (
+            <div className="flex w-full items-center justify-center py-4 text-sm opacity-80">
+              No more courses.
+            </div>
+          )}
+
+          {/* Scroll Sentinel */}
+          <div ref={bottomRef} style={{ height: 1 }} />
         </div>
       </main>
     </div>
