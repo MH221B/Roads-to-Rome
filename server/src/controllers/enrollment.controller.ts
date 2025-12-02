@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import enrollmentService from '../services/enrollment.service';
+// viết commit cho tớ nhé cưng ơi
+// refactor enrollment controller to use enrollment service
 
 const enrollmentController = {
   async List(req: Request, res: Response) {
     try {
+      // const studentId = req.user?.id as string; // Uncomment if using authentication middleware
+      // const enrollments = await enrollmentService.listEnrollmentsByUser(studentId);
       const enrollments = await enrollmentService.listEnrollments();
       res.status(200).json(enrollments);
     } catch (error) {

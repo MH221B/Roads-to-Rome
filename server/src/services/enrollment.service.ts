@@ -1,14 +1,30 @@
 import Enrollment, { IEnrollment } from '../models/enrollment.model';
 
 interface IEnrollmentService {
+  //listEnrollmentsByUser(studentId: string): Promise<IEnrollment[]>;
   listEnrollments(): Promise<IEnrollment[]>;
   createEnrollment(studentId: string, courseId: string, status?: string): Promise<IEnrollment>;
   deleteEnrollment(enrollmentId: string): Promise<void>;
 }
 
 const enrollmentService: IEnrollmentService = {
+  // async listEnrollmentsByUser(studentId: string): Promise<IEnrollment[]> {
+  //   return (await Enrollment.find({ studentId }).sort({ createdAt: -1 }).lean().exec()) as unknown as IEnrollment[];
+  // },
   async listEnrollments(): Promise<IEnrollment[]> {
-    return (await Enrollment.find().sort({ createdAt: -1 }).lean().exec()) as unknown as IEnrollment[];
+    const data = await Enrollment.find()
+      .populate({
+        path: "courseId",
+        populate: { path: "instructor", select: "name email" }
+      })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return data.map((e: any) => ({
+      ...e,
+      course: e.courseId,    // rename so frontend receives: enrollment.course
+    }));
   },
 
   async createEnrollment(studentId: string, courseId: string, status = 'enrolled'): Promise<IEnrollment> {
