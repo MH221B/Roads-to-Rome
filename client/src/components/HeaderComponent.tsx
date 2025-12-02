@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ type Props = {
 const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   const { accessToken, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -45,6 +46,12 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
 
   const isAdmin = roles.includes('ADMIN');
 
+  const isActive = (path: string) => {
+    if (!location) return false;
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <nav className="bg-primary text-primary-foreground w-full border-b shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 lg:px-8">
@@ -58,13 +65,33 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
-            <Link to="/" className="text-sm font-medium transition-colors hover:text-white/80">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                isActive('/') ? '' : 'text-muted-foreground'
+              }`}
+              aria-current={isActive('/') ? 'page' : undefined}
+            >
               Home
             </Link>
+
+            <Link
+              to="/courses"
+              className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                isActive('/courses') ? '' : 'text-muted-foreground'
+              }`}
+              aria-current={isActive('/courses') ? 'page' : undefined}
+            >
+              Courses
+            </Link>
+
             {isAuthenticated && roles.includes('STUDENT') && (
               <Link
                 to="/enrolment"
-                className="text-sm font-medium transition-colors hover:text-white/80"
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                  isActive('/enrolment') ? '' : 'text-muted-foreground'
+                }`}
+                aria-current={isActive('/enrolment') ? 'page' : undefined}
               >
                 My Enrollments
               </Link>

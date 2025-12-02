@@ -5,18 +5,19 @@ import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
 import RequireAuth from '@/components/RequireAuth';
 
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import ForgotPassword from './components/ForgotPassword'
-import ResetPassword from './components/ResetPassword'
-import Dashboard from './components/Dashboard'
-import CourseDetail from '@/components/CourseDetail'
-import Enrolment from '@/components/Enrolment'
-import LessonViewer from '@/components/LessonViewer'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import Dashboard from './components/Dashboard';
+
+// Your addition
+import CourseList from './components/CourseList';
+
+// Teammate additions
+import CourseDetail from '@/components/CourseDetail';
+import Enrolment from '@/components/Enrolment';
+import LessonViewer from '@/components/LessonViewer';
 
 function App() {
   return (
@@ -28,11 +29,27 @@ function App() {
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route path="/courses" element={<CourseList />} />
           <Route path="/enrolment" element={<Enrolment />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />
-          <Route path="/admin" element={<RequireRole roles="ADMIN"><AdminPage /></RequireRole>} />
+          <Route
+            path="/admin"
+            element={
+              <RequireRole roles="ADMIN">
+                <AdminPage />
+              </RequireRole>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
