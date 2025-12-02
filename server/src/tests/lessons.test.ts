@@ -96,12 +96,12 @@ describe('Lesson Routes', () => {
     });
   });
 
-  describe('GET /api/lessons/course/:courseId/lesson/:lessonId', () => {
+  describe('GET /api/lessons/:lessonId', () => {
     it('should return a specific lesson for a given course and lesson ID', async () => {
       const courseId = 'course1';
       const lessonId = 'l1';
       const response = await request(app)
-        .get(`/api/lessons/course/${courseId}/lesson/${lessonId}`)
+        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('id', lessonId);
@@ -118,7 +118,7 @@ describe('Lesson Routes', () => {
       const courseId = 'course1';
       const lessonId = 'nonexistent';
       const response = await request(app)
-        .get(`/api/lessons/course/${courseId}/lesson/${lessonId}`)
+        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
         .expect(400);
 
       expect(response.body).toHaveProperty('error', 'Lesson not found in the specified course');
@@ -128,7 +128,7 @@ describe('Lesson Routes', () => {
       const courseId = 'course1';
       const lessonId = 'l3'; // This lesson is in course2
       const response = await request(app)
-        .get(`/api/lessons/course/${courseId}/lesson/${lessonId}`)
+        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
         .expect(400);
 
       expect(response.body).toHaveProperty('error', 'Lesson not found in the specified course');

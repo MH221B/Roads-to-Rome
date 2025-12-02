@@ -319,7 +319,6 @@ export default function LessonViewer() {
                 </div>
               </div>
             </div>
-
           </main>
         </div>
       </div>

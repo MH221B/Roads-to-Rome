@@ -15,7 +15,7 @@ const lessonService: ILessonService = {
     console.log("Fetching lesson:", courseId, lessonId);
     const lesson = await lessonModel.findOne({ course_id: courseId, id: lessonId }).exec();
     if (!lesson) {
-      throw new Error('Lesson not found');
+      throw new Error('Lesson not found in the specified course');
     }
     return lesson;
   }
