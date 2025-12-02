@@ -6,9 +6,8 @@ import enrollmentService from '../services/enrollment.service';
 const enrollmentController = {
   async List(req: Request, res: Response) {
     try {
-      // const studentId = req.user?.id as string; // Uncomment if using authentication middleware
-      // const enrollments = await enrollmentService.listEnrollmentsByUser(studentId);
-      const enrollments = await enrollmentService.listEnrollments();
+      const studentId = req.user?.id as string; 
+      const enrollments = await enrollmentService.listEnrollmentsByUser(studentId);
       res.status(200).json(enrollments);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
@@ -27,11 +26,15 @@ const enrollmentController = {
 
   async Create(req: Request, res: Response) {
     try {
-      const { studentId, courseId, status } = req.body;
-      if (!studentId || !courseId) {
-        return res.status(400).json({ error: 'studentId and courseId are required' });
+      const studentId = req.user?.id as string;
+      const { status, course_id } = req.body; // status is ignored by service for now
+      const finalCourseId = course_id;
+
+      if (!studentId || !finalCourseId) {
+        return res.status(400).json({ error: 'courseId is required' });
       }
-      const created = await enrollmentService.createEnrollment(studentId, courseId, status);
+
+      const created = await enrollmentService.createEnrollment(studentId, finalCourseId, status);
       res.status(201).json(created);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
