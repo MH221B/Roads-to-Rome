@@ -3,8 +3,9 @@ import HeaderComponent from './HeaderComponent';
 import CourseFilterBar from './CourseFilterBar';
 import CourseCard from './CourseCard';
 import { useAuth } from '@/contexts/AuthProvider';
-import { useCallback } from 'react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/services/axiosClient';
 
 type Course = {
   id: string;
@@ -40,38 +41,6 @@ function decodeJwtPayload(token: string | null): any | null {
   }
 }
 
-const mockCourses: Course[] = [
-  {
-    id: 'course-1',
-    title: 'Modern React Patterns',
-    thumbnail: 'https://picsum.photos/seed/modern-react-patterns/640/360',
-    category: 'Web Development',
-    tags: ['react', 'components', 'performance'],
-    instructor: 'Aisha Khan',
-    shortDescription:
-      'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
-  },
-  {
-    id: 'course-2',
-    title: 'TypeScript Deep Dive',
-    thumbnail: 'https://picsum.photos/seed/typescript-deep-dive/640/360',
-    category: 'Programming',
-    tags: ['typescript', 'nodejs'],
-    instructor: 'Marcus Lee',
-    shortDescription: 'Master TypeScript features and typing strategies for real-world codebases.',
-  },
-  {
-    id: 'course-3',
-    title: 'Design Systems in Practice',
-    thumbnail: 'https://picsum.photos/seed/design-systems/640/360',
-    category: 'UI/UX',
-    tags: ['design', 'components'],
-    instructor: 'Clara Romano',
-    shortDescription:
-      'Learn how to create and maintain a robust design system that teams can trust.',
-  },
-];
-
 const Dashboard: React.FC = () => {
   const { accessToken, isAuthenticated } = useAuth();
 
@@ -100,6 +69,17 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
+  // Fetch enrollments for the logged-in user
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ['enrollments'],
+    queryFn: async () => {
+      const resp = await api.get('/api/enrollments');
+      return resp.data as any[];
+    },
+    enabled: isStudent && isAuthenticated,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
   return (
     <div className="bg-background min-h-screen">
       <HeaderComponent showAdmin={roles.includes('ADMIN')} />
@@ -109,11 +89,25 @@ const Dashboard: React.FC = () => {
         <div className="mx-auto w-full max-w-7xl px-4 py-6">
           <h2 className="mb-4 text-2xl font-semibold">My Courses</h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {mockCourses.map((course) => {
-              const extra: Partial<UserCourseProgress> =
-                isStudent && isAuthenticated
-                  ? stableFromId(course.id)
-                  : { progress: null, rating: null };
+            {(isStudent && isAuthenticated && enrollments ? enrollments : []).map((item: any) => {
+              // item might be an enrollment object with `course` and progress fields, or a plain course
+              const isEnrollment = !!item.course;
+              const course = isEnrollment
+                ? ({
+                    id: item.course.id || item.course._id,
+                    title: item.course.title || item.course.name || 'Untitled',
+                    thumbnail: item.course.thumbnail || `https://picsum.photos/seed/${item.course.id || 'course'}/640/360`,
+                    category: item.course.category,
+                    tags: item.course.tags || [],
+                    instructor: typeof item.course.instructor === 'string' ? item.course.instructor : (item.course.instructor?.name || item.course.instructor?.email || 'Unknown'),
+                    shortDescription: item.course.shortDescription || item.course.description || '',
+                  } as Course)
+                : item;
+
+              const extra: Partial<UserCourseProgress> = isEnrollment
+                ? { progress: item.progress, rating: item.rating }
+                : (isStudent && isAuthenticated ? stableFromId(course.id) : { progress: null, rating: null });
+
               return (
                 <CourseCard
                   key={course.id}

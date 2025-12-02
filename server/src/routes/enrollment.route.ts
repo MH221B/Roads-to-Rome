@@ -10,6 +10,9 @@ enrollmentRouter.get('/', authenticateToken, enrollmentController.List);
 // POST /api/enrollments - requires authentication so server can populate studentId
 enrollmentRouter.post('/', authenticateToken, enrollmentController.Create);
 
+// PATCH /api/enrollments/:id - update progress/rating
+enrollmentRouter.patch('/:id', authenticateToken, enrollmentController.Update);
+
 // DELETE /api/enrollments/:id
 enrollmentRouter.delete('/:id', authenticateToken, enrollmentController.Delete);
 
