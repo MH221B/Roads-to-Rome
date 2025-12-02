@@ -63,11 +63,11 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
           </Link>
           
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/" className="text-sm font-medium hover:text-white/80 transition-colors">
+            <Link to="/" className={`text-sm font-medium ${isActive('/') ? 'text-white/80 font-semibold' : 'hover:text-white/80 transition-colors'}`}>
               Home
             </Link>
             {isAuthenticated && roles.includes('STUDENT') && (
-              <Link to="/enrolment" className="text-sm font-medium hover:text-white/80 transition-colors">
+              <Link to="/enrolment" className={`text-sm font-medium ${isActive('/enrolment') ? 'text-white/80 font-semibold' : 'hover:text-white/80 transition-colors'}`}>
                 My Enrollments
               </Link>
             )}

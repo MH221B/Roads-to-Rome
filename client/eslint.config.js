@@ -31,6 +31,10 @@ export default defineConfig([
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      // Prefer allowing empty catch blocks which are used intentionally in some flows, e.g. logout handlers
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // React Refresh rule can cause false positives when exporting helpers/constants alongside components.
+      'react-refresh/only-export-components': 'warn',
     },
   },
 ])

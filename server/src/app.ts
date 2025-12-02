@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth.route';
 import { adminRouter } from './routes/admin.route';
 import { lessonRouter } from './routes/lesson.route';
+import { courseRouter } from './routes/course.route';
 
 const app = express();
 
@@ -36,7 +37,9 @@ app.use(
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/lessons', lessonRouter);
+app.use('/api/courses', courseRouter);
 
+// Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() });
 });
