@@ -23,6 +23,9 @@ const CourseSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Create a text index for full-text search across title, shortDescription, and tags
+CourseSchema.index({ title: 'text', shortDescription: 'text', tags: 'text' });
+
 const Course = mongoose.model<ICourse>('Course', CourseSchema);
 
 export default Course;

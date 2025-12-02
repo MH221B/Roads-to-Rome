@@ -54,37 +54,38 @@ interface CommentFormData {
   content: string;
 }
 
-const MOCK_COURSE: Course = {
-  id: "1",
-  instructor_id: "inst1",
-  instructor: {
-    id: "inst1",
-    name: "Dr. Angela Yu",
-    email: "angela@example.com",
-    role: "instructor"
-  },
-  title: "The Complete 2024 Web Development Bootcamp",
-  description: "Become a full-stack web developer with just one course. HTML, CSS, Javascript, Node, React, MongoDB, Web3 and DApps.",
-  level: "Beginner",
-  is_premium: true,
-  status: "Published",
-  lessons: [
-    { id: "l1", course_id: "1", title: "Introduction to HTML", content_type: "video", content: "url_to_video" },
-    { id: "l2", course_id: "1", title: "CSS Basics", content_type: "video", content: "url_to_video" },
-    { id: "l3", course_id: "1", title: "Javascript Fundamentals", content_type: "article", content: "text_content" }
-  ],
-  comments: [
-    { id: "c1", course_id: "1", user: { id: "u1", name: "John Doe", email: "john@example.com", role: "student" }, rating: 5, content: "Amazing course! Highly recommended." },
-    { id: "c2", course_id: "1", user: { id: "u2", name: "Jane Smith", email: "jane@example.com", role: "student" }, rating: 4, content: "Great content but a bit fast paced." }
-  ]
-};
+const fetchCourse = async (courseId: string) => {
+  try {
+    const { data } = await api.get<Course>(`/api/courses/${courseId}`);
 
-const fetchCourse = async (_id: string) => {
-  // const { data } = await api.get<Course>(`/api/courses/${id}`);
-  // return data;
-  return new Promise<Course>((resolve) => {
-    setTimeout(() => resolve(MOCK_COURSE), 500);
-  });
+    // Normalize lesson and comment shapes expected by this component
+    const lessons = (data.lessons || []).map((l: any) => ({
+      id: l.id || l._id || String(l.id || l._id),
+      course_id: l.course_id || l.courseId || String(data.id),
+      title: l.title,
+      content_type: l.content_type || l.contentType || (l.content_type ? l.content_type : undefined),
+      content: l.content,
+    }));
+
+    const comments = (data.comments || []).map((c: any) => ({
+      id: c.id || c._id,
+      course_id: c.course_id || c.courseId || String(data.id),
+      user: c.user || (c.userId ? { id: c.userId._id || c.userId, name: c.userId.name || c.userId.email || c.userName || 'Anonymous', email: c.userId.email || null, role: 'student' } : { id: null, name: c.userName || 'Anonymous', email: null, role: 'student' }),
+      rating: c.rating,
+      content: c.content,
+    }));
+
+    const instructor = data.instructor || { id: data.instructor_id || null, name: (data as any).instructor?.name || (data as any).instructor || 'Unknown Instructor', email: (data as any).instructor?.email || null };
+
+    return {
+      ...data,
+      lessons,
+      comments,
+      instructor,
+    } as Course;
+  } catch (err) {
+    console.error('Error fetching course data:', err);
+  } 
 };
 
 const postComment = async ({ courseId, data }: { courseId: string; data: CommentFormData }) => {
@@ -93,9 +94,9 @@ const postComment = async ({ courseId, data }: { courseId: string; data: Comment
 };
 
 const enrollCourse = async (courseId: string) => {
-    const response = await api.post(`/api/enrollments`, { course_id: courseId });
-    return response.data;
-}
+  const response = await api.post(`/api/enrollments`, { course_id: courseId });
+  return response.data;
+};
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();

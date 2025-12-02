@@ -8,6 +8,7 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
   "seed:courses": "ts-node src/scripts/seedCourses.ts",
+  "seed:users": "ts-node src/scripts/seedUsersAndEnrollments.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "build": "tsc",
