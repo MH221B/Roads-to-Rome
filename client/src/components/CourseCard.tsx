@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 import {
   Card,
@@ -7,10 +7,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Progress } from "@/components/ui/progress";
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Progress } from '@/components/ui/progress';
 
 type Course = {
   id: string;
@@ -18,6 +18,8 @@ type Course = {
   thumbnail: string;
   category?: string;
   tags: string[];
+  /** e.g. 'Beginner' | 'Intermediate' | 'Advanced' */
+  difficulty?: string | null;
   instructor: string;
   shortDescription: string;
 };
@@ -38,7 +40,7 @@ function RatingStars({ value, onRate }: { value?: number | null; onRate?: (v: nu
   const [local, setLocal] = React.useState<number>(Math.round((value ?? 0) * 2) / 2);
 
   React.useEffect(() => {
-    if (typeof value === "number") setLocal(Math.round(value * 2) / 2);
+    if (typeof value === 'number') setLocal(Math.round(value * 2) / 2);
   }, [value]);
 
   const handleClick = (v: number) => {
@@ -61,51 +63,68 @@ function RatingStars({ value, onRate }: { value?: number | null; onRate?: (v: nu
               className="inline-flex h-5 w-5 items-center justify-center p-0"
               aria-label={`Rate ${i} star`}
             >
-              <svg viewBox="0 0 20 20" fill={fill ? "currentColor" : "none"} stroke="currentColor" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.388 2.46a1 1 0 00-.364 1.118l1.287 3.97c.3.921-.755 1.688-1.54 1.118l-3.388-2.46a1 1 0 00-1.176 0l-3.388 2.46c-.785.57-1.84-.197-1.54-1.118l1.287-3.97a1 1 0 00-.364-1.118L2.045 9.397c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.97z"/>
+              <svg
+                viewBox="0 0 20 20"
+                fill={fill ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1"
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.388 2.46a1 1 0 00-.364 1.118l1.287 3.97c.3.921-.755 1.688-1.54 1.118l-3.388-2.46a1 1 0 00-1.176 0l-3.388 2.46c-.785.57-1.84-.197-1.54-1.118l1.287-3.97a1 1 0 00-.364-1.118L2.045 9.397c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.97z"
+                />
               </svg>
             </button>
           );
         })}
       </div>
-      <div className="text-sm text-muted-foreground">{(value ?? 0).toFixed(1)}</div>
+      <div className="text-muted-foreground text-sm">{(value ?? 0).toFixed(1)}</div>
     </div>
   );
 }
 
-const CourseCard: React.FC<Props> = ({ course, showProgress = false, progress = null, rating = null, onRate }) => {
+const CourseCard: React.FC<Props> = ({
+  course,
+  showProgress = false,
+  progress = null,
+  rating = null,
+  onRate,
+}) => {
   return (
-    <Card className="overflow-hidden p-0 h-auto flex flex-col gap-2">
+    <Card className="flex h-auto flex-col gap-2 overflow-hidden p-0">
       <AspectRatio ratio={16 / 9}>
-        <img
-          src={course.thumbnail}
-          alt={course.title}
-          className="w-full h-full object-cover"
-        />
+        <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
       </AspectRatio>
 
-      <CardHeader className="p-0 pt-2 pb-0 px-3">
-        <div>
-          <CardTitle className="leading-tight">{course.title}</CardTitle>
-          <CardDescription className="mt-1 text-sm text-muted-foreground">
-            {course.instructor}
-          </CardDescription>
+      <CardHeader className="p-0 px-3 pt-2 pb-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="leading-tight">{course.title}</CardTitle>
+            <CardDescription className="text-muted-foreground mt-1 text-sm">
+              {course.instructor}
+            </CardDescription>
+          </div>
+          {course.difficulty && (
+            <div className="ml-3">
+              <Badge>{course.difficulty}</Badge>
+            </div>
+          )}
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 py-0 px-3">
-        <div className="text-sm text-muted-foreground">
-          {course.shortDescription}
-        </div>
+      <CardContent className="p-0 px-3 py-0">
+        <div className="text-muted-foreground text-sm">{course.shortDescription}</div>
       </CardContent>
 
-      <CardFooter className="p-0 pt-2 pb-5 px-3 mt-auto">
-        <div className="flex flex-col gap-2 w-full">
+      <CardFooter className="mt-auto p-0 px-3 pt-2 pb-5">
+        <div className="flex w-full flex-col gap-2">
           {showProgress && (
             <div className="w-full">
-              <div className="flex items-center justify-between mb-1">
+              <div className="mb-1 flex items-center justify-between">
                 <div className="text-xs font-medium">Progress</div>
-                <div className="text-xs text-muted-foreground">{progress ?? 0}%</div>
+                <div className="text-muted-foreground text-xs">{progress ?? 0}%</div>
               </div>
               <Progress value={progress ?? 0} />
             </div>
