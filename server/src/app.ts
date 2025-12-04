@@ -7,14 +7,18 @@ import { adminRouter } from './routes/admin.route';
 import { courseRouter } from './routes/course.route';
 import { enrollmentRouter } from './routes/enrollment.route';
 import { lessonRouter } from './routes/lesson.route';
-import { courseRouter } from './routes/course.route';
 
 const app = express();
 
 // Middleware
+// Ensure CLIENT_URL doesn't include a trailing slash which would
+// prevent exact-origin comparisons (e.g. 'https://site/' !== 'https://site')
+const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const clientUrl = rawClientUrl.replace(/\/$/, '');
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: clientUrl,
     credentials: true,
   })
 );
