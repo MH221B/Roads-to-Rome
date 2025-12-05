@@ -107,8 +107,11 @@ const mockTags: string[] = [
   'deployment',
 ];
 import HeaderComponent from '@/components/HeaderComponent';
+import { useNavigate } from 'react-router-dom';
 import CourseCard from '@/components/CourseCard';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { FaPlus } from 'react-icons/fa6';
 import { useAuth } from '@/contexts/AuthProvider';
 
 function decodeJwtPayload(token: string | null): any | null {
@@ -133,12 +136,15 @@ const HomePage: React.FC = () => {
   );
 
   const showAdmin = roles.includes('ADMIN');
+  const showStudent = roles.includes('STUDENT');
+  const showInstructor = roles.includes('INSTRUCTOR');
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderComponent showAdmin={showAdmin} />
       <main className="flex-1">
-        {
+        {showStudent && (
           <div className="mx-auto w-full max-w-7xl px-4 py-10">
             <section className="mt-3">
               <div className="mb-4 flex items-center justify-between">
@@ -176,7 +182,54 @@ const HomePage: React.FC = () => {
               </div>
             </section>
           </div>
-        }
+        )}
+
+        {showInstructor && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10">
+            <section className="mt-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Your Courses</h2>
+                <div>
+                  <Button
+                    onClick={() => navigate('/courses/create')}
+                    className="flex items-center gap-2"
+                  >
+                    <FaPlus />
+                    Create Course
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {mockCourses.map((course) => (
+                  <div key={course.id} className="flex items-center gap-4 rounded-md border p-4">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="h-20 w-32 rounded object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium">{course.title}</h3>
+                      <p className="text-muted-foreground text-sm">{course.category}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="rounded-md border px-2 py-1 text-sm">Edit</button>
+                      <button className="rounded-md bg-gray-100 px-2 py-1 text-sm">Preview</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {!showStudent && !showInstructor && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10">
+            <p className="text-muted-foreground text-center text-sm">
+              No content available for your role.
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );
