@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,29 +23,95 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { CiCircleRemove } from 'react-icons/ci';
-import { getCourses } from '@/services/courseService';
+
+// Define Form Type
+interface CreateCourseFormValues {
+  title: string;
+  category: string;
+  shortDescription: string;
+  difficulty: string;
+  tags: string[];
+  thumbnail: File | null;
+}
 
 const CreateCourse: React.FC = () => {
   const navigate = useNavigate();
-  const [title, setTitle] = React.useState('');
-  const [category, setCategory] = React.useState('');
-  const [shortDescription, setShortDescription] = React.useState('');
-  const [thumbnailFile, setThumbnailFile] = React.useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(null);
-  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
-  const [tagQuery, setTagQuery] = React.useState('');
-  const [allTags, setAllTags] = React.useState<string[]>([]);
-  const [difficulty, setDifficulty] = React.useState('beginner');
+  const queryClient = useQueryClient();
 
+  // Setup React Hook Form
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CreateCourseFormValues>({
+    defaultValues: {
+      title: '',
+      category: '',
+      shortDescription: '',
+      difficulty: 'beginner',
+      tags: [],
+      thumbnail: null,
+    },
+  });
+
+  // Local state purely for UI (Tag search input & Image preview)
+  const [tagQuery, setTagQuery] = React.useState('');
+  const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(null);
+
+  // Watch tags to render them
+  const selectedTags = watch('tags');
+
+  // Local sample tags (backend not implemented yet)
+  const allTags = React.useMemo(
+    () => ['web development', 'javascript', 'react', 'node', 'typescript', 'css', 'html'],
+    []
+  );
+
+  // React Query: Mutation for Create
+  const createMutation = useMutation({
+    mutationFn: async (data: CreateCourseFormValues) => {
+      const payload: any = {
+        title: data.title,
+        category: data.category,
+        shortDescription: data.shortDescription,
+        difficulty: data.difficulty,
+        tags: data.tags,
+        thumbnail: data.thumbnail
+          ? { name: data.thumbnail.name, size: data.thumbnail.size, type: data.thumbnail.type }
+          : null,
+      };
+      console.log('CreateCourse (simulated) payload:', payload);
+
+      // Simulate network delay
+      await new Promise((res) => setTimeout(res, 300));
+      return payload;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      console.log('Course creation simulated successfully');
+      navigate('/courses'); // Redirect to list
+    },
+    onError: (error) => {
+      console.error('Failed to create course (simulated)', error);
+      alert('Failed to create course. Please try again.');
+    },
+  });
+
+  // Cleanup preview URL
   React.useEffect(() => {
     return () => {
       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     };
   }, [thumbnailPreview]);
 
+  // Handle File Change wrapper
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    setThumbnailFile(file);
+    setValue('thumbnail', file); // Update RHF state
+
     if (file) {
       const url = URL.createObjectURL(file);
       setThumbnailPreview(url);
@@ -52,85 +120,45 @@ const CreateCourse: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // If the user typed something in the tag input but didn't press Enter,
-    // include those tags as well.
-    const tagsFromQuery = tagQuery
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-
-    const tags = Array.from(new Set([...selectedTags, ...tagsFromQuery]));
-
-    // Simple validation
-    if (!title.trim()) {
-      // Replace with your UI error handling if desired
-      alert('Please provide a title for the course.');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('category', category);
-    formData.append('shortDescription', shortDescription);
-    formData.append('difficulty', difficulty);
-    formData.append('tags', JSON.stringify(tags));
-    if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
-
-    try {
-      // If you have a service to create a course, call it here, e.g.
-      // await createCourse(formData);
-      // For now keep existing behavior: log and navigate on success.
-      console.log('Create course form data:', {
-        title,
-        category,
-        shortDescription,
-        tags,
-        difficulty,
-        thumbnailFile,
-      });
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to create course', err);
-      alert('Failed to create course. Please try again.');
-    }
-  };
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const data = await getCourses(1, 200);
-        if (!mounted) return;
-        const tags = Array.from(new Set(data.flatMap((c) => c.tags)));
-        setAllTags(tags);
-      } catch (err) {
-        // ignore
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+  // Tag Logic
   const addTagFromQuery = (q?: string) => {
     const val = (q ?? tagQuery).trim();
     if (!val) return;
-    const match = allTags.find((t) => t.toLowerCase() === val.toLowerCase());
+
+    const match = allTags.find((t: string) => t.toLowerCase() === val.toLowerCase());
     const tagToAdd = match ?? val;
-    setSelectedTags((prev) => (prev.includes(tagToAdd) ? prev : [...prev, tagToAdd]));
+
+    // Prevent duplicates
+    if (!selectedTags.includes(tagToAdd)) {
+      setValue('tags', [...selectedTags, tagToAdd]);
+    }
     setTagQuery('');
   };
 
-  const removeTag = (tag: string) => {
-    setSelectedTags((prev) => prev.filter((t) => t !== tag));
+  const removeTag = (tagToRemove: string) => {
+    setValue(
+      'tags',
+      selectedTags.filter((t) => t !== tagToRemove)
+    );
+  };
+
+  const onSubmit: SubmitHandler<CreateCourseFormValues> = (data) => {
+    // If user typed a tag but didn't hit enter, add it now
+    let finalTags = data.tags;
+    if (tagQuery.trim()) {
+      const val = tagQuery.trim();
+      if (!finalTags.includes(val)) {
+        finalTags = [...finalTags, val];
+      }
+    }
+
+    // Trigger mutation
+    createMutation.mutate({ ...data, tags: finalTags });
   };
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
             <CardTitle>Create Course</CardTitle>
@@ -139,11 +167,19 @@ const CreateCourse: React.FC = () => {
 
           <CardContent>
             <div className="space-y-4">
+              {/* TITLE */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  {...register('title', { required: 'Title is required' })}
+                  placeholder="Course title"
+                />
+                {errors.title && (
+                  <span className="text-xs text-red-500">{errors.title.message}</span>
+                )}
               </div>
 
+              {/* THUMBNAIL */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Thumbnail</Label>
                 <Input
@@ -161,19 +197,20 @@ const CreateCourse: React.FC = () => {
                 )}
               </div>
 
+              {/* CATEGORY */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Category</Label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} />
+                <Input {...register('category')} placeholder="e.g. Web Development" />
               </div>
 
+              {/* TAGS */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Tags</Label>
                 <div className="flex flex-col gap-2">
-                  {/* 1. INPUT & FLOATING SUGGESTIONS */}
                   <div className="relative z-20">
                     <Input
                       value={tagQuery}
-                      onChange={(e) => setTagQuery((e.target as HTMLInputElement).value)}
+                      onChange={(e) => setTagQuery(e.target.value)}
                       placeholder="Search or type to add tags"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -187,14 +224,16 @@ const CreateCourse: React.FC = () => {
                       <div className="absolute top-full mt-1 w-full rounded-md border bg-white p-2 shadow-lg dark:bg-gray-950">
                         <div className="flex flex-wrap gap-2">
                           {allTags
-                            .filter((t) => t.toLowerCase().includes(tagQuery.trim().toLowerCase()))
+                            .filter((t: string) =>
+                              t.toLowerCase().includes(tagQuery.trim().toLowerCase())
+                            )
                             .slice(0, 8)
-                            .map((suggestion) => (
+                            .map((suggestion: string) => (
                               <button
                                 key={suggestion}
                                 type="button"
                                 onClick={() => {
-                                  setTagQuery(''); // Clear query immediately
+                                  setTagQuery('');
                                   addTagFromQuery(suggestion);
                                 }}
                                 className="rounded bg-gray-100 px-2 py-1 text-sm hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
@@ -202,8 +241,7 @@ const CreateCourse: React.FC = () => {
                                 {suggestion}
                               </button>
                             ))}
-                          {/* Optional: Show message if no matches */}
-                          {allTags.filter((t) =>
+                          {allTags.filter((t: string) =>
                             t.toLowerCase().includes(tagQuery.trim().toLowerCase())
                           ).length === 0 && (
                             <span className="text-muted-foreground p-1 text-xs">
@@ -222,7 +260,6 @@ const CreateCourse: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => removeTag(tag)}
-                            aria-label={`Remove ${tag}`}
                             className="hover:bg-primary-foreground/20 ml-1 rounded-full p-0.5"
                           >
                             <CiCircleRemove size={14} />
@@ -238,36 +275,41 @@ const CreateCourse: React.FC = () => {
                 </div>
               </div>
 
+              {/* DESCRIPTION */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Short Description</Label>
-                <Textarea
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  className="h-30 resize-none"
-                  rows={5}
-                />
+                <Textarea {...register('shortDescription')} className="h-30 resize-none" rows={5} />
               </div>
 
+              {/* DIFFICULTY (Using Controller) */}
               <div>
                 <Label className="mb-1 block text-sm font-medium">Difficulty</Label>
-                <Select value={difficulty} onValueChange={(v) => setDifficulty(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="difficulty"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
           </CardContent>
 
           <CardFooter>
             <div className="flex items-center gap-3">
-              <Button type="submit">Create</Button>
-              <Button variant="ghost" onClick={() => navigate('/courses')}>
+              <Button type="submit" disabled={(createMutation as any).isLoading}>
+                {(createMutation as any).isLoading ? 'Creating...' : 'Create'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => navigate('/courses')}>
                 Cancel
               </Button>
             </div>
