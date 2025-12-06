@@ -96,21 +96,43 @@ const courseService: ICourseService = {
       throw new Error('title is required');
     }
 
+    // Prefer user's fullName when available for instructor field
+    let instructorValue: any = undefined;
+    if (data.instructor) {
+      if (typeof data.instructor === 'object') {
+        const instr = data.instructor as any;
+        instructorValue = {
+          name: instr.fullName ?? instr.username ?? undefined,
+          email: instr.email ?? null,
+          id: instr._id ?? instr.id ?? undefined,
+        };
+      } else {
+        instructorValue = data.instructor;
+      }
+    }
+
     const created = await Course.create({
       title: data.title,
       thumbnail: data.thumbnail ?? undefined,
       category: data.category ?? undefined,
       tags: Array.isArray(data.tags) ? data.tags : [],
-      instructor: data.instructor ?? undefined,
+      instructor: instructorValue ?? undefined,
       shortDescription: data.shortDescription ?? undefined,
       difficulty: data.difficulty ?? null,
     });
 
     const c: any = created.toObject ? created.toObject() : created;
 
+    // Ensure returned instructor has a consistent shape (name/email)
+    const instructor =
+      typeof c.instructor === 'object'
+        ? c.instructor
+        : { name: c.instructor || 'Unknown Instructor', email: null };
+
     return {
       id: String(c._id),
       ...c,
+      instructor,
     };
   },
 
