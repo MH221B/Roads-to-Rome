@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 // Import Controller
 import { useForm, Controller } from 'react-hook-form';
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaEye, FaEyeSlash } from 'react-icons/fa';
 import {
   Card,
   CardAction,
@@ -48,6 +48,8 @@ const RegisterCard = () => {
     defaultValues: { role: 'student' },
   });
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
 
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
@@ -126,19 +128,34 @@ const RegisterCard = () => {
 
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: { value: 8, message: 'Password must be at least 8 characters!' },
-                    pattern: {
-                      value: /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+/,
-                      message:
-                        'Password must include uppercase, lowercase, number and special character!',
-                    },
-                  })}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    className="pr-12"
+                    {...register('password', {
+                      required: 'Password is required',
+                      minLength: { value: 8, message: 'Password must be at least 8 characters!' },
+                      pattern: {
+                        value: /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+/,
+                        message:
+                          'Password must include uppercase, lowercase, number and special character!',
+                      },
+                    })}
+                  />
+                  <button
+                    type="button"
+                    aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                    onClick={() => setPasswordVisible((v) => !v)}
+                    className="absolute top-1/2 right-2 z-20 -translate-y-1/2 bg-transparent text-gray-500 hover:text-gray-700"
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="h-4 w-4" />
+                    ) : (
+                      <FaEye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <span className="text-sm text-red-600">{String(errors.password.message)}</span>
                 )}
@@ -169,14 +186,29 @@ const RegisterCard = () => {
 
               <div className="grid gap-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  {...register('confirmPassword', {
-                    required: true,
-                    validate: (value) => value === watch('password') || 'Passwords do not match!',
-                  })}
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={confirmVisible ? 'text' : 'password'}
+                    className="pr-12"
+                    {...register('confirmPassword', {
+                      required: true,
+                      validate: (value) => value === watch('password') || 'Passwords do not match!',
+                    })}
+                  />
+                  <button
+                    type="button"
+                    aria-label={confirmVisible ? 'Hide password' : 'Show password'}
+                    onClick={() => setConfirmVisible((v) => !v)}
+                    className="absolute top-1/2 right-2 z-20 -translate-y-1/2 bg-transparent text-gray-500 hover:text-gray-700"
+                  >
+                    {confirmVisible ? (
+                      <FaEyeSlash className="h-4 w-4" />
+                    ) : (
+                      <FaEye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.confirmPassword && (
                   <span className="text-sm text-red-600">
                     {String(errors.confirmPassword.message ?? 'Confirm your password')}
