@@ -18,6 +18,7 @@ import CourseList from './components/CourseList';
 import CourseDetail from '@/components/CourseDetail';
 import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
+import QuizPage from './components/QuizPage';
 
 function App() {
   return (
@@ -49,6 +50,8 @@ function App() {
               </RequireRole>
             }
           />
+          <Route path="/courses/:courseId/lessons/:lessonId/quiz" element={<QuizPage />} />
+          // ex: /courses/123/lessons/456/quiz
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
