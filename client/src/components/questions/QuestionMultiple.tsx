@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-export default function MultipleChoiceAnswer({ item }: any) {
+export default function MultipleChoiceAnswer({ item, onAnswered }: any) {
   const [selected, setSelected] = useState<string[]>([]);
 
   // Shuffle chỉ 1 lần
@@ -15,6 +15,7 @@ export default function MultipleChoiceAnswer({ item }: any) {
         ? prev.filter((x) => x !== opt) // bỏ chọn
         : [...prev, opt]                // thêm chọn
     );
+    onAnswered();
   };
 
   return (

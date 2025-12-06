@@ -1,28 +1,32 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import MultipleChoiceAnswer from "./questions/QuestionMultiple";
 import SingleChoiceAnswer from "./questions/QuestionSingle";
 import ImageChoiceAnswer from "./questions/QuestionImage";
 import DragDropAnswer from "./questions/QuestionDragDrop";
 import type { Question } from "@/types/question";
+import HeaderComponent from "./HeaderComponent";
+import { set } from "react-hook-form";
+import { Button } from "./ui/button";
 
 
 
-function renderQuestion(q: Question) {
+function renderQuestion(q: Question, onAnswered: () => void) {
     switch (q.type) {
         case "multiple":
-            return <MultipleChoiceAnswer item={q} />;
+            return <MultipleChoiceAnswer item={q} onAnswered={onAnswered} />;
         case "single":
-            return <SingleChoiceAnswer item={q} />;
+            return <SingleChoiceAnswer item={q} onAnswered={onAnswered} />;
         case "image":
-            return <ImageChoiceAnswer item={q} />;
+            return <ImageChoiceAnswer item={q} onAnswered={onAnswered} />;
         case "dragdrop":
-            return <DragDropAnswer item={q} />;
+            return <DragDropAnswer item={q} onAnswered={onAnswered} />;
         default:
             return null;
     }
 }
+
+
 // Generate 5 mock questions per quiz id
 function generateMockQuestions(quizId: string): Question[] {
     const types: Question['type'][] = ["multiple", "single", "image", "dragdrop"];
@@ -56,6 +60,12 @@ function generateMockQuestions(quizId: string): Question[] {
         } as Question;
     });
 }
+function formatTime(seconds: number) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+}
+
 
 
 export default function QuizPage() {
@@ -63,103 +73,136 @@ export default function QuizPage() {
     const [openLesson, setOpenLesson] = useState<number | null>(1);
     const [activeQuiz, setActiveQuiz] = useState<string>("1.1");
     const [questions, setQuestions] = useState<Question[]>(() => generateMockQuestions(activeQuiz));
+    const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+    const [timeRemaining, setTimeRemaining] = useState(1200); // seconds
     const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+
+    function handleAutoSubmit() {
+        alert("Time's up! Submitting your quiz automatically.");
+        console.log("SUBMITTED:", [...answeredQuestions]);
+    }
     useEffect(() => {
         setQuestions(generateMockQuestions(activeQuiz));
+        setTimeRemaining( Math.floor(Math.random() * 300) + 900 ); // 15-20 phút
         // reset refs array when quiz changes
         questionRefs.current = [];
     }, [activeQuiz]);
+
+    function handleAnswered(id: string) {
+        setAnsweredQuestions(prev => new Set(prev).add(id));
+    }
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeRemaining((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    handleAutoSubmit();   // ⬅ auto submit khi hết giờ
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     return (
-        <div className="w-full h-screen grid grid-cols-12 bg-gray-50">
-            <aside className="col-span-3 border-r p-4 overflow-y-auto">
-                <h2 className="text-xl font-semibold mb-4">Lessons</h2>
+        <div className="min-h-screen bg-background pb-10">
+            <HeaderComponent />
+            <div className="w-full h-screen grid grid-cols-12 bg-gray-50">
+                {/* Sidebar: Lessons and Quizzes */}
+                <aside className="col-span-3 border-r p-4 overflow-y-auto">
+                    <h2 className="text-xl font-semibold mb-4">Lessons</h2>
 
-                <Card className="shadow-sm">
-                    <CardContent className="p-4 space-y-4">
-                        {[1, 2, 3].map((lesson) => (
-                            <div key={lesson} className="border-b pb-2">
-                                <div
-                                    className="flex justify-between items-center cursor-pointer"
-                                    onClick={() => setOpenLesson(openLesson === lesson ? null : lesson)}
-                                >
-                                    <h3 className="font-semibold mb-2">Lesson {lesson}</h3>
-                                    <span>{openLesson === lesson ? "-" : "+"}</span>
-                                </div>
-
-                                {openLesson === lesson && (
-                                    <div className="space-y-1 ml-2 mt-2">
-                                        {[1, 2, 3].map((quiz) => {
-                                            const id = `${lesson}.${quiz}`;
-                                            return (
-                                                <div
-                                                    key={id}
-                                                    onClick={() => {
-                                                        setActiveQuiz(id);
-                                                        setOpenLesson(lesson);
-                                                    }}
-                                                    className={`text-sm cursor-pointer p-1 rounded-md transition-colors duration-150 ${activeQuiz === id
-                                                        ? "bg-blue-100 text-blue-700 font-semibold"
-                                                        : "hover:underline hover:bg-gray-50"
-                                                        }`}
-                                                >
-                                                    Quiz {lesson}.{quiz}
-                                                </div>
-                                            );
-                                        })}
+                    <Card className="shadow-sm">
+                        <CardContent className="p-4 space-y-4">
+                            {[1, 2, 3].map((lesson) => (
+                                <div key={lesson} className="border-b pb-2">
+                                    <div
+                                        className="flex justify-between items-center cursor-pointer"
+                                        onClick={() => setOpenLesson(openLesson === lesson ? null : lesson)}
+                                    >
+                                        <h3 className="font-semibold mb-2">Lesson {lesson}</h3>
+                                        <span>{openLesson === lesson ? "-" : "+"}</span>
                                     </div>
-                                )}
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            </aside>
 
-            <main className="col-span-6 p-6 overflow-y-auto">
-                <h1 className="text-2xl font-bold mb-4">Quiz {activeQuiz}</h1>
-
-                {questions.map((q, index) => (
-                    <div key={q.id} ref={(el) => { questionRefs.current[index] = el; }}>
-                        <Card className="mb-6">
-                            <CardContent className="p-6 space-y-6">
-                                <h2 className="text-lg font-semibold">Question {index + 1}</h2>
-                                <p>{q.text}</p>
-
-                                {/* Render đúng câu trả lời */}
-                                {renderQuestion(q)}
-
-                                {/* <Button className="mt-6 w-full">Submit Answer</Button> */}
-                            </CardContent>
-                        </Card>
-                    </div>
-                ))}
-            </main>
-
-            <aside className="col-span-3 border-l p-4 flex flex-col gap-6">
-                <Card className="shadow-sm">
-                    <CardContent className="p-4 text-center">
-                        <h3 className="text-lg font-semibold mb-2">Time Remaining</h3>
-                        <div className="text-3xl font-bold">12:34</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-sm">
-                    <CardContent className="p-4">
-                        <h3 className="text-lg font-semibold mb-3">Questions</h3>
-                        <div className="grid grid-cols-5 gap-2">
-                            {questions.map((q, i) => (
-                                <button
-                                    key={q.id}
-                                    onClick={() => questionRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                                    className="border rounded-lg p-2 text-sm hover:bg-gray-100"
-                                >
-                                    {i + 1}
-                                </button>
+                                    {openLesson === lesson && (
+                                        <div className="space-y-1 ml-2 mt-2">
+                                            {[1, 2, 3].map((quiz) => {
+                                                const id = `${lesson}.${quiz}`;
+                                                return (
+                                                    <div
+                                                        key={id}
+                                                        onClick={() => {
+                                                            setActiveQuiz(id);
+                                                            setOpenLesson(lesson);
+                                                        }}
+                                                        className={`text-sm cursor-pointer p-1 rounded-md transition-colors duration-150 ${activeQuiz === id
+                                                            ? "bg-blue-100 text-blue-700 font-semibold"
+                                                            : "hover:underline hover:bg-gray-50"
+                                                            }`}
+                                                    >
+                                                        Quiz {lesson}.{quiz}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
+                        </CardContent>
+                    </Card>
+                </aside>
+
+                {/* Main Content: Quiz Questions */}
+                <main className="col-span-6 p-6 overflow-y-auto">
+                    <h1 className="text-2xl font-bold mb-4">Quiz {activeQuiz}</h1>
+
+                    {questions.map((q, index) => (
+                        <div key={q.id} ref={(el) => { questionRefs.current[index] = el; }}>
+                            <Card className="mb-6">
+                                <CardContent className="p-6 space-y-6">
+                                    <h2 className="text-lg font-semibold">Question {index + 1}</h2>
+                                    <p>{q.text}</p>
+
+                                    {/* Render đúng câu trả lời */}
+                                    {renderQuestion(q, () => handleAnswered(q.id))}
+
+                                </CardContent>
+                            </Card>
                         </div>
-                    </CardContent>
-                </Card>
-            </aside>
+                    ))}
+                </main>
+                {/* Sidebar: Timer and Question Navigation */}
+                <aside className="col-span-3 border-l p-4 flex flex-col gap-6">
+                    <Card className="shadow-sm">
+                        <CardContent className="p-4 text-center">
+                            <h3 className="text-lg font-semibold mb-2">Time Remaining</h3>
+                            <div className="text-3xl font-bold">{formatTime(timeRemaining)}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardContent className="p-4">
+                            <h3 className="text-lg font-semibold mb-3">Questions</h3>
+                            <div className="grid grid-cols-5 gap-2">
+                                {questions.map((q, i) => (
+                                    <button
+                                        key={q.id}
+                                        onClick={() => questionRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                                        className={`${answeredQuestions.has(q.id) ? "bg-green-200" : "bg-gray-200"} rounded-lg p-2 text-sm hover:bg-gray-300`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Button className="mt-1  w-full">Submit Answer</Button>
+                </aside>
+            </div>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 
-export default function DragDropAnswer({ item }: any) {
+export default function DragDropAnswer({ item, onAnswered }: any) {
   // Shuffle chỉ 1 lần
   const shuffled = useMemo(
     () => [...item.options].sort(() => Math.random() - 0.5),
@@ -11,6 +11,15 @@ export default function DragDropAnswer({ item }: any) {
   const [dropSlots, setDropSlots] = useState<(string | null)[]>(
     Array(item.slotCount || shuffled.length).fill(null)
   );
+
+  // if left side fully empty or right side fully filled, consider question answered
+  React.useEffect(() => {
+    const leftEmpty = dragItems.length === 0;
+    const rightFull = dropSlots.every((slot) => slot !== null);
+    if (leftEmpty || rightFull) {
+      onAnswered();
+    }
+  }, [dragItems, dropSlots, onAnswered]);
 
   const handleDragStartFromLeft = (e: React.DragEvent, item: string) => {
     e.dataTransfer.setData(

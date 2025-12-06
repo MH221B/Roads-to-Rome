@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-export default function SingleChoiceAnswer({ item }: any) {
+export default function SingleChoiceAnswer({ item, onAnswered }: any) {
     const [selected, setSelected] = useState<string | null>(null);
     // Shuffle options only once
     const shuffled = useMemo(
@@ -19,7 +19,10 @@ export default function SingleChoiceAnswer({ item }: any) {
                     className= {`flex items-center gap-2 p-2 m-2 border rounded-lg cursor-pointer
                         transition ${selected === opt ? "bg-blue-100 border-blue-500" : "hover:bg-gray-100"}`}
                     onKeyDown={(e) => e.key === "Enter" && setSelected(opt)}
-                    onClick={() => setSelected(opt)} // chỉ đổi màu
+                    onClick={() => {
+                        setSelected(opt);
+                        onAnswered();
+                    }} // chỉ đổi màu
                 >
                     <input type="radio" name={`q-${item.id}-single`} checked={selected === opt} onChange={() => setSelected(opt)} />
                     <span>{opt}</span>
