@@ -206,14 +206,6 @@ const HomePage: React.FC = () => {
             </section>
           </div>
         )}
-
-        {!showStudent && !showInstructor && (
-          <div className="mx-auto w-full max-w-7xl px-4 py-10">
-            <p className="text-muted-foreground text-center text-sm">
-              No content available for your role.
-            </p>
-          </div>
-        )}
       </main>
     </div>
   );
