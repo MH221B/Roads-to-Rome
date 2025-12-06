@@ -4,22 +4,34 @@ import HomePage from '@/components/HomePage';
 import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
 import RequireAuth from '@/components/RequireAuth';
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Dashboard from './components/Dashboard';
-
-// Your addition
 import CourseList from './components/CourseList';
-
-// Teammate additions
 import CourseDetail from '@/components/CourseDetail';
 import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
+import InstructorDashboard from './components/InstructorDashboard';
+import QuizCreator from './components/QuizCreator';
+import Quiz from './components/Quiz';
+import { decodeJwtPayload } from './lib/utils';
+import { useAuth } from './contexts/AuthProvider';
+import { useState, useMemo, useEffect } from 'react';
 
 function App() {
+  const { accessToken } = useAuth();
+  const [roles, setRoles] = useState<string[] | null>(null);
+  const [isInstructor, setIsInstructor] = useState(false);
+  const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
+  useEffect(() => {
+    const rawRoles = payload?.roles ?? payload?.role;
+    const userRoles: string[] = (
+      Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []
+    ).map((r) => String(r).toUpperCase());
+    setIsInstructor(userRoles.includes('INSTRUCTOR'));
+    setRoles(userRoles);
+  }, [payload, setIsInstructor, setRoles]);
   return (
     <Router>
       <div className="flex grow flex-col">
@@ -29,14 +41,25 @@ function App() {
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
+          {isInstructor ? (
+            <Route
+              path="/dashboard"
+              element={
+                <RequireRole roles="INSTRUCTOR">
+                  <InstructorDashboard />
+                </RequireRole>
+              }
+            />
+          ) : (
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <Dashboard />
+                </RequireAuth>
+              }
+            />
+          )}
           <Route path="/courses" element={<CourseList />} />
           <Route path="/enrolment" element={<Enrolment />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
@@ -49,7 +72,22 @@ function App() {
               </RequireRole>
             }
           />
-
+          <Route
+            path="/quizzes/new"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <QuizCreator />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/quizzes/:quizId"
+            element={
+              <RequireAuth>
+                <Quiz />
+              </RequireAuth>
+            }
+          />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>

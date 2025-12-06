@@ -1,6 +1,6 @@
-import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthProvider";
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthProvider';
 
 type Props = {
   children: React.ReactElement;
@@ -10,11 +10,11 @@ type Props = {
 function decodeJwtPayload(token: string | null): any | null {
   if (!token) return null;
   try {
-    const parts = token.split(".");
+    const parts = token.split('.');
     if (parts.length < 2) return null;
     const payload = parts[1];
     // atob is available in browser environments
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
     return JSON.parse(json);
   } catch (e) {
     return null;
@@ -22,14 +22,19 @@ function decodeJwtPayload(token: string | null): any | null {
 }
 
 const RequireRole: React.FC<Props> = ({ children, roles }) => {
-  const { accessToken, isAuthenticated } = useAuth();
+  const { accessToken, isAuthenticated, initialized } = useAuth();
   const location = useLocation();
+
+  // Wait for initial auth check (silent refresh) before deciding
+  if (!initialized) return null;
 
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
 
   const payload = decodeJwtPayload(accessToken);
   const rawRoles = payload?.roles ?? payload?.role;
-  const userRoles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) => String(r).toUpperCase());
+  const userRoles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
 
   const required = Array.isArray(roles) ? roles : [roles];
 

@@ -110,19 +110,7 @@ import HeaderComponent from '@/components/HeaderComponent';
 import CourseCard from '@/components/CourseCard';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthProvider';
-
-function decodeJwtPayload(token: string | null): any | null {
-  if (!token) return null;
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = parts[1];
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
-}
+import { decodeJwtPayload } from '@/lib/utils';
 
 const HomePage: React.FC = () => {
   const { accessToken } = useAuth();
