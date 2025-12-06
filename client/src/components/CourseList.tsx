@@ -135,11 +135,13 @@ export default function CourseList() {
       const categoryMatch = !selectedCategory || c.category === selectedCategory;
       const tagsMatch = selectedTags.length === 0 || selectedTags.every((t) => c.tags.includes(t));
       const q = searchQuery.trim().toLowerCase();
+      const instructorName = String((c.instructor as any)?.name ?? '');
+
       const queryMatch =
         !q ||
         c.title.toLowerCase().includes(q) ||
         c.shortDescription.toLowerCase().includes(q) ||
-        c.instructor.toLowerCase().includes(q) ||
+        instructorName.toLowerCase().includes(q) ||
         c.tags.some((t) => t.toLowerCase().includes(q));
 
       return categoryMatch && tagsMatch && queryMatch;

@@ -34,7 +34,6 @@ interface CreateCourseFormValues {
   difficulty: string;
   tags: string[];
   thumbnail: File | null;
-  instructor: string;
 }
 
 const CreateCourse: React.FC = () => {
@@ -57,7 +56,6 @@ const CreateCourse: React.FC = () => {
       difficulty: 'beginner',
       tags: [],
       thumbnail: null,
-      instructor: '',
     },
   });
 
@@ -82,7 +80,7 @@ const CreateCourse: React.FC = () => {
       if (data.category) form.append('category', data.category);
       if (data.shortDescription) form.append('shortDescription', data.shortDescription);
       if (data.difficulty) form.append('difficulty', data.difficulty);
-      if (data.instructor) form.append('instructor', data.instructor);
+      // instructor is automatically set server-side from the authenticated user
 
       // append tags as JSON string so server can parse reliably
       if (Array.isArray(data.tags) && data.tags.length > 0) {
@@ -193,15 +191,6 @@ const CreateCourse: React.FC = () => {
                 />
                 {errors.title && (
                   <span className="text-xs text-red-500">{errors.title.message}</span>
-                )}
-              </div>
-
-              {/* INSTRUCTOR */}
-              <div>
-                <Label className="mb-1 block text-sm font-medium">Instructor</Label>
-                <Input {...register('instructor')} placeholder="Instructor name" />
-                {errors.instructor && (
-                  <span className="text-xs text-red-500">{errors.instructor.message}</span>
                 )}
               </div>
 

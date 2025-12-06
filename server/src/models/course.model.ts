@@ -1,11 +1,11 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ICourse extends Document {
   title: string;
   thumbnail?: string;
   category?: string;
   tags: string[];
-  instructor?: string;
+  instructor?: Types.ObjectId | null;
   shortDescription?: string;
   difficulty?: string | null;
 }
@@ -16,7 +16,7 @@ const CourseSchema: Schema = new Schema(
     thumbnail: { type: String },
     category: { type: String },
     tags: { type: [String], default: [] },
-    instructor: { type: String },
+    instructor: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     shortDescription: { type: String },
     difficulty: { type: String, default: null },
   },

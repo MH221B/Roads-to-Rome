@@ -6,7 +6,7 @@ export type Course = {
   thumbnail: string;
   category?: string;
   tags: string[];
-  instructor: string;
+  instructor: { id: string | null; name: string };
   shortDescription: string;
   difficulty?: string | null;
 };

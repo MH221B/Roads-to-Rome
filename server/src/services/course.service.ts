@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
@@ -26,26 +27,46 @@ const courseService: ICourseService = {
         { score: { $meta: 'textScore' } }
       )
         .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+        .populate({ path: 'instructor', select: 'fullName' })
         .lean()
         .exec()) as any[];
 
       return raw.map((c) => {
-        const { _id, ...rest } = c || {};
-        return { id: String(_id), ...rest };
+        const { _id, instructor, ...rest } = c || {};
+        const instr = instructor
+          ? {
+              id: String(instructor._id || instructor),
+              name: instructor.fullName ?? 'Unknown Instructor',
+            }
+          : { id: null, name: rest.instructor || 'Unknown Instructor' };
+        return { id: String(_id), ...rest, instructor: instr };
       });
     }
 
     // return all courses sorted by createdAt desc (lean returns plain objects)
-    const raw = (await Course.find().sort({ createdAt: -1 }).lean().exec()) as any[];
+    const raw = (await Course.find()
+      .sort({ createdAt: -1 })
+      .populate({ path: 'instructor', select: 'fullName' })
+      .lean()
+      .exec()) as any[];
     return raw.map((c) => {
-      const { _id, ...rest } = c || {};
-      return { id: String(_id), ...rest };
+      const { _id, instructor, ...rest } = c || {};
+      const instr = instructor
+        ? {
+            id: String(instructor._id || instructor),
+            name: instructor.fullName ?? 'Unknown Instructor',
+          }
+        : { id: null, name: rest.instructor || 'Unknown Instructor' };
+      return { id: String(_id), ...rest, instructor: instr };
     });
   },
 
   async getCourseById(id: string): Promise<any | null> {
-    // find course
-    const course = await Course.findById(id).lean().exec();
+    // find course and populate instructor info when possible
+    const course = await Course.findById(id)
+      .populate({ path: 'instructor', select: 'fullName' })
+      .lean()
+      .exec();
     if (!course) return null;
 
     // lessons: try matching by course._id as string or as ObjectId
@@ -76,11 +97,14 @@ const courseService: ICourseService = {
       };
     });
 
-    // normalize instructor shape (frontend expects instructor.name/email)
-    const instructor =
-      typeof (course as any).instructor === 'object'
-        ? (course as any).instructor
-        : { name: (course as any).instructor || 'Unknown Instructor', email: null };
+    // normalize instructor shape (frontend expects instructor.name/email and id)
+    const rawInstructor = (course as any).instructor;
+    const instructor = rawInstructor
+      ? {
+          id: String(rawInstructor._id || rawInstructor),
+          name: rawInstructor.fullName ?? 'Unknown Instructor',
+        }
+      : { id: null, name: (course as any).instructor || 'Unknown Instructor' };
 
     return {
       id: String((course as any)._id),
@@ -96,18 +120,21 @@ const courseService: ICourseService = {
       throw new Error('title is required');
     }
 
-    // Prefer user's fullName when available for instructor field
-    let instructorValue: any = undefined;
+    // Prefer storing the instructor as an ObjectId reference when possible
+    let instructorToStore: any = null;
     if (data.instructor) {
+      // if passed an object with id/_id, use that
       if (typeof data.instructor === 'object') {
         const instr = data.instructor as any;
-        instructorValue = {
-          name: instr.fullName ?? instr.username ?? undefined,
-          email: instr.email ?? null,
-          id: instr._id ?? instr.id ?? undefined,
-        };
-      } else {
-        instructorValue = data.instructor;
+        const maybeId = instr._id ?? instr.id ?? instr;
+        if (maybeId && mongoose.Types.ObjectId.isValid(String(maybeId))) {
+          instructorToStore = new mongoose.Types.ObjectId(String(maybeId));
+        }
+      } else if (typeof data.instructor === 'string') {
+        // if the string looks like an ObjectId, store it as ObjectId, otherwise leave null
+        if (mongoose.Types.ObjectId.isValid(data.instructor)) {
+          instructorToStore = new mongoose.Types.ObjectId(data.instructor);
+        }
       }
     }
 
@@ -116,23 +143,26 @@ const courseService: ICourseService = {
       thumbnail: data.thumbnail ?? undefined,
       category: data.category ?? undefined,
       tags: Array.isArray(data.tags) ? data.tags : [],
-      instructor: instructorValue ?? undefined,
+      instructor: instructorToStore,
       shortDescription: data.shortDescription ?? undefined,
       difficulty: data.difficulty ?? null,
     });
 
-    const c: any = created.toObject ? created.toObject() : created;
-
-    // Ensure returned instructor has a consistent shape (name/email)
-    const instructor =
-      typeof c.instructor === 'object'
-        ? c.instructor
-        : { name: c.instructor || 'Unknown Instructor', email: null };
+    // re-query the created course to populate instructor info for consistent return shape
+    const populated = await Course.findById(created._id)
+      .populate({ path: 'instructor', select: 'fullName' })
+      .lean()
+      .exec();
+    const c: any = populated || (created.toObject ? created.toObject() : created);
+    const rawInstr = c.instructor;
+    const returnedInstructor = rawInstr
+      ? { id: String(rawInstr._id || rawInstr), name: rawInstr.fullName ?? 'Unknown Instructor' }
+      : { id: null, name: null };
 
     return {
       id: String(c._id),
       ...c,
-      instructor,
+      instructor: returnedInstructor,
     };
   },
 

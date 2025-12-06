@@ -81,15 +81,10 @@ const courseController = {
         }
       }
 
-      // If authentication middleware sets req.user.id, fetch user to get email for instructor
+      // If authentication middleware sets req.user.id, prefer storing that user id as instructor
       const userId = (req as any).user?.id as string | undefined;
       if (userId) {
-        try {
-          const user = await User.findById(userId).lean().exec();
-          if (user && user.email) payload.instructor = payload.instructor ?? user.email;
-        } catch (_) {
-          // ignore fetch errors — not critical
-        }
+        payload.instructor = payload.instructor ?? userId;
       }
 
       // Normalize tags: client may send tags as JSON string when using FormData

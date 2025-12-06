@@ -20,7 +20,7 @@ type Course = {
   tags: string[];
   /** e.g. 'Beginner' | 'Intermediate' | 'Advanced' */
   difficulty?: string | null;
-  instructor: string;
+  instructor: string | { id: string | null; name: string };
   shortDescription: string;
 };
 
@@ -103,7 +103,9 @@ const CourseCard: React.FC<Props> = ({
           <div>
             <CardTitle className="leading-tight">{course.title}</CardTitle>
             <CardDescription className="text-muted-foreground mt-1 text-sm">
-              {course.instructor}
+              {typeof course.instructor === 'string'
+                ? course.instructor
+                : ((course.instructor as any)?.name ?? '')}
             </CardDescription>
           </div>
           {course.difficulty && (
