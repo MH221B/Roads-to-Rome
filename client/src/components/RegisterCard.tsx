@@ -116,12 +116,12 @@ const RegisterCard = () => {
 
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
-                <Input id="username" {...register('username', { required: false })} />
+                <Input id="username" {...register('username', { required: true })} />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="fullName">Full name</Label>
-                <Input id="fullName" {...register('fullName', { required: false })} />
+                <Input id="fullName" {...register('fullName', { required: true })} />
               </div>
 
               <div className="grid gap-2">
