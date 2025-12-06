@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Card,
@@ -92,8 +93,28 @@ const CourseCard: React.FC<Props> = ({
   rating = null,
   onRate,
 }) => {
+  const navigate = useNavigate();
+
+  const handleNavigate = (e: React.MouseEvent | React.KeyboardEvent) => {
+    // If the click/keyboard event originated from an interactive element, don't navigate
+    const target = (e as React.MouseEvent).target as HTMLElement | null;
+    if (target) {
+      if (target.closest('button') || target.closest('a')) return;
+    }
+
+    navigate(`/courses/${course.id}`);
+  };
+
   return (
-    <Card className="flex h-auto flex-col gap-2 overflow-hidden p-0">
+    <Card
+      onClick={handleNavigate}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') handleNavigate(e);
+      }}
+      tabIndex={0}
+      role="button"
+      className="flex h-auto cursor-pointer flex-col gap-2 overflow-hidden p-0 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+    >
       <AspectRatio ratio={16 / 9}>
         <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
       </AspectRatio>
