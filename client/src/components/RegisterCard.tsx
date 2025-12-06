@@ -31,6 +31,8 @@ type FormValues = {
   password: string;
   confirmPassword: string;
   role: string;
+  username?: string;
+  fullName?: string;
 };
 
 const RegisterCard = () => {
@@ -50,7 +52,13 @@ const RegisterCard = () => {
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {
-      const result = await registerUser(data.email, data.password, data.role);
+      const result = await registerUser(
+        data.email,
+        data.password,
+        data.role,
+        data.username,
+        data.fullName
+      );
       console.log('Registration successful:', result);
       await Swal.fire({
         title: 'Account created!',
@@ -81,7 +89,7 @@ const RegisterCard = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 p-4 min-h-screen">
+    <div className="flex min-h-screen flex-1 flex-col items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
@@ -104,6 +112,16 @@ const RegisterCard = () => {
                   {...register('email', { required: true })}
                 />
                 {errors.email && <span className="text-sm text-red-600">Email is required</span>}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" {...register('username', { required: false })} />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="fullName">Full name</Label>
+                <Input id="fullName" {...register('fullName', { required: false })} />
               </div>
 
               <div className="grid gap-2">
@@ -167,7 +185,7 @@ const RegisterCard = () => {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex-col gap-2 mt-5">
+          <CardFooter className="mt-5 flex-col gap-2">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing up...' : 'Sign Up'}
             </Button>

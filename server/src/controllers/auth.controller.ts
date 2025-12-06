@@ -43,8 +43,8 @@ const authController: IAuthController = {
 
   Register: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, role } = req.body;
-      const result = await authService.Register(email, password, role);
+      const { email, password, role, username, fullName } = req.body;
+      const result = await authService.Register(email, password, role, username, fullName);
       res.status(201).json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
