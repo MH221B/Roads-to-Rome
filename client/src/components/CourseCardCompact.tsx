@@ -1,0 +1,106 @@
+import * as React from 'react';
+import type { Course } from '@/services/courseService';
+import { deleteCourse } from '@/services/courseService';
+import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+
+interface CourseCardCompactProps {
+  course: Course;
+  onEdit?: (course: Course) => void;
+  onPreview?: (course: Course) => void;
+  onDelete?: (course: Course) => void;
+}
+
+const CourseCardCompact: React.FC<CourseCardCompactProps> = ({
+  course,
+  onEdit,
+  onPreview,
+  onDelete,
+}) => {
+  const navigate = useNavigate();
+
+  const handleEdit = () => {
+    if (typeof onEdit === 'function') {
+      onEdit(course);
+      return;
+    }
+    navigate(`/courses/${course.id}/edit`);
+  };
+
+  const handlePreview = () => {
+    if (typeof onPreview === 'function') {
+      onPreview(course);
+      return;
+    }
+    navigate(`/courses/${course.id}`);
+  };
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: `Delete ${course.title}?`,
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      focusCancel: true,
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          await deleteCourse(course.id);
+        } catch (err: any) {
+          const message = err?.response?.data?.message || err?.message || 'Failed to delete';
+          Swal.showValidationMessage(message);
+          throw err;
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      await Swal.fire({ title: 'Deleted', text: 'Course deleted successfully', icon: 'success' });
+      // Let parent update list if handler provided, otherwise reload
+      if (typeof onDelete === 'function') {
+        onDelete(course);
+      } else {
+        // fallback: reload the page to reflect change
+        window.location.reload();
+      }
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4 overflow-hidden rounded-md border">
+      <img src={course.thumbnail} alt={course.title} className="h-20 w-32 shrink-0 object-cover" />
+      <div className="flex-1 p-4">
+        <h3 className="text-lg font-medium">{course.title}</h3>
+        <p className="text-muted-foreground text-sm">{course.category}</p>
+      </div>
+      <div className="flex items-center gap-2 pr-4">
+        <Button type="button" size="sm" variant="outline" onClick={handleEdit}>
+          Edit
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          onClick={handlePreview}
+          className="preview-btn"
+        >
+          Preview
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          onClick={handleDelete}
+          aria-label={`Delete ${course.title}`}
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default CourseCardCompact;

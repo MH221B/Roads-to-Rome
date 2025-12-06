@@ -107,6 +107,32 @@ const courseController = {
       res.status(500).json({ error: (error as Error).message });
     }
   },
+  async Delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params as any;
+      const user = (req as any).user;
+
+      if (!id) return res.status(400).json({ error: 'Course id required' });
+
+      const existing = await courseService.getCourseById(id);
+      if (!existing) return res.status(404).json({ error: 'Course not found' });
+
+      // Allow delete if user is ADMIN or the instructor owner
+      const isAdmin = user?.role === 'ADMIN' || user?.role === 'Admin';
+      const userId = user?.id;
+
+      const instructorId = existing?.instructor?.id ?? existing?.instructor;
+      if (!isAdmin && (!userId || String(instructorId) !== String(userId))) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      await (courseService as any).deleteCourse(id as string);
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
 };
 
 export default courseController;

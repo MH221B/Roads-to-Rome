@@ -47,4 +47,8 @@ export async function getInstructorCourses(
   return all.filter((c) => (c.instructor && (c.instructor as any)?.id) === instructorId);
 }
 
-export default { getCourses, getInstructorCourses };
+export async function deleteCourse(id: string): Promise<void> {
+  await api.delete(`/api/courses/${id}`);
+}
+
+export default { getCourses, getInstructorCourses, deleteCourse };

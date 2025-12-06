@@ -32,6 +32,7 @@ const mockTags: string[] = [
 import HeaderComponent from '@/components/HeaderComponent';
 import { useNavigate } from 'react-router-dom';
 import CourseCard from '@/components/CourseCard';
+import CourseCardCompact from '@/components/CourseCardCompact';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FaPlus } from 'react-icons/fa6';
@@ -175,32 +176,13 @@ const HomePage: React.FC = () => {
                 {!loading && courses.length === 0 && <div>No courses found for your account.</div>}
                 {!loading &&
                   courses.map((course) => (
-                    <div
+                    <CourseCardCompact
                       key={course.id}
-                      className="flex items-center gap-4 overflow-hidden rounded-md border"
-                    >
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="h-20 w-32 shrink-0 object-cover"
-                      />
-                      <div className="flex-1 p-4">
-                        <h3 className="text-lg font-medium">{course.title}</h3>
-                        <p className="text-muted-foreground text-sm">{course.category}</p>
-                      </div>
-                      <div className="flex items-center gap-2 pr-4">
-                        <button type="button" className="rounded-md border px-2 py-1 text-sm">
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/courses/${course.id}`)}
-                          className="preview-btn rounded-md px-2 py-1 text-sm"
-                        >
-                          Preview
-                        </button>
-                      </div>
-                    </div>
+                      course={course}
+                      onEdit={() => navigate(`/courses/${course.id}/edit`)}
+                      onPreview={() => navigate(`/courses/${course.id}`)}
+                      onDelete={() => setCourses((prev) => prev.filter((c) => c.id !== course.id))}
+                    />
                   ))}
               </div>
             </section>

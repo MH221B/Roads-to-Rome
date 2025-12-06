@@ -15,6 +15,7 @@ interface ICourseService {
     userId?: string,
     userName?: string
   ): Promise<any>;
+  deleteCourse?(id: string): Promise<void>;
 }
 
 const courseService: ICourseService = {
@@ -204,6 +205,16 @@ const courseService: ICourseService = {
       rating: populated?.rating,
       content: populated?.content,
     };
+  },
+
+  async deleteCourse(id: string): Promise<void> {
+    // Remove course, its lessons and comments
+    // Accept string id; underlying models expect string/ObjectId
+    await Promise.all([
+      Course.findByIdAndDelete(id).exec(),
+      Lesson.deleteMany({ course_id: String(id) }).exec(),
+      Comment.deleteMany({ courseId: id }).exec(),
+    ]);
   },
 };
 

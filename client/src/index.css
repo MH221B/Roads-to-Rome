@@ -133,14 +133,3 @@ body {
   flex: 1 1 auto;
   min-height: 0;
 }
-
-@layer components {
-  .preview-btn {
-    background-color: var(--color-muted);
-    color: var(--color-muted-foreground);
-  }
-
-  .preview-btn:hover {
-    filter: brightness(0.98);
-  }
-}

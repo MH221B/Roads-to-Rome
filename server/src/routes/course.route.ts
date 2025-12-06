@@ -12,6 +12,14 @@ courseRouter.get('/', courseController.List);
 // GET /api/courses/:id
 courseRouter.get('/:id', courseController.Get);
 
+// DELETE /api/courses/:id (requires auth + instructor/admin)
+courseRouter.delete(
+  '/:id',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  courseController.Delete
+);
+
 // POST /api/courses (requires auth + instructor/admin). Accepts `multipart/form-data` with optional `thumbnail` file field.
 courseRouter.post(
   '/',
