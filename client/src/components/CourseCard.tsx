@@ -115,7 +115,18 @@ const CourseCard: React.FC<Props> = ({
       </CardHeader>
 
       <CardContent className="p-0 px-3 py-0">
-        <div className="text-muted-foreground text-sm">{course.shortDescription}</div>
+        <div
+          className="text-muted-foreground text-sm"
+          style={{
+            display: '-webkit-box' as any,
+            WebkitLineClamp: 3 as any,
+            WebkitBoxOrient: 'vertical' as any,
+            overflow: 'hidden',
+          }}
+          title={course.shortDescription}
+        >
+          {course.shortDescription}
+        </div>
       </CardContent>
 
       <CardFooter className="mt-auto p-0 px-3 pt-2 pb-5">

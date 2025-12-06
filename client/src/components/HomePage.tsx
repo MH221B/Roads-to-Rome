@@ -139,12 +139,13 @@ const HomePage: React.FC = () => {
   const showStudent = roles.includes('STUDENT');
   const showInstructor = roles.includes('INSTRUCTOR');
   const navigate = useNavigate();
+  const isGuest = !accessToken || roles.length === 0;
 
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderComponent showAdmin={showAdmin} />
       <main className="flex-1">
-        {showStudent && (
+        {(showStudent || isGuest) && (
           <div className="mx-auto w-full max-w-7xl px-4 py-10">
             <section className="mt-3">
               <div className="mb-4 flex items-center justify-between">

@@ -160,11 +160,11 @@ export default function CourseList() {
   }, [resetAndLoad]);
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background flex min-h-screen flex-col">
       <HeaderComponent />
 
-      <main>
-        <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <main className="flex-1">
+        <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-6">
           <div className="mb-6 flex flex-col items-start justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
               <Select
@@ -274,10 +274,10 @@ export default function CourseList() {
             </div>
           )}
 
-          {/* End of list message */}
+          {/* End of list message - pushed to bottom */}
           {!loading && !hasMore && courses.length > 0 && (
-            <div className="flex w-full items-center justify-center py-4 text-sm opacity-80">
-              No more courses.
+            <div className="mt-auto flex w-full items-center justify-center py-4 text-sm opacity-80">
+              No more courses available.
             </div>
           )}
 
