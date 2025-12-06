@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import courseController from '../controllers/course.controller';
-import { authenticateToken } from '../middlewares/auth.middleware';
+import { authenticateToken, authorizeRoles } from '../middlewares/auth.middleware';
+import Role from '../enums/user.enum';
+import { upload } from '../middlewares/upload.middleware';
 
 const courseRouter = Router();
 
@@ -9,6 +11,15 @@ courseRouter.get('/', courseController.List);
 
 // GET /api/courses/:id
 courseRouter.get('/:id', courseController.Get);
+
+// POST /api/courses (requires auth + instructor/admin). Accepts `multipart/form-data` with optional `thumbnail` file field.
+courseRouter.post(
+  '/',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  upload.single('thumbnail'),
+  courseController.Create
+);
 
 // POST /api/courses/:courseId/comments (requires auth)
 courseRouter.post('/:courseId/comments', authenticateToken, courseController.PostComment);

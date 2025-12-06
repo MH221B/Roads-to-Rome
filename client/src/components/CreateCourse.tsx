@@ -1,7 +1,9 @@
 import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/services/axiosClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,50 +60,62 @@ const CreateCourse: React.FC = () => {
   });
 
   // Local state purely for UI (Tag search input & Image preview)
-  const [tagQuery, setTagQuery] = React.useState('');
-  const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(null);
+  const [tagQuery, setTagQuery] = useState('');
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   // Watch tags to render them
   const selectedTags = watch('tags');
 
   // Local sample tags (backend not implemented yet)
-  const allTags = React.useMemo(
+  const allTags = useMemo(
     () => ['web development', 'javascript', 'react', 'node', 'typescript', 'css', 'html'],
     []
   );
 
-  // React Query: Mutation for Create
+  // React Query: Mutation for Create (sends multipart/form-data to backend)
   const createMutation = useMutation({
     mutationFn: async (data: CreateCourseFormValues) => {
-      const payload: any = {
-        title: data.title,
-        category: data.category,
-        shortDescription: data.shortDescription,
-        difficulty: data.difficulty,
-        tags: data.tags,
-        thumbnail: data.thumbnail
-          ? { name: data.thumbnail.name, size: data.thumbnail.size, type: data.thumbnail.type }
-          : null,
-      };
-      console.log('CreateCourse (simulated) payload:', payload);
+      const form = new FormData();
+      form.append('title', data.title || '');
+      if (data.category) form.append('category', data.category);
+      if (data.shortDescription) form.append('shortDescription', data.shortDescription);
+      if (data.difficulty) form.append('difficulty', data.difficulty);
 
-      // Simulate network delay
-      await new Promise((res) => setTimeout(res, 300));
-      return payload;
+      // append tags as JSON string so server can parse reliably
+      if (Array.isArray(data.tags) && data.tags.length > 0) {
+        form.append('tags', JSON.stringify(data.tags));
+      }
+
+      // append file under field name `thumbnail` (multer expects this)
+      if (data.thumbnail) {
+        form.append('thumbnail', data.thumbnail);
+      }
+
+      const resp = await api.post('/api/courses', form, {
+        headers: {
+          // Let browser set Content-Type with boundary for multipart
+          Accept: 'application/json',
+        },
+      });
+
+      return resp.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
-      console.log('Course creation simulated successfully');
       navigate('/courses'); // Redirect to list
     },
-    onError: (error) => {
-      console.error('Failed to create course (simulated)', error);
-      alert('Failed to create course. Please try again.');
+    onError: (error: any) => {
+      console.error('Failed to create course', error);
+      const msg =
+        error?.response?.data?.error ??
+        error?.message ??
+        'Failed to create course. Please try again.';
+      alert(msg);
     },
   });
 
   // Cleanup preview URL
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     };
@@ -158,7 +172,7 @@ const CreateCourse: React.FC = () => {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
         <Card>
           <CardHeader>
             <CardTitle>Create Course</CardTitle>

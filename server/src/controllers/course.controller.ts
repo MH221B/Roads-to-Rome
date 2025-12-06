@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import courseService from '../services/course.service';
+import { uploadImageToSupabase } from '../lib/supabaseClient';
+import { User } from '../models/user.model';
 
 const courseController = {
   async List(req: Request, res: Response) {
@@ -37,7 +39,74 @@ const courseController = {
       const userId = (req as any).user?.id as string | undefined;
       const userName = undefined; // can be derived from user record if needed
 
-      const created = await courseService.createComment(courseId, rating, content, userId, userName);
+      const created = await courseService.createComment(
+        courseId,
+        rating,
+        content,
+        userId,
+        userName
+      );
+      res.status(201).json(created);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+  async Create(req: Request, res: Response) {
+    try {
+      // Expect multipart/form-data when a file is included (thumbnail)
+      const payload = { ...(req.body || {}) } as any;
+
+      if (!payload || !payload.title) {
+        return res.status(400).json({ error: 'title is required' });
+      }
+
+      // If a file was uploaded via multer (memory storage), upload to Supabase
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (file) {
+        const timestamp = Date.now();
+        const safeName = `${timestamp}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+        try {
+          const publicUrl = await uploadImageToSupabase(
+            'course-thumbnails',
+            safeName,
+            file.buffer,
+            file.mimetype
+          );
+          payload.thumbnail = publicUrl;
+        } catch (err) {
+          // if upload fails, return error
+          return res
+            .status(500)
+            .json({ error: 'Failed to upload thumbnail', details: (err as Error).message });
+        }
+      }
+
+      // If authentication middleware sets req.user.id, fetch user to get email for instructor
+      const userId = (req as any).user?.id as string | undefined;
+      if (userId) {
+        try {
+          const user = await User.findById(userId).lean().exec();
+          if (user && user.email) payload.instructor = payload.instructor ?? user.email;
+        } catch (_) {
+          // ignore fetch errors — not critical
+        }
+      }
+
+      // Normalize tags: client may send tags as JSON string when using FormData
+      if (payload && typeof payload.tags === 'string') {
+        try {
+          const parsed = JSON.parse(payload.tags);
+          if (Array.isArray(parsed)) payload.tags = parsed;
+        } catch (e) {
+          // fallback: comma separated
+          payload.tags = payload.tags
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      const created = await courseService.createCourse(payload);
       res.status(201).json(created);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
