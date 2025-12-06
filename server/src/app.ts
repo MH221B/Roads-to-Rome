@@ -45,7 +45,6 @@ app.use('/api/admin', adminRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/lessons', lessonRouter);
-app.use('/api/courses', courseRouter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

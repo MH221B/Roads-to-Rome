@@ -37,34 +37,35 @@ const CourseCardCompact: React.FC<CourseCardCompactProps> = ({
   };
 
   const handleDelete = async () => {
+    // 1. Ask for confirmation
     const result = await Swal.fire({
       title: `Delete ${course.title}?`,
-      text: 'This action cannot be undone.',
+      text: "You won't be able to revert this!",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      focusCancel: true,
-      showLoaderOnConfirm: true,
-      preConfirm: async () => {
-        try {
-          await deleteCourse(course.id);
-        } catch (err: any) {
-          const message = err?.response?.data?.message || err?.message || 'Failed to delete';
-          Swal.showValidationMessage(message);
-          throw err;
-        }
-      },
+      confirmButtonText: 'Yes',
+      confirmButtonColor: '#d33',
     });
 
+    // 2. If confirmed, perform the action
     if (result.isConfirmed) {
-      await Swal.fire({ title: 'Deleted', text: 'Course deleted successfully', icon: 'success' });
-      // Let parent update list if handler provided, otherwise reload
-      if (typeof onDelete === 'function') {
-        onDelete(course);
-      } else {
-        // fallback: reload the page to reflect change
-        window.location.reload();
+      try {
+        // Optional: Show a loading state while deleting
+        Swal.showLoading();
+
+        await deleteCourse(course.id);
+
+        // 3. Show success message
+        await Swal.fire('Deleted!', 'The course has been deleted.', 'success');
+
+        // Call onDelete callback if provided
+        if (typeof onDelete === 'function') {
+          onDelete(course);
+        }
+      } catch (err: any) {
+        // 4. Handle error
+        const message = err?.response?.data?.message || 'Failed to delete';
+        await Swal.fire('Error', message, 'error');
       }
     }
   };

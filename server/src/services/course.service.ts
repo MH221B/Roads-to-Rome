@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
-import { User } from '../models/user.model';
 
 interface ICourseService {
   listCourses(search?: string): Promise<any[]>;
