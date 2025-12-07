@@ -7,6 +7,8 @@ import { adminRouter } from './routes/admin.route';
 import { courseRouter } from './routes/course.route';
 import { enrollmentRouter } from './routes/enrollment.route';
 import { lessonRouter } from './routes/lesson.route';
+import { upload } from './middlewares/upload.middleware';
+import { uploadImageToSupabase } from './lib/supabaseClient';
 
 const app = express();
 
@@ -44,7 +46,45 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/enrollments', enrollmentRouter);
-app.use('/api/lessons', lessonRouter);
+
+// Nested lesson routes under courses
+app.use('/api/courses/:courseId/lessons', lessonRouter);
+
+// Upload endpoint for lesson files (videos, attachments)
+app.post(
+  '/api/uploads',
+  upload.single('file'),
+  async (req: Express.Request, res: Express.Response) => {
+    try {
+      const file = (req as Express.Request & { file?: Express.Multer.File }).file;
+
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const timestamp = Date.now();
+      const safeName = `${timestamp}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+
+      try {
+        // Determine bucket based on file type
+        let bucket = 'lesson-attachments';
+        if (file.mimetype.startsWith('video/')) {
+          bucket = 'lesson-videos';
+        } else if (file.mimetype.startsWith('image/')) {
+          bucket = 'lesson-images';
+        }
+
+        const publicUrl = await uploadImageToSupabase(bucket, safeName, file.buffer, file.mimetype);
+
+        res.status(200).json({ url: publicUrl });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to upload file', details: (err as Error).message });
+      }
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

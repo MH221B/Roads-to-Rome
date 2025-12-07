@@ -11,18 +11,59 @@ interface ILessonController {
 
 const lessonController: ILessonController = {
   CreateLesson: async (req: Request, res: Response): Promise<void> => {
-    // Placeholder for creating a lesson
-    res.status(501).json({ message: 'Not implemented' });
+    try {
+      const { courseId } = req.params;
+      const payload = req.body;
+
+      if (!courseId) {
+        res.status(400).json({ error: 'courseId is required' });
+        return;
+      }
+
+      if (!payload.title || !payload.content_type || payload.content === undefined) {
+        res.status(400).json({ error: 'title, content_type, and content are required' });
+        return;
+      }
+
+      const lesson = await lessonService.CreateLesson(courseId, payload);
+      res.status(201).json(lesson);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
   },
-  
+
   UpdateLesson: async (req: Request, res: Response): Promise<void> => {
-    // Placeholder for updating a lesson
-    res.status(501).json({ message: 'Not implemented' });
+    try {
+      const { courseId, lessonId } = req.params;
+      const payload = req.body;
+
+      if (!courseId || !lessonId) {
+        res.status(400).json({ error: 'courseId and lessonId are required' });
+        return;
+      }
+
+      const lesson = await lessonService.UpdateLesson(courseId, lessonId, payload);
+      res.status(200).json(lesson);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
   },
 
   DeleteLesson: async (req: Request, res: Response): Promise<void> => {
-    // Placeholder for deleting a lesson
-    res.status(501).json({ message: 'Not implemented' });
+    try {
+      const { courseId } = req.params;
+      const { id } = req.params;
+
+      if (!courseId || !id) {
+        res.status(400).json({ error: 'courseId and lesson id are required' });
+        return;
+      }
+
+      await lessonService.DeleteLesson(courseId, id);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
   },
 
   GetLessonsByCourseId: async (req: Request, res: Response): Promise<void> => {
@@ -44,7 +85,7 @@ const lessonController: ILessonController = {
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
-  }
+  },
 };
 
 export default lessonController;
