@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../app';
 import lessonModel from '../models/lesson.model';
-import { LessonType, ContentType } from '../enums/lesson.enum';
+import { LessonType } from '../enums/lesson.enum';
 
 const mockLessons = [
   {
@@ -10,37 +10,37 @@ const mockLessons = [
     course_id: 'course1',
     title: 'Introduction to HTML',
     lessonType: LessonType.THEORY,
-    contentType: ContentType.VIDEO,
+    content_type: 'video',
     content: 'https://example.com/html-intro-video.mp4',
     duration: 600,
     order: 1,
     created_at: new Date('2025-12-01T00:00:00.000Z'),
-    updated_at: new Date('2025-12-01T00:00:00.000Z')
+    updated_at: new Date('2025-12-01T00:00:00.000Z'),
   },
   {
     id: 'l2',
     course_id: 'course1',
     title: 'CSS Basics',
     lessonType: LessonType.THEORY,
-    contentType: ContentType.VIDEO,
+    content_type: 'video',
     content: 'https://example.com/css-basics-video.mp4',
     duration: 900,
     order: 2,
     created_at: new Date('2025-12-01T00:00:00.000Z'),
-    updated_at: new Date('2025-12-01T00:00:00.000Z')
+    updated_at: new Date('2025-12-01T00:00:00.000Z'),
   },
   {
     id: 'l3',
     course_id: 'course2',
     title: 'JavaScript Fundamentals',
     lessonType: LessonType.THEORY,
-    contentType: ContentType.ARTICLE,
+    content_type: 'html',
     content: '# JavaScript Fundamentals\n\nJavaScript is a versatile language...',
     duration: 1200,
     order: 1,
     created_at: new Date('2025-12-01T00:00:00.000Z'),
-    updated_at: new Date('2025-12-01T00:00:00.000Z')
-  }
+    updated_at: new Date('2025-12-01T00:00:00.000Z'),
+  },
 ];
 
 describe('Lesson Routes', () => {
@@ -51,12 +51,10 @@ describe('Lesson Routes', () => {
     await lessonModel.insertMany(mockLessons);
   });
 
-  describe('GET /api/lessons/course/:courseId', () => {
+  describe('GET /api/courses/:courseId/lessons', () => {
     it('should return all lessons for a given course ID', async () => {
       const courseId = 'course1';
-      const response = await request(app)
-        .get(`/api/lessons/course/${courseId}`)
-        .expect(200);
+      const response = await request(app).get(`/api/courses/${courseId}/lessons`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body).toHaveLength(2);
@@ -70,16 +68,14 @@ describe('Lesson Routes', () => {
       expect(lesson).toHaveProperty('id');
       expect(lesson).toHaveProperty('course_id', courseId);
       expect(lesson).toHaveProperty('title');
-      expect(lesson).toHaveProperty('contentType');
+      expect(lesson).toHaveProperty('content_type');
       expect(lesson).toHaveProperty('content');
       expect(lesson).toHaveProperty('order');
     });
 
     it('should return lessons sorted by order', async () => {
       const courseId = 'course1';
-      const response = await request(app)
-        .get(`/api/lessons/course/${courseId}`)
-        .expect(200);
+      const response = await request(app).get(`/api/courses/${courseId}/lessons`).expect(200);
 
       expect(response.body[0].order).toBe(1);
       expect(response.body[1].order).toBe(2);
@@ -87,27 +83,25 @@ describe('Lesson Routes', () => {
 
     it('should return empty array for course with no lessons', async () => {
       const courseId = 'nonexistent';
-      const response = await request(app)
-        .get(`/api/lessons/course/${courseId}`)
-        .expect(200);
+      const response = await request(app).get(`/api/courses/${courseId}/lessons`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body).toHaveLength(0);
     });
   });
 
-  describe('GET /api/lessons/:lessonId', () => {
+  describe('GET /api/courses/:courseId/lessons/:lessonId', () => {
     it('should return a specific lesson for a given course and lesson ID', async () => {
       const courseId = 'course1';
       const lessonId = 'l1';
       const response = await request(app)
-        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
+        .get(`/api/courses/${courseId}/lessons/${lessonId}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('id', lessonId);
       expect(response.body).toHaveProperty('course_id', courseId);
       expect(response.body).toHaveProperty('title', 'Introduction to HTML');
-      expect(response.body).toHaveProperty('contentType', ContentType.VIDEO);
+      expect(response.body).toHaveProperty('content_type', 'video');
       expect(response.body).toHaveProperty('lessonType', LessonType.THEORY);
       expect(response.body).toHaveProperty('content', 'https://example.com/html-intro-video.mp4');
       expect(response.body).toHaveProperty('duration', 600);
@@ -118,7 +112,7 @@ describe('Lesson Routes', () => {
       const courseId = 'course1';
       const lessonId = 'nonexistent';
       const response = await request(app)
-        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
+        .get(`/api/courses/${courseId}/lessons/${lessonId}`)
         .expect(400);
 
       expect(response.body).toHaveProperty('error', 'Lesson not found in the specified course');
@@ -128,51 +122,59 @@ describe('Lesson Routes', () => {
       const courseId = 'course1';
       const lessonId = 'l3'; // This lesson is in course2
       const response = await request(app)
-        .get(`/api/lessons/${lessonId}?courseId=${courseId}`)
+        .get(`/api/courses/${courseId}/lessons/${lessonId}`)
         .expect(400);
 
       expect(response.body).toHaveProperty('error', 'Lesson not found in the specified course');
     });
   });
 
-  describe('POST /api/lessons', () => {
-    it('should return 501 Not Implemented for create lesson', async () => {
+  describe('POST /api/courses/:courseId/lessons', () => {
+    it('should create a new lesson', async () => {
+      const courseId = 'course1';
       const response = await request(app)
-        .post('/api/lessons')
+        .post(`/api/courses/${courseId}/lessons`)
         .send({
-          id: 'l4',
-          course_id: 'course1',
           title: 'New Lesson',
-          contentType: ContentType.ARTICLE,
+          content_type: 'html',
           content: 'Test content',
-          order: 3
         })
-        .expect(501);
+        .expect(201);
 
-      expect(response.body).toHaveProperty('message', 'Not implemented');
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('course_id', courseId);
+      expect(response.body).toHaveProperty('title', 'New Lesson');
+      expect(response.body).toHaveProperty('content_type', 'html');
+      expect(response.body).toHaveProperty('content', 'Test content');
+      expect(response.body).toHaveProperty('order', 3); // Next available order
     });
   });
 
-  describe('PUT /api/lessons/:id', () => {
-    it('should return 501 Not Implemented for update lesson', async () => {
+  describe('PUT /api/courses/:courseId/lessons/:lessonId', () => {
+    it('should update a lesson', async () => {
+      const courseId = 'course1';
+      const lessonId = 'l1';
       const response = await request(app)
-        .put('/api/lessons/l1')
+        .put(`/api/courses/${courseId}/lessons/${lessonId}`)
         .send({
-          title: 'Updated Title'
+          title: 'Updated Title',
         })
-        .expect(501);
+        .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Not implemented');
+      expect(response.body).toHaveProperty('id', lessonId);
+      expect(response.body).toHaveProperty('title', 'Updated Title');
     });
   });
 
-  describe('DELETE /api/lessons/:id', () => {
-    it('should return 501 Not Implemented for delete lesson', async () => {
+  describe('DELETE /api/courses/:courseId/lessons/:lessonId', () => {
+    it('should delete a lesson', async () => {
+      const courseId = 'course1';
+      const lessonId = 'l1';
       const response = await request(app)
-        .delete('/api/lessons/l1')
-        .expect(501);
+        .delete(`/api/courses/${courseId}/lessons/${lessonId}`)
+        .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Not implemented');
+      expect(response.body).toHaveProperty('success', true);
     });
   });
 });

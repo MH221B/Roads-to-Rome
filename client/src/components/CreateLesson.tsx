@@ -148,7 +148,7 @@ export default function CreateLesson() {
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       setVideoFile(null);
                     }}
@@ -196,7 +196,7 @@ export default function CreateLesson() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             setAttachmentFiles((prev) => prev.filter((_, i) => i !== idx));
                           }}
@@ -210,7 +210,7 @@ export default function CreateLesson() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       setAttachmentFiles([]);
                     }}
