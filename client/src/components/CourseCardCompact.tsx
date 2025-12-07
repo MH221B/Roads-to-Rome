@@ -73,8 +73,8 @@ const CourseCardCompact: React.FC<CourseCardCompactProps> = ({
   return (
     <div className="flex items-center gap-4 overflow-hidden rounded-md border">
       <img src={course.thumbnail} alt={course.title} className="h-20 w-32 shrink-0 object-cover" />
-      <div className="flex-1 p-4">
-        <h3 className="text-lg font-medium">{course.title}</h3>
+      <div className="min-w-0 flex-1 p-4">
+        <h3 className="truncate text-lg font-medium">{course.title}</h3>
         <p className="text-muted-foreground text-sm">{course.category}</p>
       </div>
       <div className="flex items-center gap-2 pr-4">
