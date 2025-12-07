@@ -4,12 +4,15 @@ export interface IQuiz extends Document {
   id: string; // Unique identifier for the quiz in a course
   title: string; // Title of the quiz
   description?: string; // Optional description of the quiz
+  targetType?: 'course' | 'lesson';
   questions: Array<{
     question: string;
     options: string[];
     correctAnswer: string;
+    explanation?: string;
   }>; // Array of questions in the quiz
   courseId: string; // Reference to the course this quiz belongs to
+  lessonId?: string; // Optional lesson linkage when targetType === 'lesson'
   createdAt: Date; // Timestamp of when the quiz was created
   updatedAt: Date; // Timestamp of when the quiz was last updated
 }
@@ -30,14 +33,17 @@ const QuizSchema: Schema = new Schema(
   {
     title: { type: String, required: true },
     description: { type: String },
+    targetType: { type: String, enum: ['course', 'lesson'], default: 'course' },
     questions: [
       {
         question: { type: String, required: true },
         options: [{ type: String, required: true }],
         correctAnswer: { type: String, required: true },
+        explanation: { type: String },
       },
     ],
     courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+    lessonId: { type: Schema.Types.ObjectId, ref: 'Lesson' },
   },
   { timestamps: true }
 );

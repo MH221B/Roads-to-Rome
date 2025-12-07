@@ -36,4 +36,17 @@ export async function getCourses(
   return [];
 }
 
+export async function getCoursesByInstructor(instructorId: string): Promise<Course[]> {
+  if (!instructorId) return [];
+  const resp = await api.get(`/api/courses/instructor/${instructorId}`);
+  const payload = resp.data;
+  if (Array.isArray(payload)) {
+    return payload as Course[];
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data as Course[];
+  }
+  return [];
+}
+
 export default { getCourses };

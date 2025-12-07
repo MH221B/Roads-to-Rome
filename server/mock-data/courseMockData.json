@@ -1,0 +1,57 @@
+[
+  {
+    "title": "Modern React Patterns",
+    "thumbnail": "https://picsum.photos/seed/modern-react-patterns/640/360",
+    "category": "Web Development",
+    "tags": ["react", "components", "performance"],
+    "shortDescription": "Explore advanced React patterns and hooks to build scalable, maintainable applications.",
+    "difficulty": "Intermediate",
+    "is_premium": false,
+    "status": "published",
+    "instructor": "69341617d184167f2c3631fd"
+  },
+  {
+    "title": "TypeScript Deep Dive",
+    "thumbnail": "https://picsum.photos/seed/typescript-deep-dive/640/360",
+    "category": "Programming",
+    "tags": ["typescript", "nodejs"],
+    "shortDescription": "Master TypeScript features and typing strategies for real-world codebases.",
+    "difficulty": "Advanced",
+    "is_premium": true,
+    "status": "published",
+    "instructor": "69341617d184167f2c3631fd"
+  },
+  {
+    "title": "Design Systems in Practice",
+    "thumbnail": "https://picsum.photos/seed/design-systems/640/360",
+    "category": "UI/UX",
+    "tags": ["design", "components"],
+    "shortDescription": "Learn how to create and maintain a robust design system that teams can trust.",
+    "difficulty": "Beginner",
+    "is_premium": false,
+    "status": "published",
+    "instructor": "69341617d184167f2c3631fd"
+  },
+  {
+    "title": "Fullstack MERN Bootcamp",
+    "thumbnail": "https://picsum.photos/seed/mern-bootcamp/640/360",
+    "category": "Web Development",
+    "tags": ["mongodb", "express", "react", "nodejs"],
+    "shortDescription": "Build a complete social media application from scratch using the MERN stack.",
+    "difficulty": "Intermediate",
+    "is_premium": true,
+    "status": "published",
+    "instructor": "69341617d184167f2c3631fd"
+  },
+  {
+    "title": "Python for Data Science",
+    "thumbnail": "https://picsum.photos/seed/python-data-science/640/360",
+    "category": "Data Science",
+    "tags": ["python", "pandas", "numpy"],
+    "shortDescription": "Introduction to data analysis and visualization using Python libraries.",
+    "difficulty": "Beginner",
+    "is_premium": false,
+    "status": "published",
+    "instructor": "69341617d184167f2c3631fd"
+  }
+]

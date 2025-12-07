@@ -14,6 +14,7 @@ import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
 import InstructorDashboard from './components/InstructorDashboard';
 import QuizCreator from './components/QuizCreator';
+import QuizEditor from './components/QuizEditor';
 import Quiz from './components/Quiz';
 import { decodeJwtPayload } from './lib/utils';
 import { useAuth } from './contexts/AuthProvider';
@@ -77,6 +78,14 @@ function App() {
             element={
               <RequireRole roles="INSTRUCTOR">
                 <QuizCreator />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/quizzes/:id/edit"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <QuizEditor />
               </RequireRole>
             }
           />

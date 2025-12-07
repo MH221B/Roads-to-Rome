@@ -7,6 +7,9 @@ const courseRouter = Router();
 // GET /api/courses
 courseRouter.get('/', courseController.List);
 
+// GET /api/courses/instructor/:instructorId
+courseRouter.get('/instructor/:instructorId', courseController.ListByInstructor);
+
 // GET /api/courses/:id
 courseRouter.get('/:id', courseController.Get);
 
