@@ -32,4 +32,13 @@ courseRouter.post(
 // POST /api/courses/:courseId/comments (requires auth)
 courseRouter.post('/:courseId/comments', authenticateToken, courseController.PostComment);
 
+// PATCH /api/courses/:id (requires auth + instructor/admin). Accepts `multipart/form-data` with optional `thumbnail` file field.
+courseRouter.patch(
+  '/:id',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  upload.single('thumbnail'),
+  courseController.Update
+);
+
 export { courseRouter };

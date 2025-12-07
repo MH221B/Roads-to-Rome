@@ -144,6 +144,64 @@ const courseController = {
       res.status(500).json({ error: (error as Error).message });
     }
   },
+  async Update(req: Request, res: Response) {
+    try {
+      const { id } = req.params as any;
+      if (!id) return res.status(400).json({ error: 'Course id required' });
+
+      const existing = await courseService.getCourseById(id);
+      if (!existing) return res.status(404).json({ error: 'Course not found' });
+
+      const user = (req as any).user;
+      const isAdmin = user?.role === 'ADMIN' || user?.role === 'Admin';
+      const userId = user?.id;
+      const instructorId = existing?.instructor?.id ?? existing?.instructor;
+      if (!isAdmin && (!userId || String(instructorId) !== String(userId))) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      // payload comes from multipart/form-data, read fields from req.body
+      const payload = { ...(req.body || {}) } as any;
+
+      // Normalize tags if sent as JSON string
+      if (payload && typeof payload.tags === 'string') {
+        try {
+          const parsed = JSON.parse(payload.tags);
+          if (Array.isArray(parsed)) payload.tags = parsed;
+        } catch (e) {
+          payload.tags = payload.tags
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      // If a new file was uploaded, upload to Supabase and set thumbnail url
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (file) {
+        const timestamp = Date.now();
+        const safeName = `${timestamp}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+        try {
+          const publicUrl = await uploadImageToSupabase(
+            'course-thumbnails',
+            safeName,
+            file.buffer,
+            file.mimetype
+          );
+          payload.thumbnail = publicUrl;
+        } catch (err) {
+          return res
+            .status(500)
+            .json({ error: 'Failed to upload thumbnail', details: (err as Error).message });
+        }
+      }
+
+      const updated = await (courseService as any).updateCourse(id, payload);
+      res.status(200).json(updated);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
 };
 
 export default courseController;

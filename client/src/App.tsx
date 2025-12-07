@@ -13,6 +13,7 @@ import CourseDetail from '@/components/CourseDetail';
 import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
 import CreateCourse from './components/CreateCourse';
+import EditCourse from './components/EditCourse';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           />
           <Route path="/courses" element={<CourseList />} />
           <Route path="/courses/create" element={<CreateCourse />} />
+          <Route path="/courses/:id/edit" element={<EditCourse />} />
           <Route path="/enrolment" element={<Enrolment />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />

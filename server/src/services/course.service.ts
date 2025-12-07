@@ -25,6 +25,7 @@ interface ICourseService {
     userName?: string
   ): Promise<any>;
   deleteCourse?(id: string): Promise<void>;
+  updateCourse?(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any>;
 }
 
 const courseService: ICourseService = {
@@ -242,6 +243,86 @@ const courseService: ICourseService = {
       rating: populated?.rating,
       content: populated?.content,
     };
+  },
+
+  async updateCourse(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any> {
+    if (!id) throw new Error('id is required');
+
+    const existing = await Course.findById(id).exec();
+    if (!existing) throw new Error('Course not found');
+
+    const updates: Record<string, any> = {};
+
+    if (typeof data.title === 'string' && data.title.trim()) updates.title = data.title.trim();
+    if (typeof data.thumbnail === 'string' && data.thumbnail.trim())
+      updates.thumbnail = data.thumbnail.trim();
+    if (typeof data.category === 'string') updates.category = data.category;
+    if (typeof data.shortDescription === 'string') updates.shortDescription = data.shortDescription;
+    if (typeof data.difficulty !== 'undefined') updates.difficulty = data.difficulty ?? null;
+
+    if (typeof data.tags !== 'undefined') {
+      if (Array.isArray(data.tags)) updates.tags = data.tags.map((t: any) => String(t));
+      else if (typeof data.tags === 'string') {
+        try {
+          const parsed = JSON.parse(data.tags);
+          if (Array.isArray(parsed)) updates.tags = parsed.map((t: any) => String(t));
+          else
+            updates.tags = String(data.tags)
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean);
+        } catch (e) {
+          updates.tags = String(data.tags)
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean);
+        }
+      }
+    }
+
+    if (typeof data.is_premium !== 'undefined') {
+      updates.is_premium =
+        data.is_premium === true ||
+        String(data.is_premium).toLowerCase() === 'true' ||
+        String(data.is_premium) === '1';
+    }
+
+    if (typeof data.status === 'string' && data.status.trim()) updates.status = data.status.trim();
+
+    // Prefer storing instructor as ObjectId if provided (controller normally won't change instructor)
+    if (data.instructor) {
+      if (typeof data.instructor === 'object') {
+        const maybeId =
+          (data.instructor as any)._id ?? (data.instructor as any).id ?? data.instructor;
+        if (maybeId && mongoose.Types.ObjectId.isValid(String(maybeId))) {
+          updates.instructor = new mongoose.Types.ObjectId(String(maybeId));
+        }
+      } else if (
+        typeof data.instructor === 'string' &&
+        mongoose.Types.ObjectId.isValid(data.instructor)
+      ) {
+        updates.instructor = new mongoose.Types.ObjectId(data.instructor);
+      }
+    }
+
+    const updated = await Course.findByIdAndUpdate(id, { $set: updates }, { new: true })
+      .populate({ path: 'instructor', select: 'fullName email' })
+      .lean()
+      .exec();
+
+    const c: any = updated;
+    if (!c) throw new Error('Failed to update course');
+
+    const rawInstr = c.instructor;
+    const returnedInstructor = rawInstr
+      ? {
+          id: String(rawInstr._id || rawInstr),
+          name: rawInstr.fullName ?? 'Unknown Instructor',
+          email: rawInstr.email ?? null,
+        }
+      : { id: null, name: c.instructor || 'Unknown Instructor', email: null };
+
+    return { id: String(c._id), ...c, instructor: returnedInstructor };
   },
 
   async deleteCourse(id: string): Promise<void> {
