@@ -1,5 +1,6 @@
 import lessonModel from '../models/lesson.model';
 import { v4 as uuidv4 } from 'uuid';
+import quizModel from '../models/quiz.model';
 
 interface CreateLessonPayload {
   title: string;
