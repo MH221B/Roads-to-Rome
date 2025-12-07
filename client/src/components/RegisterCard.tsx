@@ -51,7 +51,6 @@ const RegisterCard = () => {
     setLoading(true);
     try {
       const result = await registerUser(data.email, data.password, data.role);
-      console.log('Registration successful:', result);
       await Swal.fire({
         title: 'Account created!',
         text: 'Your account has been created successfully.',
@@ -81,7 +80,7 @@ const RegisterCard = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 p-4 min-h-screen">
+    <div className="flex min-h-screen flex-1 flex-col items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
@@ -167,7 +166,7 @@ const RegisterCard = () => {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex-col gap-2 mt-5">
+          <CardFooter className="mt-5 flex-col gap-2">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing up...' : 'Sign Up'}
             </Button>

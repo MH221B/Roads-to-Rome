@@ -1,9 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { FiBookOpen, FiUsers, FiTrendingUp, FiRefreshCw, FiTarget, FiTrash2 } from 'react-icons/fi';
-
+import {
+  FiBookOpen,
+  FiUsers,
+  FiTrendingUp,
+  FiRefreshCw,
+  FiTarget,
+  FiTrash2,
+  FiEdit,
+} from 'react-icons/fi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import api from '@/services/axiosClient';
+import HeaderComponent from './HeaderComponent';
+import { useAuth } from '@/contexts/AuthProvider';
+import { decodeJwtPayload } from '@/lib/utils';
 
 type CourseRow = {
   id: string;
@@ -35,6 +46,7 @@ type Overview = {
   totalStudents: number;
   averageScore: number;
   completionRate: number;
+  totalQuizzes?: number;
 };
 
 type InsightRow = {
@@ -45,9 +57,24 @@ type InsightRow = {
   completionRate: number;
 };
 
+type QuizInsightRow = {
+  quizId: string;
+  quizTitle: string;
+  averageScore: number;
+  participants?: number;
+  totalQuestions?: number;
+};
+
 type FilterForm = {
   search: string;
   difficulty: string;
+};
+
+type QuizRow = {
+  _id: string;
+  title: string;
+  courseTitle?: string;
+  questions?: Array<any>;
 };
 
 const difficultyOptions = [
@@ -57,12 +84,15 @@ const difficultyOptions = [
   { label: 'Advanced', value: 'advanced' },
 ];
 
-async function fetchInstructorCourses(filters: FilterForm): Promise<CourseRow[]> {
+async function fetchInstructorCourses(
+  filters: FilterForm,
+  instructorId: string
+): Promise<CourseRow[]> {
   const params: Record<string, string> = {};
   if (filters.search) params.search = filters.search;
   if (filters.difficulty && filters.difficulty !== 'all') params.difficulty = filters.difficulty;
 
-  const res = await api.get('/api/instructor/courses', { params });
+  const res = await api.get(`/api/courses/instructor/${instructorId}`, { params });
   const payload = res.data;
 
   if (Array.isArray(payload)) return payload as CourseRow[];
@@ -70,18 +100,40 @@ async function fetchInstructorCourses(filters: FilterForm): Promise<CourseRow[]>
   return [];
 }
 
-async function fetchEnrollmentInsights(): Promise<{ overview: Overview; insights: InsightRow[] }> {
-  const res = await api.get('/api/instructor/enrollments/overview');
+async function fetchEnrollmentInsights(): Promise<{
+  overview: Overview;
+  insights: InsightRow[];
+  quizInsights: QuizInsightRow[];
+}> {
+  const res = await api.get(`/api/instructor/insights`);
   const data = res.data ?? {};
+  const sourceOverview = data.overview ?? data;
   const overview: Overview = {
-    totalCourses: data.totalCourses ?? 0,
-    totalStudents: data.totalStudents ?? data.totalEnrolled ?? 0,
-    averageScore: data.averageScore ?? data.avgScore ?? 0,
-    completionRate: data.completionRate ?? data.avgCompletion ?? 0,
+    totalCourses: sourceOverview.totalCourses ?? sourceOverview.count ?? 0,
+    totalStudents:
+      sourceOverview.totalStudents ?? sourceOverview.totalEnrolled ?? sourceOverview.students ?? 0,
+    averageScore: sourceOverview.averageScore ?? sourceOverview.avgScore ?? 0,
+    completionRate: sourceOverview.completionRate ?? sourceOverview.avgCompletion ?? 0,
+    totalQuizzes: sourceOverview.totalQuizzes ?? sourceOverview.quizCount ?? 0,
   };
 
-  const insights: InsightRow[] = Array.isArray(data.byCourse)
-    ? data.byCourse.map((row: any) => ({
+  // Accept multiple server shapes: byCourse, CourseInsights, insights
+  const rawCourseInsights =
+    data.byCourse ??
+    data.CourseInsights ??
+    (Array.isArray(data.insights) ? data.insights : data.insights?.CourseInsights) ??
+    [];
+  const rawQuizInsights =
+    data.QuizInsights ??
+    data.quizInsights ??
+    data.byQuiz ??
+    (Array.isArray(data.insights?.QuizInsights)
+      ? data.insights.QuizInsights
+      : data.insights?.QuizInsights) ??
+    [];
+
+  const insights: InsightRow[] = Array.isArray(rawCourseInsights)
+    ? rawCourseInsights.map((row: any) => ({
         courseId: String(row.courseId ?? row.id ?? ''),
         courseTitle: row.courseTitle ?? row.title ?? 'Untitled course',
         students: Number(row.students ?? row.enrollments ?? 0),
@@ -90,16 +142,61 @@ async function fetchEnrollmentInsights(): Promise<{ overview: Overview; insights
       }))
     : [];
 
-  return { overview, insights };
+  const quizInsights: QuizInsightRow[] = Array.isArray(rawQuizInsights)
+    ? rawQuizInsights.map((q: any) => ({
+        quizId: String(q.quizId ?? q.id ?? ''),
+        quizTitle: q.quizTitle ?? q.title ?? 'Untitled quiz',
+        totalQuestions: Number(q.totalQuestions ?? q.questions?.length ?? q.questionCount ?? 0),
+        averageScore: Number(q.averageScore ?? q.avgScore ?? 0),
+        participants: Number(q.participants ?? q.attempts ?? 0),
+      }))
+    : [];
+
+  return { overview, insights, quizInsights };
+}
+
+async function fetchInstructorQuizzes(
+  instructorId: string,
+  instructorCourse: Array<CourseRow>
+): Promise<QuizRow[]> {
+  const res = await api.get(`/api/quizzes/instructor/${instructorId}`);
+  const payload = res.data;
+  if (Array.isArray(payload)) {
+    payload.forEach((quiz: any) => {
+      const course = instructorCourse.find((c) => c.id === quiz.courseId);
+      if (course) {
+        quiz.courseTitle = course.title;
+      }
+    });
+    return payload as QuizRow[];
+  } else {
+    if (Array.isArray(payload?.data)) {
+      payload.data.forEach((quiz: any) => {
+        const course = instructorCourse.find((c) => c.id === quiz.courseId);
+        if (course) {
+          quiz.courseTitle = course.title;
+        }
+      });
+      return payload.data as QuizRow[];
+    }
+  }
+  return [];
 }
 
 async function deleteCourse(courseId: string): Promise<void> {
-  await api.delete(`/api/instructor/courses/${courseId}`);
+  await api.delete(`/api/courses/${courseId}`);
 }
 
 export default function InstructorDashboard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<FilterForm>({ search: '', difficulty: 'all' });
+  const { accessToken } = useAuth();
+  const instructorId = useMemo(() => {
+    const payload = decodeJwtPayload(accessToken);
+    const id = payload?.userId ?? '';
+    return id ? String(id) : '';
+  }, [accessToken]);
 
   const {
     register,
@@ -113,12 +210,18 @@ export default function InstructorDashboard() {
 
   const coursesQuery = useQuery({
     queryKey: ['instructor-courses', filters],
-    queryFn: () => fetchInstructorCourses(filters),
+    queryFn: () => fetchInstructorCourses(filters, instructorId),
   });
 
   const insightQuery = useQuery({
     queryKey: ['instructor-insights'],
     queryFn: fetchEnrollmentInsights,
+  });
+
+  const quizzesQuery = useQuery({
+    queryKey: ['instructor-quizzes', instructorId, coursesQuery.data],
+    queryFn: () => fetchInstructorQuizzes(instructorId, coursesQuery.data ?? []),
+    enabled: Boolean(instructorId) && Boolean(coursesQuery.data),
   });
 
   const deleteMutation = useMutation({
@@ -160,10 +263,11 @@ export default function InstructorDashboard() {
   };
 
   const overview = insightQuery.data?.overview ?? {
-    totalCourses: coursesQuery.data?.length ?? 0,
+    totalCourses: 0,
     totalStudents: 0,
     averageScore: 0,
     completionRate: 0,
+    totalQuizzes: 0,
   };
 
   const topCourses = useMemo(() => {
@@ -171,251 +275,430 @@ export default function InstructorDashboard() {
     return [...insightQuery.data.insights].sort((a, b) => b.students - a.students).slice(0, 3);
   }, [insightQuery.data?.insights]);
 
+  const avgQuizScore = useMemo(() => {
+    const raw = Number(overview.averageScore);
+    if (Number.isFinite(raw) && !Number.isNaN(raw)) return raw;
+    const quizzes = insightQuery.data?.quizInsights ?? [];
+    if (quizzes.length === 0) return 0;
+    return quizzes.reduce((acc, q) => acc + Number(q.averageScore ?? 0), 0) / quizzes.length;
+  }, [overview, insightQuery.data?.quizInsights]);
+
   return (
-    <div className="bg-muted/30 min-h-screen px-4 py-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Track your courses, enrollment, and learner performance in one place.
-            </p>
+    <>
+      <HeaderComponent />
+      <div className="bg-muted/30 min-h-screen px-4 py-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Track your courses, enrollment, and learner performance in one place.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  coursesQuery.refetch();
+                  insightQuery.refetch();
+                  quizzesQuery.refetch();
+                }}
+                className="gap-2"
+              >
+                <FiRefreshCw className="h-4 w-4" /> Refresh
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                coursesQuery.refetch();
-                insightQuery.refetch();
-              }}
-              className="gap-2"
-            >
-              <FiRefreshCw className="h-4 w-4" /> Refresh
-            </Button>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <StatCard
+              title="Created courses"
+              value={overview.totalCourses ?? coursesQuery.data?.length ?? 0}
+              icon={<FiBookOpen className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Enrolled students"
+              value={
+                overview.totalStudents ??
+                coursesQuery.data?.reduce((acc, c) => acc + (c.students ?? 0), 0) ??
+                0
+              }
+              icon={<FiUsers className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Quizzes created"
+              value={overview.totalQuizzes ?? quizzesQuery.data?.length ?? 0}
+              icon={<FiEdit className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Avg quiz score"
+              value={`${(Number(overview.averageScore ?? NaN) || (insightQuery.data?.quizInsights?.length ? insightQuery.data!.quizInsights.reduce((a, b) => a + Number(b.averageScore ?? 0), 0) / insightQuery.data!.quizInsights.length : 0)).toFixed(1)}%`}
+              icon={<FiTrendingUp className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Completion rate"
+              value={`${overview.completionRate.toFixed(1)}%`}
+              icon={<FiTarget className="h-5 w-5" />}
+            />
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Created courses"
-            value={overview.totalCourses}
-            icon={<FiBookOpen className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Enrolled students"
-            value={overview.totalStudents}
-            icon={<FiUsers className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Avg quiz score"
-            value={`${overview.averageScore.toFixed(1)}%`}
-            icon={<FiTrendingUp className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Completion rate"
-            value={`${overview.completionRate.toFixed(1)}%`}
-            icon={<FiTarget className="h-5 w-5" />}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle className="flex items-center gap-2 text-xl">Your courses</CardTitle>
-              <CardDescription>Filter courses you created and manage enrollments.</CardDescription>
-              <div className="flex flex-wrap items-center gap-3">
-                <form
-                  className="flex flex-wrap items-center gap-3"
-                  onSubmit={handleSubmit(onApplyFilters)}
-                >
-                  <Input
-                    placeholder="Search by title or tag"
-                    className="w-60"
-                    {...register('search')}
-                  />
-                  <Select
-                    value={watch('difficulty')}
-                    onValueChange={(val) => setValue('difficulty', val)}
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader className="gap-2">
+                <CardTitle className="flex items-center gap-2 text-xl">Your courses</CardTitle>
+                <CardDescription>
+                  Filter courses you created and manage enrollments.
+                </CardDescription>
+                <div className="flex flex-wrap items-center gap-3">
+                  <form
+                    className="flex flex-wrap items-center gap-3"
+                    onSubmit={handleSubmit(onApplyFilters)}
                   >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {difficultyOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex gap-2">
-                    <Button type="submit" className="gap-2">
-                      <FiRefreshCw className="h-4 w-4" /> Apply
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        resetFilters({ search: '', difficulty: 'all' });
-                        setFilters({ search: '', difficulty: 'all' });
-                      }}
+                    <Input
+                      placeholder="Search by title or tag"
+                      className="w-60"
+                      {...register('search')}
+                    />
+                    <Select
+                      value={watch('difficulty')}
+                      onValueChange={(val) => setValue('difficulty', val)}
                     >
-                      Clear
-                    </Button>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {difficultyOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="gap-2">
+                        <FiRefreshCw className="h-4 w-4" /> Apply
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          resetFilters({ search: '', difficulty: 'all' });
+                          setFilters({ search: '', difficulty: 'all' });
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {coursesQuery.isLoading && (
+                  <div className="flex min-h-40 items-center justify-center">
+                    <Spinner className="h-8 w-8" />
                   </div>
-                </form>
-              </div>
+                )}
+
+                {coursesQuery.error && (
+                  <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
+                    Unable to load courses. Please retry.
+                  </div>
+                )}
+
+                {!coursesQuery.isLoading && coursesQuery.data?.length === 0 && (
+                  <div className="text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm">
+                    No courses yet.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {coursesQuery.data?.map((course) => (
+                    <Card
+                      key={course.id}
+                      className="border-muted/70 cursor-pointer"
+                      onClick={() => navigate(`/courses/${course.id}`)}
+                    >
+                      <CardHeader className="gap-1 pb-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <CardTitle className="text-lg">{course.title}</CardTitle>
+                            <CardDescription>
+                              {course.category || 'Uncategorized'} · {course.difficulty || 'Mixed'}
+                            </CardDescription>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(course.id);
+                            }}
+                            disabled={deleteMutation.isPending}
+                            aria-label="Delete course"
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {course.tags && course.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {course.tags.map((tag) => (
+                              <Badge key={tag} variant="secondary">
+                                #{tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <FiUsers className="text-muted-foreground h-4 w-4" />
+                            <span className="font-semibold">{course.students ?? 0}</span>
+                            <span className="text-muted-foreground">enrolled</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FiTrendingUp className="text-muted-foreground h-4 w-4" />
+                            <span className="font-semibold">
+                              {(course.avgScore ?? 0).toFixed(1)}%
+                            </span>
+                            <span className="text-muted-foreground">avg score</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Progress value={Math.min(100, course.avgScore ?? 0)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="gap-1">
+              <CardTitle>Your Quizzes</CardTitle>
+              <CardDescription>Manage the quizzes you have created.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {coursesQuery.isLoading && (
+              {quizzesQuery.isLoading && (
                 <div className="flex min-h-40 items-center justify-center">
                   <Spinner className="h-8 w-8" />
                 </div>
               )}
 
-              {coursesQuery.error && (
+              {quizzesQuery.error && (
                 <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
-                  Unable to load courses. Please retry.
+                  Unable to load quizzes. Please retry.
                 </div>
               )}
 
-              {!coursesQuery.isLoading && coursesQuery.data?.length === 0 && (
+              {!quizzesQuery.isLoading && quizzesQuery.data?.length === 0 && (
                 <div className="text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm">
-                  No courses yet.
+                  No quizzes yet.
                 </div>
               )}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {coursesQuery.data?.map((course) => (
-                  <Card key={course.id} className="border-muted/70">
+                {quizzesQuery.data?.map((quiz) => (
+                  <Card
+                    key={quiz._id}
+                    className="border-muted/70 cursor-pointer"
+                    onClick={() => navigate(`/quizzes/${quiz._id}`)}
+                  >
                     <CardHeader className="gap-1 pb-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <CardTitle className="text-lg">{course.title}</CardTitle>
-                          <CardDescription>
-                            {course.category || 'Uncategorized'} · {course.difficulty || 'Mixed'}
-                          </CardDescription>
+                          <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                          <CardDescription>{quiz.courseTitle || 'No course'}</CardDescription>
                         </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => confirmDelete(course.id)}
-                          disabled={deleteMutation.isPending}
-                          aria-label="Delete course"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/quizzes/${quiz._id}/edit`);
+                          }}
+                          aria-label="Edit quiz"
                         >
-                          <FiTrash2 className="h-4 w-4" />
+                          <FiEdit className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      {course.tags && course.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {course.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <FiUsers className="text-muted-foreground h-4 w-4" />
-                          <span className="font-semibold">{course.students ?? 0}</span>
-                          <span className="text-muted-foreground">enrolled</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <FiTrendingUp className="text-muted-foreground h-4 w-4" />
-                          <span className="font-semibold">
-                            {(course.avgScore ?? 0).toFixed(1)}%
-                          </span>
-                          <span className="text-muted-foreground">avg score</span>
-                        </div>
-                      </div>
-                      <div>
-                        <Progress value={Math.min(100, course.avgScore ?? 0)} />
-                      </div>
-                    </CardContent>
                   </Card>
                 ))}
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        <Card>
-          <CardHeader className="gap-1">
-            <CardTitle>Enrollment & score by course</CardTitle>
-            <CardDescription>Shows enrollment counts and average quiz scores.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {insightQuery.isLoading && (
-              <div className="flex min-h-[140px] items-center justify-center">
-                <Spinner className="h-8 w-8" />
-              </div>
-            )}
-
-            {insightQuery.error && (
-              <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
-                Unable to load enrollment stats.
-              </div>
-            )}
-
-            {!insightQuery.isLoading && insightQuery.data?.insights?.length === 0 && (
-              <div className="text-muted-foreground text-sm">No enrollments yet.</div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {insightQuery.data?.insights?.map((insight) => (
-                <Card key={insight.courseId} className="border-muted/60">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{insight.courseTitle}</CardTitle>
-                    <CardDescription>{insight.students} students</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Avg quiz score</span>
-                      <span className="font-semibold">{insight.averageScore.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={Math.min(100, insight.averageScore)} />
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Completion rate</span>
-                      <span className="font-semibold">{insight.completionRate.toFixed(1)}%</span>
-                    </div>
-                    <Progress
-                      value={Math.min(100, insight.completionRate)}
-                      className="bg-emerald-200/50"
-                    />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {topCourses.length > 0 && (
           <Card>
             <CardHeader className="gap-1">
-              <CardTitle>Top performers</CardTitle>
-              <CardDescription>Courses with the highest enrollment.</CardDescription>
+              <CardTitle>Insights</CardTitle>
+              <CardDescription>
+                Course and quiz performance summaries for your content.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {topCourses.map((course) => (
-                <div key={course.courseId} className="rounded-lg border bg-white/40 p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-muted-foreground text-sm">Enrollment</div>
-                      <div className="text-xl font-semibold">{course.students}</div>
-                    </div>
-                    <Badge variant="secondary">{course.averageScore.toFixed(1)}%</Badge>
-                  </div>
-                  <div className="mt-2 text-sm font-medium">{course.courseTitle}</div>
+            <CardContent className="space-y-4">
+              {insightQuery.isLoading && (
+                <div className="flex min-h-[140px] items-center justify-center">
+                  <Spinner className="h-8 w-8" />
                 </div>
-              ))}
+              )}
+
+              {insightQuery.error && (
+                <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
+                  Unable to load insights.
+                </div>
+              )}
+
+              {!insightQuery.isLoading &&
+                !insightQuery.data?.insights?.length &&
+                !insightQuery.data?.quizInsights?.length && (
+                  <div className="text-muted-foreground text-sm">No insights yet.</div>
+                )}
+
+              {/* Insights grid: Courses + Quizzes */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Course insights column */}
+                <div>
+                  <Card className="border-muted/60">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Course Insights</CardTitle>
+                      <CardDescription>Enrollment and performance by course</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {insightQuery.isLoading && (
+                        <div className="flex min-h-[100px] items-center justify-center">
+                          <Spinner className="h-8 w-8" />
+                        </div>
+                      )}
+
+                      {insightQuery.isLoading === false &&
+                        (insightQuery.data?.insights ?? []).length === 0 && (
+                          <div className="text-muted-foreground text-sm">
+                            No course insights yet.
+                          </div>
+                        )}
+
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        {(insightQuery.data?.insights ?? []).map((insight) => (
+                          <div key={insight.courseId} className="rounded-md border bg-white/60 p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium">{insight.courseTitle}</div>
+                              <div className="text-muted-foreground text-xs">
+                                {insight.students} students
+                              </div>
+                            </div>
+                            <div className="text-muted-foreground mt-2 text-xs">
+                              Avg score{' '}
+                              <span className="font-semibold">
+                                {insight.averageScore.toFixed(1)}%
+                              </span>
+                            </div>
+                            <Progress
+                              value={Math.min(100, insight.averageScore)}
+                              className="mt-2"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Quiz insights column */}
+                <div>
+                  <Card className="border-muted/60">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Quiz Insights</CardTitle>
+                      <CardDescription>
+                        Average scores and participation for quizzes
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {insightQuery.isLoading && (
+                        <div className="flex min-h-[100px] items-center justify-center">
+                          <Spinner className="h-8 w-8" />
+                        </div>
+                      )}
+
+                      {insightQuery.isLoading === false &&
+                        (insightQuery.data?.quizInsights ?? []).length === 0 && (
+                          <div className="text-muted-foreground text-sm">No quiz insights yet.</div>
+                        )}
+
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-1">
+                        {(insightQuery.data?.quizInsights ?? []).map((quiz: any) => {
+                          const questionsCount = Number(
+                            quiz.totalQuestions ??
+                              quizzesQuery.data?.find((q) => q._id === quiz.quizId)?.questions
+                                ?.length ??
+                              0
+                          );
+                          const avgRaw = Number(quiz.averageScore ?? quiz.avgScore ?? 0);
+                          const progressValue =
+                            questionsCount > 0 ? Math.min(100, (avgRaw / questionsCount) * 100) : 0;
+                          return (
+                            <div key={quiz.quizId} className="rounded-md border bg-white/60 p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm font-medium">
+                                  {quiz.quizTitle || quiz.title || 'Untitled quiz'}
+                                </div>
+                                <div className="text-muted-foreground text-xs">
+                                  Avg <span className="font-semibold">{avgRaw.toFixed(1)}</span>
+                                  {questionsCount > 0 && (
+                                    <span className="text-muted-foreground">/{questionsCount}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-muted-foreground mt-2 text-xs">
+                                Participants{' '}
+                                <span className="font-semibold">
+                                  {Number(quiz.participants ?? quiz.attempts ?? 0)}
+                                </span>
+                              </div>
+                              {questionsCount > 0 && (
+                                <Progress value={progressValue} className="mt-2" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        )}
+
+          {topCourses.length > 0 && (
+            <Card>
+              <CardHeader className="gap-1">
+                <CardTitle>Top performers</CardTitle>
+                <CardDescription>Courses with the highest enrollment.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {topCourses.map((course) => (
+                  <div
+                    key={course.courseId}
+                    className="rounded-lg border bg-white/40 p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-muted-foreground text-sm">Enrollment</div>
+                        <div className="text-xl font-semibold">{course.students}</div>
+                      </div>
+                      <Badge variant="secondary">{course.averageScore.toFixed(1)}%</Badge>
+                    </div>
+                    <div className="mt-2 text-sm font-medium">{course.courseTitle}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -96,17 +96,26 @@ const Dashboard: React.FC = () => {
                 ? ({
                     id: item.course.id || item.course._id,
                     title: item.course.title || item.course.name || 'Untitled',
-                    thumbnail: item.course.thumbnail || `https://picsum.photos/seed/${item.course.id || 'course'}/640/360`,
+                    thumbnail:
+                      item.course.thumbnail ||
+                      `https://picsum.photos/seed/${item.course.id || 'course'}/640/360`,
                     category: item.course.category,
                     tags: item.course.tags || [],
-                    instructor: typeof item.course.instructor === 'string' ? item.course.instructor : (item.course.instructor?.name || item.course.instructor?.email || 'Unknown'),
+                    instructor:
+                      typeof item.course.instructor === 'string'
+                        ? item.course.instructor
+                        : item.course.instructor?.name ||
+                          item.course.instructor?.email ||
+                          'Unknown',
                     shortDescription: item.course.shortDescription || item.course.description || '',
                   } as Course)
                 : item;
 
               const extra: Partial<UserCourseProgress> = isEnrollment
                 ? { progress: item.progress, rating: item.rating }
-                : (isStudent && isAuthenticated ? stableFromId(course.id) : { progress: null, rating: null });
+                : isStudent && isAuthenticated
+                  ? stableFromId(course.id)
+                  : { progress: null, rating: null };
 
               return (
                 <CourseCard
@@ -115,7 +124,9 @@ const Dashboard: React.FC = () => {
                   showProgress={isStudent && isAuthenticated}
                   progress={extra.progress}
                   rating={extra.rating}
-                  onRate={(r) => console.log(`Rated ${course.id}:`, r)}
+                  onRate={(r) => {
+                    /* rating captured */
+                  }}
                 />
               );
             })}

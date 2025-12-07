@@ -34,7 +34,6 @@ interface Course {
 
 // --- API Functions ---
 const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
-  console.log('Fetching course:', courseId);
   const response = await api.get(`/api/lessons/course/${courseId}`);
   const lessons: Lesson[] = response.data.map((l: any) => ({
     ...l,

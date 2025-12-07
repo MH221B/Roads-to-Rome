@@ -16,4 +16,7 @@ courseRouter.get('/:id', courseController.Get);
 // POST /api/courses/:courseId/comments (requires auth)
 courseRouter.post('/:courseId/comments', authenticateToken, courseController.PostComment);
 
+// DELETE /api/courses/:courseId (requires auth & ownership/admin)
+courseRouter.delete('/:courseId', authenticateToken, courseController.Delete);
+
 export { courseRouter };

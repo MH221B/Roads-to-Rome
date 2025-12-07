@@ -1,8 +1,10 @@
 import { Quiz, IQuiz, QuizSubmission, IQuizSubmission } from '../models/quiz.model';
+import Course from '../models/course.model';
 
 interface IQuizService {
   getAllQuizzes(): Promise<IQuiz[]>;
   getQuizById(id: string): Promise<IQuiz | null>;
+  getQuizzesByInstructor(instructorId: string): Promise<IQuiz[]>;
   createQuiz(quizData: Partial<IQuiz>): Promise<IQuiz>;
   submitQuiz(
     quizId: string,
@@ -36,6 +38,7 @@ const quizService: IQuizService = {
       throw new Error('Error retrieving quizzes, message: ' + (error as Error).message);
     }
   },
+
   async getQuizById(id: string) {
     try {
       return await Quiz.findById(id);
@@ -43,6 +46,19 @@ const quizService: IQuizService = {
       throw new Error('Error retrieving quiz, message: ' + (error as Error).message);
     }
   },
+
+  async getQuizzesByInstructor(instructorId: string) {
+    try {
+      const courses = await Course.find({ instructor: instructorId }).select('_id').lean().exec();
+      const courseIds = courses.map((course) => course._id);
+      return await Quiz.find({ courseId: { $in: courseIds } });
+    } catch (error) {
+      throw new Error(
+        'Error retrieving quizzes by instructor, message: ' + (error as Error).message
+      );
+    }
+  },
+
   async createQuiz(quizData: Partial<IQuiz>) {
     try {
       const quiz = new Quiz(quizData);

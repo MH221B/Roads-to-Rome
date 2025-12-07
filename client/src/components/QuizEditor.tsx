@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -117,15 +117,17 @@ async function updateQuiz(quizId: string, payload: QuizFormValues) {
 }
 
 export default function QuizEditor() {
-  const { id: quizId } = useParams<{ quizId: string }>();
+  // Support both '/quizzes/:id/edit' and '/quizzes/:quizId' param shapes
+  const params = useParams<{ id?: string; quizId?: string }>();
+  const quizId = params.quizId ?? params.id ?? '';
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
-  const [currentCourseTitle, setCurrentCourseTitle] = useState<string | null>(null);
   const instructorId = useMemo(() => {
     const payload = decodeJwtPayload(accessToken);
     const id = payload?.userId ?? '';
     return id ? String(id) : '';
   }, [accessToken]);
+  // remove direct DOM manipulation and rely on controlled form state (setValue)
 
   const {
     control,
@@ -170,16 +172,21 @@ export default function QuizEditor() {
   const lessonsQuery = useQuery({
     queryKey: ['quiz-lessons', effectiveCourseId],
     queryFn: () => fetchLessons(effectiveCourseId),
-    enabled: !!effectiveCourseId,
+    enabled: !!effectiveCourseId && targetType === 'lesson',
     staleTime: 5 * 60 * 1000,
   });
 
+  // Debugging removed: previously logged query states for development troubleshooting.
+
   useEffect(() => {
-    if (!quizQuery.data || !coursesQuery.data) return;
+    if (!quizQuery.data || !coursesQuery.data || !quizQuery.data.courseId) return;
     const quiz = quizQuery.data;
     const courses = coursesQuery.data;
+    // debugging removed: do not print course lists in production
     const course = courses.find((c) => c.id === quiz.courseId);
+    // debugging removed: do not print found course in production
     if (instructorId != course?.instructor) {
+      // debugging removed: do not log instructor IDs
       Swal.fire({
         icon: 'error',
         title: 'Unauthorized',
@@ -189,11 +196,9 @@ export default function QuizEditor() {
       //   window.location.href = '/dashboard'; // Redirect to dashboard or another appropriate page
       // });
     }
-    setCurrentCourseTitle(() => {
-      const courses = coursesQuery.data?.find((c) => c.id === quizQuery.data?.courseId);
-      return course ? course.title : null;
-    });
-  }, [quizQuery.data, coursesQuery.data, instructorId]);
+    // Ensure the form value for courseId is set to the quiz' course ID so lessonsQuery becomes enabled
+    setValue('courseId', quiz.courseId);
+  }, [quizQuery.data, coursesQuery.data, instructorId, setValue]);
 
   useEffect(() => {
     if (!quizQuery.data) return;
@@ -212,6 +217,14 @@ export default function QuizEditor() {
       setValue('lessonId', '');
     }
   }, [targetType, setValue]);
+
+  // When the instructor loads a list of courses and no course is selected (creating new quiz),
+  // choose the first course as default so lessons load automatically.
+  useEffect(() => {
+    if (coursesQuery.isSuccess && !courseId && coursesQuery.data?.length) {
+      setValue('courseId', coursesQuery.data[0].id);
+    }
+  }, [coursesQuery.isSuccess, coursesQuery.data, courseId, setValue]);
 
   const updateMutation = useMutation({
     mutationFn: (payload: QuizFormValues) => updateQuiz(quizId ?? '', payload),
@@ -250,23 +263,37 @@ export default function QuizEditor() {
     updateMutation.mutate(sanitized);
   };
 
-  if (quizQuery.isLoading) {
+  const needToLoadCourses = !!instructorId;
+  const initialLoading = quizQuery.isLoading || (needToLoadCourses && coursesQuery.isLoading);
+
+  if (initialLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner className="h-10 w-10" />
       </div>
     );
   }
+  const failedLoad = Boolean(quizQuery.error || !quizQuery.data);
+  const courseLoadFailed = Boolean(needToLoadCourses && (coursesQuery.error || !coursesQuery.data));
+  const lessonLoadFailed = Boolean(effectiveCourseId && (lessonsQuery.error || !lessonsQuery.data));
 
-  if (quizQuery.error || !quizQuery.data) {
+  if (failedLoad) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-muted-foreground text-center text-sm">
           Unable to load quiz.
+          {quizQuery.error && (
+            <div className="text-muted-foreground mt-2 text-xs">
+              {String(quizQuery.error?.message ?? quizQuery.error)}
+            </div>
+          )}
           <Button
             variant="link"
             className="inline-flex items-center gap-2"
-            onClick={() => quizQuery.refetch()}
+            onClick={() => {
+              quizQuery.refetch();
+              if (needToLoadCourses) coursesQuery.refetch();
+            }}
           >
             <FiRefreshCw className="h-4 w-4" /> Retry
           </Button>
@@ -275,7 +302,7 @@ export default function QuizEditor() {
     );
   }
 
-  const quiz = quizQuery.data;
+  const quiz = quizQuery.data!;
 
   return (
     <div className="bg-muted/30 min-h-screen px-4 py-10">
@@ -330,6 +357,18 @@ export default function QuizEditor() {
                       <SelectItem value="lesson">Lesson</SelectItem>
                     </SelectContent>
                   </Select>
+                  {courseLoadFailed && (
+                    <div className="flex items-start gap-2 pt-2">
+                      <p className="text-destructive text-xs">Unable to load your courses.</p>
+                      <Button
+                        variant="link"
+                        className="text-xs"
+                        onClick={() => coursesQuery.refetch()}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -340,7 +379,6 @@ export default function QuizEditor() {
                     <SelectTrigger>
                       <SelectValue
                         placeholder={coursesQuery.isLoading ? 'Loading...' : 'Select course'}
-                        value={currentCourseTitle}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -408,6 +446,20 @@ export default function QuizEditor() {
                         )}
                     </SelectContent>
                   </Select>
+                  {lessonLoadFailed && (
+                    <div className="flex items-start gap-2 pt-2">
+                      <p className="text-destructive text-xs">
+                        Unable to load lessons for this course.
+                      </p>
+                      <Button
+                        variant="link"
+                        className="text-xs"
+                        onClick={() => lessonsQuery.refetch()}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )}
                   {targetType === 'lesson' && !courseId && (
                     <p className="text-destructive text-xs">
                       Select a course first to load lessons.

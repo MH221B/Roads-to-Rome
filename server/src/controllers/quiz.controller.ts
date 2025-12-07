@@ -4,6 +4,7 @@ import quizService from '../services/quiz.service';
 interface IQuizController {
   getAllQuizzes(req: Request, res: Response): Promise<Response | void>;
   getQuizById(req: Request, res: Response): Promise<Response | void>;
+  getQuizzesByInstructor(req: Request, res: Response): Promise<Response | void>;
   createQuiz(req: Request, res: Response): Promise<Response | void>;
   submitQuiz(req: Request, res: Response): Promise<Response | void>;
   updateQuiz(req: Request, res: Response): Promise<Response | void>;
@@ -31,6 +32,17 @@ const quizController: IQuizController = {
       res.status(500).json({ message: 'Error retrieving quiz', error });
     }
   },
+
+  async getQuizzesByInstructor(req, res) {
+    try {
+      const instructorId = req.params.instructorId;
+      const quizzes = await quizService.getQuizzesByInstructor(instructorId);
+      res.status(200).json(quizzes);
+    } catch (error) {
+      res.status(500).json({ message: 'Error retrieving quizzes by instructor', error });
+    }
+  },
+
   async createQuiz(req, res) {
     try {
       const newQuiz = await quizService.createQuiz(req.body);

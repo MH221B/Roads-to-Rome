@@ -2,6 +2,7 @@ import Course from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
 import { Types } from 'mongoose';
+import Role from '../enums/user.enum';
 
 interface ICourseService {
   listCourses(search?: string): Promise<any[]>;
@@ -14,6 +15,7 @@ interface ICourseService {
     userName?: string
   ): Promise<any>;
   listCoursesByInstructor(instructorId: string): Promise<any[]>;
+  deleteCourse(userId: string, userRole: Role, courseId: string): Promise<boolean>;
 }
 
 const courseService: ICourseService = {
@@ -142,6 +144,19 @@ const courseService: ICourseService = {
       rating: populated?.rating,
       content: populated?.content,
     };
+  },
+  async deleteCourse(userId: string, userRole: Role, courseId: string): Promise<boolean> {
+    if (!userId) return false;
+
+    const course = await Course.findById(courseId).exec();
+    if (!course) return false;
+
+    // Only the course instructor or an admin can delete the course
+    if (String(course.instructor) !== userId && userRole !== Role.ADMIN) {
+      return false;
+    }
+    const result = await Course.deleteOne({ _id: courseId }).exec();
+    return result.deletedCount === 1;
   },
 };
 

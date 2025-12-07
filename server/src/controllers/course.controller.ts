@@ -59,6 +59,24 @@ const courseController = {
       res.status(500).json({ error: (error as Error).message });
     }
   },
+
+  async Delete(req: Request, res: Response) {
+    try {
+      const { courseId } = req.params as any;
+
+      // If authentication middleware sets req.user, use it
+      const userId = (req as any).user?.id as string | '';
+      const userRole = (req as any).user?.role;
+
+      const deleted = await courseService.deleteCourse(userId, userRole, courseId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Course not found or not authorized' });
+      }
+      res.status(200).json({ message: 'Course deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
 };
 
 export default courseController;
