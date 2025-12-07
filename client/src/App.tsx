@@ -12,6 +12,7 @@ import CourseList from './components/CourseList';
 import CourseDetail from '@/components/CourseDetail';
 import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
+import CreateLesson from '@/components/CreateLesson';
 import CreateCourse from './components/CreateCourse';
 import EditCourse from './components/EditCourse';
 import QuizPage from './components/QuizPage';
@@ -39,6 +40,7 @@ function App() {
           <Route path="/courses/:id/edit" element={<EditCourse />} />
           <Route path="/enrolment" element={<Enrolment />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/courses/:courseId/lessons/create" element={<CreateLesson />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />
           <Route
             path="/admin"

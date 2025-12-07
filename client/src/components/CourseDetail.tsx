@@ -322,7 +322,20 @@ export default function CourseDetail() {
 
             {/* Course Content / Lessons */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Course Content</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Course Content</h2>
+                {/** allow owners, editors or admins to create lessons */}
+                {(isInstructorOwner || roles.includes('EDITOR') || roles.includes('ADMIN')) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/courses/${id}/lessons/create`)}
+                  >
+                    Create Lesson
+                  </Button>
+                )}
+              </div>
+
               <div className="text-muted-foreground mb-4 text-sm">
                 {course.lessons?.length || 0} lessons
               </div>
