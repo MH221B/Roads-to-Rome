@@ -10,9 +10,14 @@ import { cn } from '@/lib/utils';
 interface ReviewFormProps {
   onSubmit?: (data: { rating: number; content: string }) => void;
   submitting?: boolean;
+  readOnly?: boolean;
 }
 
-const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, submitting = false }) => {
+const ReviewForm: React.FC<ReviewFormProps> = ({
+  onSubmit,
+  submitting = false,
+  readOnly = false,
+}) => {
   const {
     register,
     handleSubmit,
@@ -27,7 +32,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, submitting = false })
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   const handleFormSubmit = (data: { rating: number; content: string }) => {
-    onSubmit?.(data);
+    if (!readOnly) onSubmit?.(data);
   };
 
   return (
@@ -63,9 +68,15 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, submitting = false })
                     key={star}
                     type="button"
                     className="p-1 transition-transform hover:scale-110 focus:outline-none"
-                    onMouseEnter={() => setHoveredStar(star)}
-                    onMouseLeave={() => setHoveredStar(null)}
-                    onClick={() => setValue('rating', star, { shouldValidate: true })}
+                    onMouseEnter={readOnly ? undefined : () => setHoveredStar(star)}
+                    onMouseLeave={readOnly ? undefined : () => setHoveredStar(null)}
+                    onClick={
+                      readOnly
+                        ? undefined
+                        : () => setValue('rating', star, { shouldValidate: true })
+                    }
+                    disabled={readOnly}
+                    aria-disabled={readOnly}
                   >
                     <FaStar
                       className={cn(
@@ -92,7 +103,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, submitting = false })
               id="content"
               placeholder="Tell us what you liked or what we can do better..."
               {...register('content', { required: 'Please leave a comment' })}
-              className="min-h-[140px] resize-none rounded-xl border-slate-200 bg-slate-50 p-4 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-transparent focus:bg-white focus:ring-2 focus:ring-slate-900"
+              className={`min-h-[140px] resize-none rounded-xl border-slate-200 bg-slate-50 p-4 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-transparent focus:bg-white focus:ring-2 focus:ring-slate-900 ${
+                readOnly ? 'pointer-events-none opacity-70' : ''
+              }`}
+              readOnly={readOnly}
+              disabled={readOnly}
             />
             {errors.content && (
               <p className="text-xs font-medium text-red-500">{errors.content.message as string}</p>
@@ -103,9 +118,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, submitting = false })
             type="submit"
             size="lg"
             className="w-full rounded-xl bg-slate-900 text-lg font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-lg"
-            disabled={submitting || isSubmitting}
+            disabled={submitting || isSubmitting || readOnly}
           >
-            {submitting || isSubmitting ? 'Posting...' : 'Post Review'}
+            {readOnly
+              ? 'Preview — Read Only'
+              : submitting || isSubmitting
+                ? 'Posting...'
+                : 'Post Review'}
           </Button>
         </form>
       </CardContent>

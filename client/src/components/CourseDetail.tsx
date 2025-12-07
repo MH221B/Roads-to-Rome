@@ -16,7 +16,8 @@ import {
   FaUnlock,
 } from 'react-icons/fa';
 import ReviewForm from './ReviewForm';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthProvider';
 import HeaderComponent from './HeaderComponent';
 
 // Types based on the provided database design
@@ -139,6 +140,27 @@ export default function CourseDetail() {
   const queryClient = useQueryClient();
   const [isEnrollLoading, setIsEnrollLoading] = useState(false);
 
+  const { accessToken } = useAuth();
+  const payload = useMemo(() => {
+    if (!accessToken) return null;
+    try {
+      const parts = accessToken.split('.');
+      if (parts.length < 2) return null;
+      const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  }, [accessToken]);
+
+  const rawRoles = payload?.roles ?? payload?.role;
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
+
+  const currentUserId =
+    payload?.sub ?? payload?.id ?? payload?.userId ?? (payload?.user && payload.user.id) ?? null;
+
   const {
     data: course,
     isLoading,
@@ -148,6 +170,14 @@ export default function CourseDetail() {
     queryFn: () => fetchCourse(id!),
     enabled: !!id,
   });
+
+  const isInstructorOwner = Boolean(
+    roles.includes('INSTRUCTOR') &&
+      currentUserId &&
+      // course may provide joined instructor object or instructor_id field
+      course &&
+      String(currentUserId) === String(course.instructor?.id ?? (course as any).instructor_id)
+  );
 
   const {
     register,
@@ -298,23 +328,32 @@ export default function CourseDetail() {
               </div>
               <Card>
                 <div className="divide-y">
-                  {course.lessons?.map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-slate-50"
-                      onClick={() => navigate(`/courses/${id}/lessons/${lesson.id}`)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FaPlayCircle className="h-5 w-5 text-slate-400" />
-                        <span className="font-medium">{lesson.title}</span>
+                  {course.lessons?.map((lesson) => {
+                    const clickable = !isInstructorOwner;
+                    return (
+                      <div
+                        key={lesson.id}
+                        className={`flex ${clickable ? 'cursor-pointer' : 'cursor-default'} items-center justify-between p-4 transition-colors ${
+                          clickable ? 'hover:bg-slate-50' : ''
+                        }`}
+                        onClick={
+                          clickable
+                            ? () => navigate(`/courses/${id}/lessons/${lesson.id}`)
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <FaPlayCircle className="h-5 w-5 text-slate-400" />
+                          <span className="font-medium">{lesson.title}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-muted-foreground rounded border px-2 py-0.5 text-xs uppercase">
+                            {lesson.content_type}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-muted-foreground rounded border px-2 py-0.5 text-xs uppercase">
-                          {lesson.content_type}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             </div>
@@ -350,6 +389,7 @@ export default function CourseDetail() {
                   (commentMutation.status as string) === 'pending' ||
                   (commentMutation.status as string) === 'loading'
                 }
+                readOnly={isInstructorOwner}
               />
 
               {/* Reviews List */}
@@ -411,9 +451,11 @@ export default function CourseDetail() {
                     <Button
                       className="h-12 w-full text-lg font-bold"
                       onClick={handleEnroll}
-                      disabled={isEnrollLoading}
+                      disabled={isEnrollLoading || isInstructorOwner}
                     >
-                      {isEnrollLoading ? (
+                      {isInstructorOwner ? (
+                        'Owner — View Only'
+                      ) : isEnrollLoading ? (
                         <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
                         'Enroll Now'
