@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthProvider';
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaEye, FaEyeSlash } from 'react-icons/fa';
 import {
   Card,
   CardAction,
@@ -25,6 +26,7 @@ type FormValues = {
 
 const LoginCard = () => {
   const navigate = useNavigate();
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -100,14 +102,29 @@ const LoginCard = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                  })}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    className="pr-12"
+                    {...register('password', {
+                      required: 'Password is required',
+                      minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                    })}
+                  />
+                  <button
+                    type="button"
+                    aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                    onClick={() => setPasswordVisible((v) => !v)}
+                    className="absolute top-1/2 right-2 z-20 -translate-y-1/2 bg-transparent text-gray-500 hover:text-gray-700"
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="h-4 w-4" />
+                    ) : (
+                      <FaEye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-sm text-red-500">{(errors.password as any)?.message}</p>
                 )}

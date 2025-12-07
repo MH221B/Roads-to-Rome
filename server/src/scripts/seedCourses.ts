@@ -12,8 +12,9 @@ const mockCourses = [
     thumbnail: 'https://picsum.photos/seed/modern-react-patterns/640/360',
     category: 'Web Development',
     tags: ['react', 'components', 'performance'],
-    instructor: 'Aisha Khan',
-    shortDescription: 'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
+    // no instructor id available in seed; leave as null
+    shortDescription:
+      'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
     difficulty: 'Intermediate',
   },
   {
@@ -21,7 +22,7 @@ const mockCourses = [
     thumbnail: 'https://picsum.photos/seed/typescript-deep-dive/640/360',
     category: 'Programming',
     tags: ['typescript', 'nodejs'],
-    instructor: 'Marcus Lee',
+    // no instructor id available in seed; leave as null
     shortDescription: 'Master TypeScript features and typing strategies for real-world codebases.',
     difficulty: 'Advanced',
   },
@@ -30,8 +31,9 @@ const mockCourses = [
     thumbnail: 'https://picsum.photos/seed/design-systems/640/360',
     category: 'UI/UX',
     tags: ['design', 'components'],
-    instructor: 'Clara Romano',
-    shortDescription: 'Learn how to create and maintain a robust design system that teams can trust.',
+    // no instructor id available in seed; leave as null
+    shortDescription:
+      'Learn how to create and maintain a robust design system that teams can trust.',
     difficulty: 'Beginner',
   },
 ];

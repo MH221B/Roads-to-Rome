@@ -4,20 +4,16 @@ import HomePage from '@/components/HomePage';
 import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
 import RequireAuth from '@/components/RequireAuth';
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Dashboard from './components/Dashboard';
-
-// Your addition
 import CourseList from './components/CourseList';
-
-// Teammate additions
 import CourseDetail from '@/components/CourseDetail';
 import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
+import CreateCourse from './components/CreateCourse';
+import EditCourse from './components/EditCourse';
 import QuizPage from './components/QuizPage';
 
 function App() {
@@ -39,6 +35,8 @@ function App() {
             }
           />
           <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses/create" element={<CreateCourse />} />
+          <Route path="/courses/:id/edit" element={<EditCourse />} />
           <Route path="/enrolment" element={<Enrolment />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />

@@ -1,16 +1,24 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { api } from "@/services/axiosClient";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FaSpinner, FaStar, FaBookOpen, FaUsers, FaPlayCircle, FaLock, FaUnlock } from "react-icons/fa";
-import { useState } from "react";
-import HeaderComponent from "./HeaderComponent";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { api } from '@/services/axiosClient';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import {
+  FaSpinner,
+  FaStar,
+  FaBookOpen,
+  FaUsers,
+  FaPlayCircle,
+  FaLock,
+  FaUnlock,
+} from 'react-icons/fa';
+import ReviewForm from './ReviewForm';
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthProvider';
+import HeaderComponent from './HeaderComponent';
 
 // Types based on the provided database design
 interface User {
@@ -47,6 +55,7 @@ interface Course {
   status: string;
   lessons: Lesson[]; // Joined data
   comments: Comment[]; // Joined data
+  image?: string;
 }
 
 interface CommentFormData {
@@ -61,31 +70,58 @@ const fetchCourse = async (courseId: string) => {
     // Normalize lesson and comment shapes expected by this component
     const lessons = (data.lessons || []).map((l: any) => ({
       id: l.id || l._id || String(l.id || l._id),
-      course_id: l.course_id || l.courseId || String(data.id),
+      course_id: l.course_id || l.courseId || String((data as any).id || (data as any)._id),
       title: l.title,
-      content_type: l.content_type || l.contentType || (l.content_type ? l.content_type : undefined),
+      content_type:
+        l.content_type || l.contentType || (l.content_type ? l.content_type : undefined),
       content: l.content,
     }));
 
     const comments = (data.comments || []).map((c: any) => ({
       id: c.id || c._id,
-      course_id: c.course_id || c.courseId || String(data.id),
-      user: c.user || (c.userId ? { id: c.userId._id || c.userId, name: c.userId.name || c.userId.email || c.userName || 'Anonymous', email: c.userId.email || null, role: 'student' } : { id: null, name: c.userName || 'Anonymous', email: null, role: 'student' }),
+      course_id: c.course_id || c.courseId || String((data as any).id || (data as any)._id),
+      user:
+        c.user ||
+        (c.userId
+          ? {
+              id: c.userId._id || c.userId,
+              name: c.userId.name || c.userId.email || c.userName || 'Anonymous',
+              email: c.userId.email || null,
+              role: 'student',
+            }
+          : { id: null, name: c.userName || 'Anonymous', email: null, role: 'student' }),
       rating: c.rating,
       content: c.content,
     }));
 
-    const instructor = data.instructor || { id: data.instructor_id || null, name: (data as any).instructor?.name || (data as any).instructor || 'Unknown Instructor', email: (data as any).instructor?.email || null };
+    const instructor = data.instructor || {
+      id: data.instructor_id || null,
+      name: (data as any).instructor?.name || (data as any).instructor || 'Unknown Instructor',
+      email: (data as any).instructor?.email || null,
+    };
 
-    return {
+    // Map backend fields to frontend-friendly names
+    const normalized = {
       ...data,
+      id: (data as any).id || (data as any)._id || undefined,
+      title: data.title || (data as any).name || '',
+      description: (data as any).description ?? (data as any).shortDescription ?? '',
+      level: (data as any).level ?? (data as any).difficulty ?? 'Beginner',
+      is_premium:
+        (data as any).is_premium ?? (data as any).isPremium ?? (data as any).premium ?? false,
+      status: (data as any).status ?? (data as any).state ?? 'published',
+      // Try a few common image field names coming from different backends
+      image: (data as any).thumbnail || null,
       lessons,
       comments,
       instructor,
     } as Course;
+    console.log('Fetched course data:', normalized);
+    return normalized;
   } catch (err) {
     console.error('Error fetching course data:', err);
-  } 
+    throw err;
+  }
 };
 
 const postComment = async ({ courseId, data }: { courseId: string; data: CommentFormData }) => {
@@ -104,18 +140,56 @@ export default function CourseDetail() {
   const queryClient = useQueryClient();
   const [isEnrollLoading, setIsEnrollLoading] = useState(false);
 
-  const { data: course, isLoading, error } = useQuery({
-    queryKey: ["course", id],
+  const { accessToken } = useAuth();
+  const payload = useMemo(() => {
+    if (!accessToken) return null;
+    try {
+      const parts = accessToken.split('.');
+      if (parts.length < 2) return null;
+      const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  }, [accessToken]);
+
+  const rawRoles = payload?.roles ?? payload?.role;
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
+
+  const currentUserId =
+    payload?.sub ?? payload?.id ?? payload?.userId ?? (payload?.user && payload.user.id) ?? null;
+
+  const {
+    data: course,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['course', id],
     queryFn: () => fetchCourse(id!),
     enabled: !!id,
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CommentFormData>();
+  const isInstructorOwner = Boolean(
+    roles.includes('INSTRUCTOR') &&
+      currentUserId &&
+      // course may provide joined instructor object or instructor_id field
+      course &&
+      String(currentUserId) === String(course.instructor?.id ?? (course as any).instructor_id)
+  );
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CommentFormData>();
 
   const commentMutation = useMutation({
     mutationFn: (data: CommentFormData) => postComment({ courseId: id!, data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["course", id] });
+      queryClient.invalidateQueries({ queryKey: ['course', id] });
       reset();
     },
   });
@@ -130,9 +204,9 @@ export default function CourseDetail() {
     try {
       await enrollCourse(course.id);
       // Navigate to dashboard or show success
-      navigate("/dashboard");
+      navigate('/dashboard');
     } catch (err) {
-      console.error("Enrollment failed", err);
+      console.error('Enrollment failed', err);
     } finally {
       setIsEnrollLoading(false);
     }
@@ -140,56 +214,75 @@ export default function CourseDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <FaSpinner className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center">
+        <FaSpinner className="text-primary h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error || !course) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <h2 className="text-2xl font-bold text-destructive">Error loading course</h2>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <h2 className="text-destructive text-2xl font-bold">Error loading course</h2>
         <p className="text-muted-foreground">Could not find the requested course.</p>
-        <Button onClick={() => navigate("/")}>Go Home</Button>
+        <Button onClick={() => navigate('/')}>Go Home</Button>
       </div>
     );
   }
 
   // Calculate average rating
   const comments = course.comments || [];
-  const averageRating = comments.length > 0
-    ? comments.reduce((acc, curr) => acc + curr.rating, 0) / comments.length
-    : 0;
+  const averageRating =
+    comments.length > 0
+      ? comments.reduce((acc, curr) => acc + curr.rating, 0) / comments.length
+      : 0;
+
+  // Instructor initials for the avatar
+  const instructorInitials = (() => {
+    const name = course.instructor?.name || '';
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length === 0) return 'IN';
+    return parts
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  })();
 
   return (
-    <div className="min-h-screen bg-background pb-10">
+    <div className="bg-background min-h-screen pb-10">
       <HeaderComponent />
       {/* Header / Hero Section */}
-      <div className="bg-slate-900 text-white py-10">
-        <div className="container mx-auto px-4 lg:px-8 flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-2/3 space-y-4">
+      <div className="bg-slate-900 py-10 text-white">
+        <div className="container mx-auto flex flex-col gap-8 px-4 lg:flex-row lg:px-8">
+          <div className="space-y-4 lg:w-2/3">
             <div className="flex items-center gap-2 text-sm text-slate-300">
               <Badge variant="secondary" className="text-xs uppercase">
                 {course.level}
               </Badge>
               {course.is_premium ? (
-                <Badge variant="default" className="bg-yellow-600 hover:bg-yellow-700 text-white">Premium</Badge>
+                <Badge variant="default" className="bg-yellow-600 text-white">
+                  Premium
+                </Badge>
               ) : (
-                <Badge variant="secondary" className="bg-green-600 hover:bg-green-700 text-white">Free</Badge>
+                <Badge variant="secondary" className="bg-green-600 text-white">
+                  Free
+                </Badge>
               )}
-              <Badge variant="outline" className="text-slate-300 border-slate-500">{course.status}</Badge>
+              <Badge variant="outline" className="border-slate-500 text-slate-300">
+                {course.status}
+              </Badge>
             </div>
-            <h1 className="text-3xl lg:text-4xl font-bold">{course.title}</h1>
-            
-            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-300 mt-4">
+            <h1 className="text-3xl font-bold lg:text-4xl">{course.title}</h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-300">
               <div className="flex items-center gap-1 text-yellow-400">
                 <span className="font-bold">{averageRating.toFixed(1)}</span>
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
                     <FaStar
                       key={i}
-                      className={`h-4 w-4 ${i < Math.round(averageRating) ? "fill-current" : "text-slate-600"}`}
+                      className={`h-4 w-4 ${i < Math.round(averageRating) ? 'fill-current' : 'text-slate-600'}`}
                     />
                   ))}
                 </div>
@@ -201,7 +294,7 @@ export default function CourseDetail() {
               </div>
             </div>
 
-            <div className="pt-4 flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-4">
               <span className="text-slate-300">Created by</span>
               <span className="text-primary-foreground font-medium">
                 {course.instructor?.name || 'Unknown Instructor'}
@@ -211,18 +304,16 @@ export default function CourseDetail() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 lg:px-8 mt-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          
+      <div className="container mx-auto mt-8 px-4 lg:px-8">
+        <div className="flex flex-col gap-8 lg:flex-row">
           {/* Main Content */}
-          <div className="lg:w-2/3 space-y-8">
-            
+          <div className="space-y-8 lg:w-2/3">
             {/* Description */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Description</h2>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="prose max-w-none text-sm text-muted-foreground whitespace-pre-line">
+                <CardContent className="p-6 md:p-8">
+                  <div className="text-muted-foreground max-w-none text-base leading-relaxed whitespace-pre-line">
                     {course.description}
                   </div>
                 </CardContent>
@@ -232,24 +323,37 @@ export default function CourseDetail() {
             {/* Course Content / Lessons */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Course Content</h2>
-              <div className="text-sm text-muted-foreground mb-4">
+              <div className="text-muted-foreground mb-4 text-sm">
                 {course.lessons?.length || 0} lessons
               </div>
               <Card>
                 <div className="divide-y">
-                  {course.lessons?.map((lesson) => (
-                    <div key={lesson.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/courses/${id}/lessons/${lesson.id}`)}>
-                      <div className="flex items-center gap-3">
-                        <FaPlayCircle className="h-5 w-5 text-slate-400" />
-                        <span className="font-medium">{lesson.title}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-muted-foreground uppercase text-xs border px-2 py-0.5 rounded">
+                  {course.lessons?.map((lesson) => {
+                    const clickable = !isInstructorOwner;
+                    return (
+                      <div
+                        key={lesson.id}
+                        className={`flex ${clickable ? 'cursor-pointer' : 'cursor-default'} items-center justify-between p-4 transition-colors ${
+                          clickable ? 'hover:bg-slate-50' : ''
+                        }`}
+                        onClick={
+                          clickable
+                            ? () => navigate(`/courses/${id}/lessons/${lesson.id}`)
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <FaPlayCircle className="h-5 w-5 text-slate-400" />
+                          <span className="font-medium">{lesson.title}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-muted-foreground rounded border px-2 py-0.5 text-xs uppercase">
                             {lesson.content_type}
-                        </span>
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             </div>
@@ -258,122 +362,121 @@ export default function CourseDetail() {
             <div id="instructor" className="space-y-4">
               <h2 className="text-2xl font-bold">Instructor</h2>
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg text-primary">{course.instructor?.name || 'Unknown Instructor'}</CardTitle>
-                  <CardDescription>{course.instructor?.email || 'No email provided'}</CardDescription>
+                <CardHeader className="flex items-center gap-6">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl font-semibold text-slate-700">
+                    {instructorInitials}
+                  </div>
+                  <div>
+                    <CardTitle className="text-primary text-lg">
+                      {course.instructor?.name || 'Unknown Instructor'}
+                    </CardTitle>
+                    <CardDescription>
+                      {course.instructor?.email || 'No email provided'}
+                    </CardDescription>
+                  </div>
                 </CardHeader>
-                <CardContent className="flex gap-4">
-                  <div className="h-16 w-16 rounded-full bg-slate-200 shrink-0 flex items-center justify-center text-slate-400">
-                     <FaUsers className="h-8 w-8" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                        Instructor for this course.
-                    </p>
-                  </div>
-                </CardContent>
               </Card>
             </div>
 
             {/* Reviews / Comments Section */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Reviews</h2>
-              
-              {/* Review Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Leave a Review</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit(onSubmitComment)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rating">Rating</Label>
-                      <Input
-                        id="rating"
-                        type="number"
-                        min="1"
-                        max="5"
-                        placeholder="1-5"
-                        {...register("rating", { required: "Rating is required", min: 1, max: 5, valueAsNumber: true })}
-                        className="w-24"
-                      />
-                      {errors.rating && <p className="text-xs text-red-500">{errors.rating.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Comment</Label>
-                      <Input
-                        id="content"
-                        placeholder="Share your thoughts..."
-                        {...register("content", { required: "Comment is required" })}
-                      />
-                      {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
-                    </div>
-                    <Button type="submit" disabled={isSubmitting || commentMutation.isPending}>
-                      {isSubmitting ? "Submitting..." : "Submit Review"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+
+              <ReviewForm
+                onSubmit={onSubmitComment}
+                submitting={
+                  isSubmitting ||
+                  (commentMutation.status as string) === 'pending' ||
+                  (commentMutation.status as string) === 'loading'
+                }
+                readOnly={isInstructorOwner}
+              />
 
               {/* Reviews List */}
-              <div className="space-y-4 mt-6">
+              <div className="mt-6 space-y-4">
                 {course.comments?.map((comment) => (
                   <Card key={comment.id}>
                     <CardContent className="pt-6">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="mb-2 flex items-center justify-between">
                         <div className="font-semibold">{comment.user.name}</div>
                       </div>
-                      <div className="flex items-center mb-2">
+                      <div className="mb-2 flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <FaStar
                             key={i}
-                            className={`h-3 w-3 ${i < comment.rating ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`}
+                            className={`h-3 w-3 ${i < comment.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`}
                           />
                         ))}
                       </div>
-                      <p className="text-sm text-muted-foreground">{comment.content}</p>
+                      <p className="text-muted-foreground text-sm">{comment.content}</p>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </div>
-
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-1/3 relative">
+          <div className="relative lg:w-1/3">
             <div className="sticky top-4 space-y-4">
-              <Card className="overflow-hidden border-slate-200 shadow-lg">
-                <div className="p-1">
-                  <AspectRatio ratio={16 / 9} className="bg-slate-100 rounded-t-md overflow-hidden flex items-center justify-center">
+              <Card className="overflow-hidden border-slate-200 p-0 shadow-lg">
+                <AspectRatio
+                  ratio={16 / 9}
+                  className="flex items-center justify-center overflow-hidden bg-transparent"
+                >
+                  {course.image ? (
+                    <img
+                      src={course.image}
+                      alt={course.title}
+                      className="block h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
                     <FaBookOpen className="h-20 w-20 text-slate-300" />
-                  </AspectRatio>
-                </div>
-                <CardContent className="p-6 space-y-6">
+                  )}
+                </AspectRatio>
+                <CardContent className="space-y-6 p-6">
                   <div className="flex items-center gap-2">
                     {course.is_premium ? (
-                        <span className="text-3xl font-bold">Premium</span>
+                      <span className="text-3xl font-bold">Premium</span>
                     ) : (
-                        <span className="text-3xl font-bold text-green-600">Free</span>
+                      <span className="text-3xl font-bold text-green-600">Free</span>
                     )}
                   </div>
 
                   <div className="space-y-3">
-                    <Button className="w-full text-lg h-12 font-bold" onClick={handleEnroll} disabled={isEnrollLoading}>
-                      {isEnrollLoading ? <FaSpinner className="mr-2 h-4 w-4 animate-spin" /> : "Enroll Now"}
+                    <Button
+                      className="h-12 w-full text-lg font-bold"
+                      onClick={handleEnroll}
+                      disabled={isEnrollLoading || isInstructorOwner}
+                    >
+                      {isInstructorOwner ? (
+                        'Owner — View Only'
+                      ) : isEnrollLoading ? (
+                        <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        'Enroll Now'
+                      )}
                     </Button>
                   </div>
 
-                  <div className="space-y-2 pt-4 border-t">
-                    <h4 className="font-bold text-sm">This course includes:</h4>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                  <div className="space-y-2 border-t pt-4">
+                    <h4 className="text-sm font-bold">This course includes:</h4>
+                    <ul className="text-muted-foreground space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <FaPlayCircle className="h-4 w-4" />
                         <span>{course.lessons?.length || 0} lessons</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        {course.is_premium ? <FaLock className="h-4 w-4" /> : <FaUnlock className="h-4 w-4" />}
-                        <span>{course.is_premium ? "Premium Access" : "Open Access"}</span>
+                        {course.is_premium ? (
+                          <FaLock className="h-4 w-4" />
+                        ) : (
+                          <FaUnlock className="h-4 w-4" />
+                        )}
+                        <span>{course.is_premium ? 'Premium Access' : 'Open Access'}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <FaUsers className="h-4 w-4" />
@@ -385,7 +488,6 @@ export default function CourseDetail() {
               </Card>
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Card,
@@ -20,7 +21,7 @@ type Course = {
   tags: string[];
   /** e.g. 'Beginner' | 'Intermediate' | 'Advanced' */
   difficulty?: string | null;
-  instructor: string;
+  instructor: string | { id: string | null; name: string };
   shortDescription: string;
 };
 
@@ -92,8 +93,28 @@ const CourseCard: React.FC<Props> = ({
   rating = null,
   onRate,
 }) => {
+  const navigate = useNavigate();
+
+  const handleNavigate = (e: React.MouseEvent | React.KeyboardEvent) => {
+    // If the click/keyboard event originated from an interactive element, don't navigate
+    const target = (e as React.MouseEvent).target as HTMLElement | null;
+    if (target) {
+      if (target.closest('button') || target.closest('a')) return;
+    }
+
+    navigate(`/courses/${course.id}`);
+  };
+
   return (
-    <Card className="flex h-auto flex-col gap-2 overflow-hidden p-0">
+    <Card
+      onClick={handleNavigate}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') handleNavigate(e);
+      }}
+      tabIndex={0}
+      role="button"
+      className="flex h-auto cursor-pointer flex-col gap-2 overflow-hidden p-0 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+    >
       <AspectRatio ratio={16 / 9}>
         <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
       </AspectRatio>
@@ -103,7 +124,9 @@ const CourseCard: React.FC<Props> = ({
           <div>
             <CardTitle className="leading-tight">{course.title}</CardTitle>
             <CardDescription className="text-muted-foreground mt-1 text-sm">
-              {course.instructor}
+              {typeof course.instructor === 'string'
+                ? course.instructor
+                : ((course.instructor as any)?.name ?? '')}
             </CardDescription>
           </div>
           {course.difficulty && (
@@ -115,7 +138,18 @@ const CourseCard: React.FC<Props> = ({
       </CardHeader>
 
       <CardContent className="p-0 px-3 py-0">
-        <div className="text-muted-foreground text-sm">{course.shortDescription}</div>
+        <div
+          className="text-muted-foreground text-sm"
+          style={{
+            display: '-webkit-box' as any,
+            WebkitLineClamp: 3 as any,
+            WebkitBoxOrient: 'vertical' as any,
+            overflow: 'hidden',
+          }}
+          title={course.shortDescription}
+        >
+          {course.shortDescription}
+        </div>
       </CardContent>
 
       <CardFooter className="mt-auto p-0 px-3 pt-2 pb-5">

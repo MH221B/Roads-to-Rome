@@ -8,6 +8,8 @@ const testUser = {
   email: 'test@example.com',
   password: 'password123',
   role: 'student',
+  username: 'testuser',
+  fullName: 'Test User',
 };
 
 const registerTestUser = () => request(app).post('/api/auth/register').send(testUser);
@@ -126,6 +128,12 @@ describe('Auth Routes', () => {
             },
           ],
         });
+
+      // mock the profile fetch (login + name) so created user has username/fullName
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ login: 'gituser', name: 'Git User' }),
+      });
 
       vi.stubGlobal('fetch', fetchMock);
 
