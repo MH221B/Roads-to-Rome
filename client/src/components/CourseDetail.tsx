@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   FaSpinner,
@@ -17,6 +18,7 @@ import {
   FaLock,
   FaUnlock,
 } from 'react-icons/fa';
+import ReviewForm from './ReviewForm';
 import { useState } from 'react';
 import HeaderComponent from './HeaderComponent';
 
@@ -55,6 +57,7 @@ interface Course {
   status: string;
   lessons: Lesson[]; // Joined data
   comments: Comment[]; // Joined data
+  image?: string;
 }
 
 interface CommentFormData {
@@ -109,6 +112,8 @@ const fetchCourse = async (courseId: string) => {
       is_premium:
         (data as any).is_premium ?? (data as any).isPremium ?? (data as any).premium ?? false,
       status: (data as any).status ?? (data as any).state ?? 'published',
+      // Try a few common image field names coming from different backends
+      image: (data as any).thumbnail || null,
       lessons,
       comments,
       instructor,
@@ -205,6 +210,18 @@ export default function CourseDetail() {
       ? comments.reduce((acc, curr) => acc + curr.rating, 0) / comments.length
       : 0;
 
+  // Instructor initials for the avatar
+  const instructorInitials = (() => {
+    const name = course.instructor?.name || '';
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length === 0) return 'IN';
+    return parts
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  })();
+
   return (
     <div className="bg-background min-h-screen pb-10">
       <HeaderComponent />
@@ -268,8 +285,8 @@ export default function CourseDetail() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Description</h2>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="prose text-muted-foreground max-w-none text-sm whitespace-pre-line">
+                <CardContent className="p-6 md:p-8">
+                  <div className="text-muted-foreground max-w-none text-base leading-relaxed whitespace-pre-line">
                     {course.description}
                   </div>
                 </CardContent>
@@ -309,22 +326,19 @@ export default function CourseDetail() {
             <div id="instructor" className="space-y-4">
               <h2 className="text-2xl font-bold">Instructor</h2>
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-primary text-lg">
-                    {course.instructor?.name || 'Unknown Instructor'}
-                  </CardTitle>
-                  <CardDescription>
-                    {course.instructor?.email || 'No email provided'}
-                  </CardDescription>
+                <CardHeader className="flex items-center gap-6">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl font-semibold text-slate-700">
+                    {instructorInitials}
+                  </div>
+                  <div>
+                    <CardTitle className="text-primary text-lg">
+                      {course.instructor?.name || 'Unknown Instructor'}
+                    </CardTitle>
+                    <CardDescription>
+                      {course.instructor?.email || 'No email provided'}
+                    </CardDescription>
+                  </div>
                 </CardHeader>
-                <CardContent className="flex gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-400">
-                    <FaUsers className="h-8 w-8" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground text-sm">Instructor for this course.</p>
-                  </div>
-                </CardContent>
               </Card>
             </div>
 
@@ -332,57 +346,14 @@ export default function CourseDetail() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Reviews</h2>
 
-              {/* Review Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Leave a Review</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit(onSubmitComment)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rating">Rating</Label>
-                      <Input
-                        id="rating"
-                        type="number"
-                        min={1}
-                        max={5}
-                        placeholder="1-5"
-                        {...register('rating', {
-                          required: 'Rating is required',
-                          valueAsNumber: true,
-                          min: { value: 1, message: 'Minimum rating is 1' },
-                          max: { value: 5, message: 'Maximum rating is 5' },
-                        })}
-                        className="w-24"
-                      />
-                      {errors.rating && (
-                        <p className="text-xs text-red-500">{errors.rating.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="content">Comment</Label>
-                      <Input
-                        id="content"
-                        placeholder="Share your thoughts..."
-                        {...register('content', { required: 'Comment is required' })}
-                      />
-                      {errors.content && (
-                        <p className="text-xs text-red-500">{errors.content.message}</p>
-                      )}
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={
-                        isSubmitting ||
-                        commentMutation.status === 'pending' ||
-                        (commentMutation.status as string) === 'loading'
-                      }
-                    >
-                      {isSubmitting ? 'Submitting...' : 'Submit Review'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+              <ReviewForm
+                onSubmit={onSubmitComment}
+                submitting={
+                  isSubmitting ||
+                  (commentMutation.status as string) === 'pending' ||
+                  (commentMutation.status as string) === 'loading'
+                }
+              />
 
               {/* Reviews List */}
               <div className="mt-6 space-y-4">
@@ -411,15 +382,25 @@ export default function CourseDetail() {
           {/* Sidebar */}
           <div className="relative lg:w-1/3">
             <div className="sticky top-4 space-y-4">
-              <Card className="overflow-hidden border-slate-200 shadow-lg">
-                <div className="p-1">
-                  <AspectRatio
-                    ratio={16 / 9}
-                    className="flex items-center justify-center overflow-hidden rounded-t-md bg-slate-100"
-                  >
+              <Card className="overflow-hidden border-slate-200 p-0 shadow-lg">
+                <AspectRatio
+                  ratio={16 / 9}
+                  className="flex items-center justify-center overflow-hidden bg-transparent"
+                >
+                  {course.image ? (
+                    <img
+                      src={course.image}
+                      alt={course.title}
+                      className="block h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
                     <FaBookOpen className="h-20 w-20 text-slate-300" />
-                  </AspectRatio>
-                </div>
+                  )}
+                </AspectRatio>
                 <CardContent className="space-y-6 p-6">
                   <div className="flex items-center gap-2">
                     {course.is_premium ? (
