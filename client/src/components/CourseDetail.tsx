@@ -6,9 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   FaSpinner,
   FaStar,
@@ -234,11 +231,11 @@ export default function CourseDetail() {
                 {course.level}
               </Badge>
               {course.is_premium ? (
-                <Badge variant="default" className="bg-yellow-600 text-white hover:bg-yellow-700">
+                <Badge variant="default" className="bg-yellow-600 text-white">
                   Premium
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="bg-green-600 text-white hover:bg-green-700">
+                <Badge variant="secondary" className="bg-green-600 text-white">
                   Free
                 </Badge>
               )}

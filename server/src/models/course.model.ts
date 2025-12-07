@@ -10,6 +10,8 @@ export interface ICourse extends Document {
   instructor?: Types.ObjectId | null;
   shortDescription?: string;
   difficulty?: string | null;
+  is_premium?: boolean;
+  status?: string;
 }
 
 const CourseSchema: Schema = new Schema(
@@ -21,6 +23,8 @@ const CourseSchema: Schema = new Schema(
     instructor: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     shortDescription: { type: String },
     difficulty: { type: String, default: null },
+    is_premium: { type: Boolean, default: false },
+    status: { type: String, default: 'published' },
   },
   { timestamps: true }
 );
