@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/axiosClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,8 @@ interface CreateCourseFormValues {
   difficulty: string;
   tags: string[];
   thumbnail: File | null;
+  is_premium?: boolean;
+  status?: string;
 }
 
 const CreateCourse: React.FC = () => {
@@ -56,6 +59,8 @@ const CreateCourse: React.FC = () => {
       difficulty: 'beginner',
       tags: [],
       thumbnail: null,
+      is_premium: false,
+      status: 'published',
     },
   });
 
@@ -85,6 +90,14 @@ const CreateCourse: React.FC = () => {
       // append tags as JSON string so server can parse reliably
       if (Array.isArray(data.tags) && data.tags.length > 0) {
         form.append('tags', JSON.stringify(data.tags));
+      }
+
+      // append is_premium and status if present
+      if (typeof data.is_premium !== 'undefined') {
+        form.append('is_premium', String(Boolean(data.is_premium)));
+      }
+      if (data.status) {
+        form.append('status', data.status);
       }
 
       // append file under field name `thumbnail` (multer expects this)
@@ -315,6 +328,47 @@ const CreateCourse: React.FC = () => {
                     </Select>
                   )}
                 />
+              </div>
+
+              {/* ACCESS: Premium + Status */}
+              <div>
+                <Label className="mb-1 block text-sm font-medium">Access</Label>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Controller
+                      name="is_premium"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={Boolean(field.value)}
+                            onCheckedChange={(val: any) => field.onChange(Boolean(val))}
+                          />
+                          <span className="text-sm">Premium (paid)</span>
+                        </div>
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-1 block text-sm font-medium">Status</Label>
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

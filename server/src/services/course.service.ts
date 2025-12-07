@@ -139,6 +139,17 @@ const courseService: ICourseService = {
       }
     }
 
+    // Normalize some fields that may come from multipart/form-data as strings
+    const isPremiumToStore =
+      data.is_premium === true ||
+      String(data.is_premium).toLowerCase() === 'true' ||
+      String(data.is_premium) === '1'
+        ? true
+        : false;
+
+    const statusToStore =
+      typeof data.status === 'string' && data.status.trim() ? data.status.trim() : undefined;
+
     const created = await Course.create({
       title: data.title,
       thumbnail: data.thumbnail ?? undefined,
@@ -147,6 +158,8 @@ const courseService: ICourseService = {
       instructor: instructorToStore,
       shortDescription: data.shortDescription ?? undefined,
       difficulty: data.difficulty ?? null,
+      is_premium: isPremiumToStore,
+      ...(statusToStore ? { status: statusToStore } : {}),
     });
 
     // re-query the created course to populate instructor info for consistent return shape
