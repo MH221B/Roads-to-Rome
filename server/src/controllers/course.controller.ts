@@ -6,11 +6,22 @@ import { User } from '../models/user.model';
 const courseController = {
   async List(req: Request, res: Response) {
     try {
-      // accept a query param `q` for full-text search ex: /api/courses?q=javascript
+      // parse query params for pagination and filters
       const q = typeof req.query.q === 'string' ? req.query.q.trim() : undefined;
-      const courses = await courseService.listCourses(q);
-      // return courses directly
-      res.status(200).json(courses);
+      const page = req.query.page ? Number(req.query.page) || 1 : 1;
+      const limit = req.query.limit ? Number(req.query.limit) || 6 : 6;
+      const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+      const tagsRaw = typeof req.query.tags === 'string' ? req.query.tags : undefined;
+      const tags = tagsRaw
+        ? tagsRaw
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined;
+
+      const result = await courseService.listCourses({ q, page, limit, category, tags });
+      // return paginated payload { data, total, page, limit }
+      res.status(200).json(result);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

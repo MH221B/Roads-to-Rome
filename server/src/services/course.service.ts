@@ -3,8 +3,18 @@ import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
 
+interface IListOptions {
+  q?: string;
+  page?: number;
+  limit?: number;
+  category?: string | null;
+  tags?: string[];
+}
+
 interface ICourseService {
-  listCourses(search?: string): Promise<any[]>;
+  listCourses(
+    options?: IListOptions
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }>;
   getCourseById(id: string): Promise<any | null>;
   createCourse(data: Partial<ICourse>): Promise<any>;
   createComment(
@@ -18,38 +28,50 @@ interface ICourseService {
 }
 
 const courseService: ICourseService = {
-  async listCourses(search?: string): Promise<any[]> {
-    // If a search string is provided, use MongoDB text search across indexed fields
-    if (search && search.trim().length > 0) {
-      // use text score to sort by relevance, then fallback to createdAt
-      const raw = (await Course.find(
-        { $text: { $search: search } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
-        .populate({ path: 'instructor', select: 'fullName email' })
-        .lean()
-        .exec()) as any[];
+  async listCourses(
+    options?: IListOptions
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+    const page = options?.page && options.page > 0 ? Math.floor(options.page) : 1;
+    const limit = options?.limit && options.limit > 0 ? Math.floor(options.limit) : 6;
 
-      return raw.map((c) => {
-        const { _id, instructor, ...rest } = c || {};
-        const instr = instructor
-          ? {
-              id: String(instructor._id || instructor),
-              name: instructor.fullName ?? 'Unknown Instructor',
-            }
-          : { id: null, name: rest.instructor || 'Unknown Instructor' };
-        return { id: String(_id), ...rest, instructor: instr };
-      });
+    const filter: Record<string, any> = {};
+    if (options?.q && options.q.trim().length > 0) {
+      filter.$text = { $search: options.q };
     }
 
-    // return all courses sorted by createdAt desc (lean returns plain objects)
-    const raw = (await Course.find()
-      .sort({ createdAt: -1 })
+    if (options?.category) {
+      filter.category = options.category;
+    }
+
+    if (options?.tags && options.tags.length) {
+      // match documents that contain all specified tags
+      filter.tags = { $all: options.tags };
+    }
+
+    // compute total count for the filter
+    const total = await Course.countDocuments(filter).exec();
+
+    // build query
+    let query = Course.find(filter)
       .populate({ path: 'instructor', select: 'fullName email' })
-      .lean()
+      .lean();
+
+    // If text search is used, request the text score and sort by relevance then createdAt
+    if (filter.$text) {
+      query = Course.find(filter, { score: { $meta: 'textScore' } })
+        .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+        .populate({ path: 'instructor', select: 'fullName email' })
+        .lean();
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    const docs = (await query
+      .skip((page - 1) * limit)
+      .limit(limit)
       .exec()) as any[];
-    return raw.map((c) => {
+
+    const data = docs.map((c) => {
       const { _id, instructor, ...rest } = c || {};
       const instr = instructor
         ? {
@@ -59,6 +81,8 @@ const courseService: ICourseService = {
         : { id: null, name: rest.instructor || 'Unknown Instructor' };
       return { id: String(_id), ...rest, instructor: instr };
     });
+
+    return { data, total, page, limit };
   },
 
   async getCourseById(id: string): Promise<any | null> {
