@@ -27,7 +27,7 @@ const courseService: ICourseService = {
         { score: { $meta: 'textScore' } }
       )
         .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
-        .populate({ path: 'instructor', select: 'fullName' })
+        .populate({ path: 'instructor', select: 'fullName email' })
         .lean()
         .exec()) as any[];
 
@@ -46,7 +46,7 @@ const courseService: ICourseService = {
     // return all courses sorted by createdAt desc (lean returns plain objects)
     const raw = (await Course.find()
       .sort({ createdAt: -1 })
-      .populate({ path: 'instructor', select: 'fullName' })
+      .populate({ path: 'instructor', select: 'fullName email' })
       .lean()
       .exec()) as any[];
     return raw.map((c) => {
@@ -64,7 +64,7 @@ const courseService: ICourseService = {
   async getCourseById(id: string): Promise<any | null> {
     // find course and populate instructor info when possible
     const course = await Course.findById(id)
-      .populate({ path: 'instructor', select: 'fullName' })
+      .populate({ path: 'instructor', select: 'fullName email' })
       .lean()
       .exec();
     if (!course) return null;
@@ -103,8 +103,9 @@ const courseService: ICourseService = {
       ? {
           id: String(rawInstructor._id || rawInstructor),
           name: rawInstructor.fullName ?? 'Unknown Instructor',
+          email: rawInstructor.email ?? null,
         }
-      : { id: null, name: (course as any).instructor || 'Unknown Instructor' };
+      : { id: null, name: (course as any).instructor || 'Unknown Instructor', email: null };
 
     return {
       id: String((course as any)._id),
