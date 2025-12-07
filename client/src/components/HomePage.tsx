@@ -1,83 +1,6 @@
 import * as React from 'react';
-
-type Course = {
-  id: string;
-  title: string;
-  thumbnail: string;
-  category: string;
-  /** e.g. 'Beginner' | 'Intermediate' | 'Advanced' */
-  difficulty?: string;
-  tags: string[];
-  instructor: string;
-  shortDescription: string;
-};
-
-const mockCourses: Course[] = [
-  {
-    id: 'course-1',
-    title: 'Modern React Patterns',
-    thumbnail: 'https://picsum.photos/seed/modern-react-patterns/640/360',
-    category: 'Web Development',
-    difficulty: 'Intermediate',
-    tags: ['react', 'components', 'performance'],
-    instructor: 'Aisha Khan',
-    shortDescription:
-      'Explore advanced React patterns and hooks to build scalable, maintainable applications.',
-  },
-  {
-    id: 'course-2',
-    title: 'TypeScript Deep Dive',
-    thumbnail: 'https://picsum.photos/seed/typescript-deep-dive/640/360',
-    category: 'Programming',
-    difficulty: 'Advanced',
-    tags: ['typescript', 'nodejs'],
-    instructor: 'Marcus Lee',
-    shortDescription: 'Master TypeScript features and typing strategies for real-world codebases.',
-  },
-  {
-    id: 'course-3',
-    title: 'Design Systems in Practice',
-    thumbnail: 'https://picsum.photos/seed/design-systems/640/360',
-    category: 'UI/UX',
-    difficulty: 'Intermediate',
-    tags: ['design', 'components'],
-    instructor: 'Clara Romano',
-    shortDescription:
-      'Learn how to create and maintain a robust design system that teams can trust.',
-  },
-  {
-    id: 'course-4',
-    title: 'Backend APIs with Node.js',
-    thumbnail: 'https://picsum.photos/seed/nodejs-apis/640/360',
-    category: 'Backend',
-    difficulty: 'Intermediate',
-    tags: ['nodejs', 'api'],
-    instructor: 'Daniel Osei',
-    shortDescription:
-      'Build reliable, documented REST APIs using Node.js and best practices for testing and security.',
-  },
-  {
-    id: 'course-5',
-    title: 'Practical GraphQL',
-    thumbnail: 'https://picsum.photos/seed/practical-graphql/640/360',
-    category: 'APIs',
-    difficulty: 'Intermediate',
-    tags: ['graphql', 'api'],
-    instructor: 'Sofia Martínez',
-    shortDescription:
-      'Design efficient GraphQL schemas and resolvers for modern client-server workflows.',
-  },
-  {
-    id: 'course-6',
-    title: 'CI/CD Essentials',
-    thumbnail: 'https://picsum.photos/seed/ci-cd-essentials/640/360',
-    category: 'DevOps',
-    difficulty: 'Beginner',
-    tags: ['ci', 'cloud', 'deployment'],
-    instructor: "Liam O'Connor",
-    shortDescription: 'Set up continuous integration and delivery pipelines to speed safe deploys.',
-  },
-];
+import type { Course } from '@/services/courseService';
+import { getCourses, getInstructorCourses } from '@/services/courseService';
 
 const mockCategories: string[] = [
   'Web Development',
@@ -107,9 +30,16 @@ const mockTags: string[] = [
   'deployment',
 ];
 import HeaderComponent from '@/components/HeaderComponent';
+import { useNavigate } from 'react-router-dom';
 import CourseCard from '@/components/CourseCard';
+import CourseCardCompact from '@/components/CourseCardCompact';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { FaPlus } from 'react-icons/fa6';
 import { useAuth } from '@/contexts/AuthProvider';
+
+// local UI-only state for courses loaded from the backend
+// `Course` type is imported from the service and matches the API shape
 
 function decodeJwtPayload(token: string | null): any | null {
   if (!token) return null;
@@ -133,12 +63,58 @@ const HomePage: React.FC = () => {
   );
 
   const showAdmin = roles.includes('ADMIN');
+  const showStudent = roles.includes('STUDENT');
+  const showInstructor = roles.includes('INSTRUCTOR');
+  const navigate = useNavigate();
+  const isGuest = !accessToken || roles.length === 0;
+
+  const [courses, setCourses] = React.useState<Course[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userId =
+          payload?.sub ??
+          payload?.id ??
+          payload?.userId ??
+          (payload?.user && payload.user.id) ??
+          null;
+
+        if (showInstructor) {
+          const instructorCourses = await getInstructorCourses(userId);
+          if (!mounted) return;
+          setCourses(instructorCourses);
+        } else {
+          const latest = await getCourses(1, 6);
+          if (!mounted) return;
+          setCourses(latest);
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setError('Failed to load courses');
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [accessToken, showInstructor, showStudent, isGuest, payload]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderComponent showAdmin={showAdmin} />
       <main className="flex-1">
-        {
+        {(showStudent || isGuest) && (
           <div className="mx-auto w-full max-w-7xl px-4 py-10">
             <section className="mt-3">
               <div className="mb-4 flex items-center justify-between">
@@ -146,9 +122,10 @@ const HomePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {mockCourses.map((course) => (
-                  <CourseCard key={course.id} course={course} />
-                ))}
+                {loading && <div>Loading courses...</div>}
+                {!loading && courses.length === 0 && <div>No courses found.</div>}
+                {!loading &&
+                  courses.map((course) => <CourseCard key={course.id} course={course} />)}
               </div>
 
               <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -176,7 +153,41 @@ const HomePage: React.FC = () => {
               </div>
             </section>
           </div>
-        }
+        )}
+
+        {showInstructor && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10">
+            <section className="mt-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Your Courses</h2>
+                <div>
+                  <Button
+                    onClick={() => navigate('/courses/create')}
+                    className="flex items-center gap-2"
+                  >
+                    <FaPlus />
+                    Create Course
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {loading && <div>Loading your courses...</div>}
+                {!loading && courses.length === 0 && <div>No courses found for your account.</div>}
+                {!loading &&
+                  courses.map((course) => (
+                    <CourseCardCompact
+                      key={course.id}
+                      course={course}
+                      onEdit={() => navigate(`/courses/${course.id}/edit`)}
+                      onPreview={() => navigate(`/courses/${course.id}`)}
+                      onDelete={() => setCourses((prev) => prev.filter((c) => c.id !== course.id))}
+                    />
+                  ))}
+              </div>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -6,7 +6,7 @@ export type Course = {
   thumbnail: string;
   category?: string;
   tags: string[];
-  instructor: string;
+  instructor: { id: string | null; name: string };
   shortDescription: string;
   difficulty?: string | null;
 };
@@ -36,4 +36,19 @@ export async function getCourses(
   return [];
 }
 
-export default { getCourses };
+export async function getInstructorCourses(
+  instructorId: string | null | undefined,
+  page = 1,
+  limit = 100
+): Promise<Course[]> {
+  if (!instructorId) return [];
+  // Fetch a reasonably large page and filter locally. Backends may offer a filter-by-instructor query.
+  const all = await getCourses(page, limit);
+  return all.filter((c) => (c.instructor && (c.instructor as any)?.id) === instructorId);
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  await api.delete(`/api/courses/${id}`);
+}
+
+export default { getCourses, getInstructorCourses, deleteCourse };
