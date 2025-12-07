@@ -12,12 +12,15 @@ interface Props {
   reviewMode: boolean;
   selectedAttempt: any | null;
   started?: boolean;
+  className?: string;
 }
-export default function QuizMain({activeQuiz, questions, questionRefs, renderQuestion, handleAnswered, locked, reviewMode, selectedAttempt, started = false }: Props) {
+export default function QuizMain({activeQuiz, questions, questionRefs, renderQuestion, handleAnswered, locked, reviewMode, selectedAttempt, started = false, className }: Props) {
   const lockedByNotStarted = !started && !reviewMode;
 
+  const containerClass = `${className ?? 'col-span-6'} p-6 overflow-y-auto ${lockedByNotStarted ? 'filter blur-sm opacity-60 pointer-events-none' : ''}`;
+
   return (
-    <main className={`col-span-6 p-6 overflow-y-auto ${lockedByNotStarted ? 'filter blur-sm opacity-60 pointer-events-none' : ''}`}>
+    <main className={containerClass}>
       <div className="flex justify-between items-center mb-4">
         {/* tên quiz */}
         <h1 className="text-2xl font-bold">Quiz  {activeQuiz}</h1>

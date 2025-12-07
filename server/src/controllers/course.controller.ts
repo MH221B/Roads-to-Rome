@@ -40,7 +40,7 @@ const courseController = {
 
   async PostComment(req: Request, res: Response) {
     try {
-      const { courseId } = req.params as any;
+      const { id } = req.params as any;
       const { rating, content } = req.body;
 
       if (!rating || !content) {
@@ -49,15 +49,9 @@ const courseController = {
 
       // If authentication middleware sets req.user, use it
       const userId = (req as any).user?.id as string | undefined;
-      const userName = undefined; // can be derived from user record if needed
+      const userName = (req as any).user?.fullName ?? (req as any).user?.email ?? undefined;
 
-      const created = await courseService.createComment(
-        courseId,
-        rating,
-        content,
-        userId,
-        userName
-      );
+      const created = await courseService.createComment(id, rating, content, userId, userName);
       res.status(201).json(created);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });

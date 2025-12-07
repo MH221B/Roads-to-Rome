@@ -7,6 +7,8 @@ import DragDropAnswer from "./questions/QuestionDragDrop";
 import type { Question } from "@/types/question";
 import HeaderComponent from "./HeaderComponent";
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { FaTimes, FaBars } from 'react-icons/fa';
 import { getLessonsByCourse } from "@/services/lessonService";
 import { getQuizById, submitQuiz, getQuizHistory } from "@/services/quizService";
 import QuizLeft from './QuizLeft';
@@ -43,6 +45,7 @@ export default function QuizPage() {
     const { courseId, quizId } = useParams<{ courseId: string; quizId: string }>();
     const navigate = useNavigate();
     const [openLesson, setOpenLesson] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [activeQuiz, setActiveQuiz] = useState<string>(quizId || "");
     const [questions, setQuestions] = useState<Question[]>([]);
     const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
@@ -283,10 +286,35 @@ export default function QuizPage() {
     return (
         <div className="min-h-screen bg-background pb-10">
             <HeaderComponent />
-            <div className="w-full h-screen grid grid-cols-12 bg-gray-50">
-                <QuizLeft lessons={lessons} openLesson={openLesson} setOpenLesson={setOpenLesson} activeQuiz={activeQuiz} setActiveQuiz={setActiveQuiz} onSelectQuiz={handleSelectQuiz} courseId={courseId} />
 
-                <QuizMain activeQuiz={activeQuiz} questions={questions} questionRefs={questionRefs} renderQuestion={renderQuestion} handleAnswered={handleAnswered} locked={locked} reviewMode={reviewMode} selectedAttempt={selectedAttempt} started={started} />
+            <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(s => !s)} className="text-slate-500">
+                        <FaBars />
+                    </Button>
+                    <div className="flex flex-col">
+                        <span className="text-xs font-medium tracking-wider text-slate-500 uppercase">Course</span>
+                        <h1 className="max-w-[200px] truncate text-sm font-bold md:max-w-md md:text-base" title={`Course ${courseId}`}>
+                            {`Course ${courseId}`}
+                        </h1>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/courses/${courseId}`)} className="hidden border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:flex">
+                        Exit
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => navigate(`/courses/${courseId}`)} className="text-slate-500 md:hidden">
+                        <FaTimes />
+                    </Button>
+                </div>
+            </header>
+
+            <div className="w-full h-screen grid grid-cols-12 bg-gray-50">
+                {isSidebarOpen && (
+                    <QuizLeft lessons={lessons} openLesson={openLesson} setOpenLesson={setOpenLesson} activeQuiz={activeQuiz} setActiveQuiz={setActiveQuiz} onSelectQuiz={handleSelectQuiz} courseId={courseId} />
+                )}
+
+                <QuizMain className={isSidebarOpen ? 'col-span-6' : 'col-span-9'} activeQuiz={activeQuiz} questions={questions} questionRefs={questionRefs} renderQuestion={renderQuestion} handleAnswered={handleAnswered} locked={locked} reviewMode={reviewMode} selectedAttempt={selectedAttempt} started={started} />
                 <QuizRight questions={questions} questionRefs={questionRefs} answeredQuestions={answeredQuestions} reviewMode={reviewMode} selectedAttempt={selectedAttempt} timeRemaining={timeRemaining} locked={locked} handleSubmit={handleSubmit} openHistory={openHistory} onRetry={retryQuiz} isSubmitting={isSubmitting} isSubmitted={isSubmitted} submissionResult={submissionResult} started={started} startQuiz={startQuiz} />
             </div>
 

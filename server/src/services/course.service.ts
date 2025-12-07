@@ -81,7 +81,7 @@ const courseService: ICourseService = {
               name: instructor.fullName ?? 'Unknown Instructor',
             }
           : { id: null, name: rest.instructor || 'Unknown Instructor' };
-        return { id: String(_id), ...rest, instructor: instr };
+        return { id: (c as any).id || String(_id), ...rest, instructor: instr };
       });
 
       return { data, total, page, limit };
@@ -93,18 +93,21 @@ const courseService: ICourseService = {
 
   async getCourseById(id: string): Promise<any | null> {
     // find course and populate instructor info when possible
-    const course = await Course.findById(id)
-      .populate({ path: 'instructor', select: 'fullName email' })
-      .lean()
-      .exec();
+    let course: any = null;
+    if (mongoose.Types.ObjectId.isValid(String(id))) {
+      course = await Course.findById(id).populate({ path: 'instructor', select: 'fullName email' }).lean().exec();
+    }
+    if (!course) {
+      course = await Course.findOne({ id: id }).populate({ path: 'instructor', select: 'fullName email' }).lean().exec();
+    }
     if (!course) return null;
 
-    // lessons: match by course.courseId if present, otherwise by _id string
-    const courseIdStr = course.courseId || (course._id ? String((course as any)._id) : id);
+    // lessons: match by course.id if present, otherwise by _id string
+    const courseIdStr = (course as any).id || (course as any).courseId || (course._id ? String((course as any)._id) : id);
     const lessons = await Lesson.find({ course_id: courseIdStr }).sort({ order: 1 }).lean().exec();
 
     // comments: stored with courseId as course identifier string
-    const commentsRaw = await Comment.find({ courseId: course.courseId || String((course as any)._id) })
+    const commentsRaw = await Comment.find({ courseId: (course as any).id || (course as any).courseId || String((course as any)._id) })
       .populate({ path: 'userId', select: 'email role' })
       .sort({ createdAt: -1 })
       .lean()
@@ -138,7 +141,7 @@ const courseService: ICourseService = {
       : { id: null, name: (course as any).instructor || 'Unknown Instructor', email: null };
 
     return {
-      id: course.courseId || String((course as any)._id),
+      id: (course as any).id || (course as any).courseId || String((course as any)._id),
       ...course,
       instructor,
       lessons,
@@ -180,7 +183,9 @@ const courseService: ICourseService = {
     const statusToStore =
       typeof data.status === 'string' && data.status.trim() ? data.status.trim() : undefined;
 
+    const idToStore = String(new mongoose.Types.ObjectId());
     const created = await Course.create({
+      id: idToStore,
       title: data.title,
       thumbnail: data.thumbnail ?? undefined,
       category: data.category ?? undefined,
@@ -204,7 +209,7 @@ const courseService: ICourseService = {
       : { id: null, name: null };
 
     return {
-      id: String(c._id),
+      id: (c as any).id || String(c._id),
       ...c,
       instructor: returnedInstructor,
     };
@@ -253,7 +258,11 @@ const courseService: ICourseService = {
   async updateCourse(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any> {
     if (!id) throw new Error('id is required');
 
-    const existing = await Course.findById(id).exec();
+    let existing: any = null;
+    if (mongoose.Types.ObjectId.isValid(String(id))) {
+      existing = await Course.findById(id).exec();
+    }
+    if (!existing) existing = await Course.findOne({ id }).exec();
     if (!existing) throw new Error('Course not found');
 
     const updates: Record<string, any> = {};
@@ -310,10 +319,15 @@ const courseService: ICourseService = {
       }
     }
 
-    const updated = await Course.findByIdAndUpdate(id, { $set: updates }, { new: true })
-      .populate({ path: 'instructor', select: 'fullName email' })
-      .lean()
-      .exec();
+    const updated = mongoose.Types.ObjectId.isValid(String(id))
+      ? await Course.findByIdAndUpdate(id, { $set: updates }, { new: true })
+          .populate({ path: 'instructor', select: 'fullName email' })
+          .lean()
+          .exec()
+      : await Course.findOneAndUpdate({ id }, { $set: updates }, { new: true })
+          .populate({ path: 'instructor', select: 'fullName email' })
+          .lean()
+          .exec();
 
     const c: any = updated;
     if (!c) throw new Error('Failed to update course');
@@ -331,7 +345,11 @@ const courseService: ICourseService = {
   },
 
   async deleteCourse(id: string): Promise<void> {
-    await Course.findByIdAndDelete(id).exec();
+    if (mongoose.Types.ObjectId.isValid(String(id))) {
+      await Course.findByIdAndDelete(id).exec();
+    } else {
+      await Course.findOneAndDelete({ id }).exec();
+    }
   },
 };
 

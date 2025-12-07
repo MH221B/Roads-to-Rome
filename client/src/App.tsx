@@ -49,7 +49,6 @@ function App() {
             }
           />
           <Route path="/courses/:courseId/quiz/:quizId" element={<QuizPage />} />
-          // ex: /courses/123/lessons/456/quiz
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

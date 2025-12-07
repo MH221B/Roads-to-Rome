@@ -14,7 +14,7 @@ function mapEnrollment(e: any, courseObj?: any) {
   const { _id, courseId, studentId, progress, lastLessonId, completed, rating, updatedAt, createdAt, status, ...rest } = e || {};
   let course = null;
   if (courseObj) {
-    course = { id: courseObj.courseId || String(courseObj._id), ...courseObj };
+    course = { id: courseObj.id || courseObj.courseId || String(courseObj._id), ...courseObj };
   } else if (courseId) {
     course = { id: String(courseId) };
   }
@@ -41,9 +41,17 @@ const enrollmentService: IEnrollmentService = {
 
     // batch fetch course documents for enrichment
     const courseIds = Array.from(new Set((raw || []).map((r: any) => r.courseId).filter(Boolean)));
-    const courses = courseIds.length ? await Course.find({ courseId: { $in: courseIds } }).lean().exec() : [];
+    let courses: any[] = [];
+    if (courseIds.length) {
+      // Separate possible ObjectId-like strings to search against _id
+      const objectIds = courseIds.filter((cid) => mongoose.Types.ObjectId.isValid(String(cid))).map((cid) => new mongoose.Types.ObjectId(String(cid)));
+      const orClauses: any[] = [];
+      if (courseIds.length) orClauses.push({ id: { $in: courseIds } });
+      if (objectIds.length) orClauses.push({ _id: { $in: objectIds } });
+      courses = await Course.find({ $or: orClauses }).lean().exec();
+    }
     const courseMap: Record<string, any> = {};
-    (courses || []).forEach((c: any) => { if (c && c.courseId) courseMap[String(c.courseId)] = c; });
+    (courses || []).forEach((c: any) => { if (c) courseMap[String(c.id || c.courseId || c._id)] = c; });
 
     return raw.map((r: any) => mapEnrollment(r, courseMap[String(r.courseId)]));
   },
@@ -52,13 +60,21 @@ const enrollmentService: IEnrollmentService = {
     // store courseId as string; prevent duplicate enrollments
     const existing = await Enrollment.findOne({ studentId, courseId }).lean().exec();
     if (existing) {
-      const course = await Course.findOne({ courseId: existing.courseId }).lean().exec();
+      const course = await Course.findOne(
+        mongoose.Types.ObjectId.isValid(String(existing.courseId))
+          ? { $or: [{ id: existing.courseId }, { _id: new mongoose.Types.ObjectId(String(existing.courseId)) }] }
+          : { id: existing.courseId }
+      ).lean().exec();
       return mapEnrollment(existing, course);
     }
 
     const created = await Enrollment.create({ studentId, courseId, status, progress: 0, lastLessonId: null, completed: false, rating: null });
     const populated = await Enrollment.findById(created._id).lean().exec();
-    const course = await Course.findOne({ courseId }).lean().exec();
+    const course = await Course.findOne(
+      mongoose.Types.ObjectId.isValid(String(courseId))
+        ? { $or: [{ id: courseId }, { _id: new mongoose.Types.ObjectId(String(courseId)) }] }
+        : { id: courseId }
+    ).lean().exec();
     return mapEnrollment(populated, course);
   },
 
@@ -71,7 +87,13 @@ const enrollmentService: IEnrollmentService = {
 
     const updated = await Enrollment.findByIdAndUpdate(enrollmentId, allowed, { new: true }).lean().exec();
     if (!updated) throw new Error('Enrollment not found');
-    const course = updated.courseId ? await Course.findOne({ courseId: updated.courseId }).lean().exec() : null;
+    const course = updated.courseId
+      ? await Course.findOne(
+          mongoose.Types.ObjectId.isValid(String(updated.courseId))
+            ? { $or: [{ id: updated.courseId }, { _id: new mongoose.Types.ObjectId(String(updated.courseId)) }] }
+            : { id: updated.courseId }
+        ).lean().exec()
+      : null;
     return mapEnrollment(updated, course);
   },
 

@@ -3,7 +3,7 @@ import Lesson from './lesson.model';
 import Comment from './comment.model';
 
 export interface ICourse extends Document {
-  courseId: string; // primary key
+  id: string; // primary key
   title: string;
   thumbnail?: string;
   category?: string;
@@ -17,7 +17,7 @@ export interface ICourse extends Document {
 
 const CourseSchema: Schema = new Schema(
   {
-    courseId: { type: String, required: true, unique: true },
+    id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     thumbnail: { type: String },
     category: { type: String },
@@ -38,10 +38,17 @@ CourseSchema.index({ title: 'text', shortDescription: 'text', tags: 'text' });
 // cascade the deletion to related Lesson and Comment documents.
 CourseSchema.post('findOneAndDelete', async function (doc: any) {
   if (!doc) return;
-  const courseId = doc._id;
+  const objectId = doc._id;
+  const customId = (doc.id ?? doc.courseId) ?? null;
+  const lessonFilters: any[] = [{ course_id: String(objectId) }];
+  const commentFilters: any[] = [{ courseId: objectId }];
+  if (customId) {
+    lessonFilters.push({ course_id: String(customId) });
+    commentFilters.push({ courseId: customId });
+  }
   await Promise.all([
-    Lesson.deleteMany({ course_id: String(courseId) }).exec(),
-    Comment.deleteMany({ courseId: courseId }).exec(),
+    Lesson.deleteMany({ $or: lessonFilters }).exec(),
+    Comment.deleteMany({ $or: commentFilters }).exec(),
   ]);
 });
 
@@ -49,11 +56,16 @@ CourseSchema.post('findOneAndDelete', async function (doc: any) {
 CourseSchema.pre('deleteMany', { document: false, query: true }, async function (next) {
   try {
     const filter = this.getFilter();
-    const courseDocs = await this.model.find(filter).select('_id').lean().exec();
-    const ids = (courseDocs || []).map((d: any) => d._id);
-    if (ids.length > 0) {
-      await Lesson.deleteMany({ course_id: { $in: ids.map(String) } }).exec();
-      await Comment.deleteMany({ courseId: { $in: ids } }).exec();
+    const courseDocs = await this.model.find(filter).select('_id id courseId').lean().exec();
+    const objectIds = (courseDocs || []).map((d: any) => d._id).filter(Boolean);
+    const customIds = (courseDocs || []).map((d: any) => d.id ?? d.courseId).filter(Boolean);
+    const lessonIdSet = [...objectIds.map(String), ...customIds.map(String)];
+    const commentIdSet = [...objectIds, ...customIds];
+    if (lessonIdSet.length > 0) {
+      await Lesson.deleteMany({ course_id: { $in: lessonIdSet } }).exec();
+    }
+    if (commentIdSet.length > 0) {
+      await Comment.deleteMany({ courseId: { $in: commentIdSet } }).exec();
     }
   } catch (err) {
     return next(err as any);

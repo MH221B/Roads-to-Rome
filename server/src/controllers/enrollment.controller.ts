@@ -31,7 +31,7 @@ const enrollmentController = {
       const finalCourseId = course_id;
 
       if (!studentId || !finalCourseId) {
-        return res.status(400).json({ error: 'courseId is required' });
+        return res.status(400).json({ error: 'course id is required' });
       }
 
       const created = await enrollmentService.createEnrollment(studentId, finalCourseId, status);

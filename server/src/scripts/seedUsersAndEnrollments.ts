@@ -42,8 +42,8 @@ async function seed() {
       const enrollmentsToInsert: any[] = [];
       createdUsers.forEach((user, idx) => {
         const course = courses[idx % courses.length];
-        // use the course identifier string (course.courseId) when creating enrollments
-        enrollmentsToInsert.push({ studentId: user._id, courseId: course.courseId || String(course._id), status: 'enrolled' });
+        // use the course identifier string (course.id) when creating enrollments
+        enrollmentsToInsert.push({ studentId: user._id, courseId: course.id || course._id || String(course._id), status: 'enrolled' });
       });
 
       await Enrollment.insertMany(enrollmentsToInsert);
