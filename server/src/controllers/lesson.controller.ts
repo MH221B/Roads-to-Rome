@@ -51,15 +51,14 @@ const lessonController: ILessonController = {
 
   DeleteLesson: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { courseId } = req.params;
-      const { id } = req.params;
+      const { courseId, lessonId } = req.params;
 
-      if (!courseId || !id) {
-        res.status(400).json({ error: 'courseId and lesson id are required' });
+      if (!courseId || !lessonId) {
+        res.status(400).json({ error: 'courseId and lessonId are required' });
         return;
       }
 
-      await lessonService.DeleteLesson(courseId, id);
+      await lessonService.DeleteLesson(courseId, lessonId);
       res.status(200).json({ success: true });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -78,8 +77,13 @@ const lessonController: ILessonController = {
 
   GetLessonById: async (req: Request, res: Response): Promise<void> => {
     try {
-      const courseId = req.query.courseId as string;
-      const lessonId = req.params.lessonId;
+      const { courseId, lessonId } = req.params;
+
+      if (!courseId || !lessonId) {
+        res.status(400).json({ error: 'courseId and lessonId are required' });
+        return;
+      }
+
       const lesson = await lessonService.GetLessonById(courseId, lessonId);
       res.status(200).json(lesson);
     } catch (error) {

@@ -54,9 +54,9 @@ app.use('/api/courses/:courseId/lessons', lessonRouter);
 app.post(
   '/api/uploads',
   upload.single('file'),
-  async (req: Express.Request, res: Express.Response) => {
+  async (req: express.Request, res: express.Response) => {
     try {
-      const file = (req as Express.Request & { file?: Express.Multer.File }).file;
+      const file = (req as express.Request & { file?: Express.Multer.File }).file;
 
       if (!file) {
         return res.status(400).json({ error: 'No file uploaded' });
