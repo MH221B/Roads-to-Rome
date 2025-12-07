@@ -67,7 +67,7 @@ const lessonController: ILessonController = {
 
   GetLessonsByCourseId: async (req: Request, res: Response): Promise<void> => {
     try {
-      const courseId = (req.params.id || req.params.courseId) as string;
+      const courseId = req.params.courseId;
       const lessons = await lessonService.GetLessonsByCourseId(courseId);
       res.status(200).json(lessons);
     } catch (error) {
@@ -77,8 +77,13 @@ const lessonController: ILessonController = {
 
   GetLessonById: async (req: Request, res: Response): Promise<void> => {
     try {
-      const courseId = (req.query.id as string) || (req.query.courseId as string);
-      const lessonId = req.params.lessonId;
+      const { courseId, lessonId } = req.params;
+
+      if (!courseId || !lessonId) {
+        res.status(400).json({ error: 'courseId and lessonId are required' });
+        return;
+      }
+
       const lesson = await lessonService.GetLessonById(courseId, lessonId);
       res.status(200).json(lesson);
     } catch (error) {
