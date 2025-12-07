@@ -23,6 +23,7 @@ const courseController = {
       // return paginated payload { data, total, page, limit }
       res.status(200).json(result);
     } catch (error) {
+      console.error('Error in courseController.List:', error);
       res.status(500).json({ error: (error as Error).message });
     }
   },

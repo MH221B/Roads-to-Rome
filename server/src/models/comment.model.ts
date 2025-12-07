@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IComment extends Document {
-  courseId: mongoose.Types.ObjectId;
+  courseId: string;
   userId?: mongoose.Types.ObjectId;
   userName?: string;
   rating: number;
@@ -10,7 +10,8 @@ export interface IComment extends Document {
 
 const CommentSchema: Schema = new Schema(
   {
-    courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+    // store course identifier as string (matches Course.courseId)
+    courseId: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     userName: { type: String },
     rating: { type: Number, required: true },

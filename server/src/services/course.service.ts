@@ -32,58 +32,63 @@ const courseService: ICourseService = {
   async listCourses(
     options?: IListOptions
   ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
-    const page = options?.page && options.page > 0 ? Math.floor(options.page) : 1;
-    const limit = options?.limit && options.limit > 0 ? Math.floor(options.limit) : 6;
+    try {
+      const page = options?.page && options.page > 0 ? Math.floor(options.page) : 1;
+      const limit = options?.limit && options.limit > 0 ? Math.floor(options.limit) : 6;
 
-    const filter: Record<string, any> = {};
-    if (options?.q && options.q.trim().length > 0) {
-      filter.$text = { $search: options.q };
-    }
+      const filter: Record<string, any> = {};
+      if (options?.q && options.q.trim().length > 0) {
+        filter.$text = { $search: options.q };
+      }
 
-    if (options?.category) {
-      filter.category = options.category;
-    }
+      if (options?.category) {
+        filter.category = options.category;
+      }
 
-    if (options?.tags && options.tags.length) {
-      // match documents that contain all specified tags
-      filter.tags = { $all: options.tags };
-    }
+      if (options?.tags && options.tags.length) {
+        // match documents that contain all specified tags
+        filter.tags = { $all: options.tags };
+      }
 
-    // compute total count for the filter
-    const total = await Course.countDocuments(filter).exec();
+      // compute total count for the filter
+      const total = await Course.countDocuments(filter).exec();
 
-    // build query
-    let query = Course.find(filter)
-      .populate({ path: 'instructor', select: 'fullName email' })
-      .lean();
-
-    // If text search is used, request the text score and sort by relevance then createdAt
-    if (filter.$text) {
-      query = Course.find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+      // build query
+      let query = Course.find(filter)
         .populate({ path: 'instructor', select: 'fullName email' })
         .lean();
-    } else {
-      query = query.sort({ createdAt: -1 });
+
+      // If text search is used, request the text score and sort by relevance then createdAt
+      if (filter.$text) {
+        query = Course.find(filter, { score: { $meta: 'textScore' } })
+          .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+          .populate({ path: 'instructor', select: 'fullName email' })
+          .lean();
+      } else {
+        query = query.sort({ createdAt: -1 });
+      }
+
+      const docs = (await query
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec()) as any[];
+
+      const data = docs.map((c) => {
+        const { _id, instructor, ...rest } = c || {};
+        const instr = instructor
+          ? {
+              id: String(instructor._id || instructor),
+              name: instructor.fullName ?? 'Unknown Instructor',
+            }
+          : { id: null, name: rest.instructor || 'Unknown Instructor' };
+        return { id: String(_id), ...rest, instructor: instr };
+      });
+
+      return { data, total, page, limit };
+    } catch (error) {
+      console.error('Error in courseService.listCourses:', error);
+      throw error;
     }
-
-    const docs = (await query
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec()) as any[];
-
-    const data = docs.map((c) => {
-      const { _id, instructor, ...rest } = c || {};
-      const instr = instructor
-        ? {
-            id: String(instructor._id || instructor),
-            name: instructor.fullName ?? 'Unknown Instructor',
-          }
-        : { id: null, name: rest.instructor || 'Unknown Instructor' };
-      return { id: String(_id), ...rest, instructor: instr };
-    });
-
-    return { data, total, page, limit };
   },
 
   async getCourseById(id: string): Promise<any | null> {
@@ -94,12 +99,12 @@ const courseService: ICourseService = {
       .exec();
     if (!course) return null;
 
-    // lessons: try matching by course._id as string or as ObjectId
-    const courseIdStr = course._id ? String((course as any)._id) : id;
+    // lessons: match by course.courseId if present, otherwise by _id string
+    const courseIdStr = course.courseId || (course._id ? String((course as any)._id) : id);
     const lessons = await Lesson.find({ course_id: courseIdStr }).sort({ order: 1 }).lean().exec();
 
-    // comments: stored with courseId as ObjectId ref
-    const commentsRaw = await Comment.find({ courseId: (course as any)._id })
+    // comments: stored with courseId as course identifier string
+    const commentsRaw = await Comment.find({ courseId: course.courseId || String((course as any)._id) })
       .populate({ path: 'userId', select: 'email role' })
       .sort({ createdAt: -1 })
       .lean()
@@ -133,7 +138,7 @@ const courseService: ICourseService = {
       : { id: null, name: (course as any).instructor || 'Unknown Instructor', email: null };
 
     return {
-      id: String((course as any)._id),
+      id: course.courseId || String((course as any)._id),
       ...course,
       instructor,
       lessons,

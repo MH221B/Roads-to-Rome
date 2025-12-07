@@ -14,6 +14,7 @@ import Enrolment from '@/components/Enrolment';
 import LessonViewer from '@/components/LessonViewer';
 import CreateCourse from './components/CreateCourse';
 import EditCourse from './components/EditCourse';
+import QuizPage from './components/QuizPage';
 
 function App() {
   return (
@@ -47,6 +48,8 @@ function App() {
               </RequireRole>
             }
           />
+          <Route path="/courses/:courseId/quiz/:quizId" element={<QuizPage />} />
+          // ex: /courses/123/lessons/456/quiz
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
