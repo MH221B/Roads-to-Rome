@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Swal from 'sweetalert2';
 import api from '@/services/axiosClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,7 +117,17 @@ const CreateCourse: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
-      navigate('/courses'); // Redirect to list
+      Swal.fire({
+        title: 'Success!',
+        text: 'Course created successfully.',
+        icon: 'success',
+        confirmButtonText: 'Great!',
+        confirmButtonColor: '#10b981',
+      }).then((result) => {
+        if (result.isConfirmed || result.isDismissed) {
+          navigate('/courses');
+        }
+      });
     },
     onError: (error: any) => {
       console.error('Failed to create course', error);
@@ -124,7 +135,13 @@ const CreateCourse: React.FC = () => {
         error?.response?.data?.error ??
         error?.message ??
         'Failed to create course. Please try again.';
-      alert(msg);
+      Swal.fire({
+        title: 'Error!',
+        text: msg,
+        icon: 'error',
+        confirmButtonText: 'Okay',
+        confirmButtonColor: '#ef4444',
+      });
     },
   });
 
