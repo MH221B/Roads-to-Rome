@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-export default function MultipleChoiceAnswer({ item, onAnswered }: any) {
+export default function MultipleChoiceAnswer({ item, onAnswered, disabled }: any) {
   const [selected, setSelected] = useState<string[]>([]);
 
   // Shuffle chỉ 1 lần
@@ -10,12 +10,12 @@ export default function MultipleChoiceAnswer({ item, onAnswered }: any) {
   );
 
   const toggleSelect = (opt: string) => {
-    setSelected((prev) =>
-      prev.includes(opt)
-        ? prev.filter((x) => x !== opt) // bỏ chọn
-        : [...prev, opt]                // thêm chọn
-    );
-    onAnswered();
+    if (disabled) return;
+    setSelected((prev) => {
+      const next = prev.includes(opt) ? prev.filter((x) => x !== opt) : [...prev, opt];
+      onAnswered(next);
+      return next;
+    });
   };
 
   return (
@@ -29,16 +29,17 @@ export default function MultipleChoiceAnswer({ item, onAnswered }: any) {
           <div
             key={idx}
             tabIndex={0}
-            className={`flex items-center gap-2 p-2 m-2 border rounded-lg cursor-pointer
-              transition ${isActive ? "bg-blue-100 border-blue-500" : "hover:bg-gray-100"}`}
-            onClick={() => toggleSelect(opt)}               // chỉ đổi state
-            onKeyDown={(e) => e.key === "Enter" && toggleSelect(opt)}
+            className={`flex items-center gap-2 p-2 m-2 border rounded-lg
+              transition ${isActive ? "bg-blue-100 border-blue-500" : "hover:bg-gray-100"} ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => toggleSelect(opt)}
+            onKeyDown={(e) => !disabled && e.key === "Enter" && toggleSelect(opt)}
           >
             {/* checkbox controlled */}
             <input
               type="checkbox"
               checked={isActive}
-              onChange={() => toggleSelect(opt)}             // click vào checkbox
+              onChange={() => toggleSelect(opt)}
+              disabled={disabled}
               name={`q-${item.id}-multi`}
             />
 

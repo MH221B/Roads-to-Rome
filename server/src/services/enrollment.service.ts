@@ -1,19 +1,22 @@
 import mongoose from 'mongoose';
 import Enrollment from '../models/enrollment.model';
+import Course from '../models/course.model';
 
 interface IEnrollmentService {
   listEnrollmentsByUser(studentId: string): Promise<any[]>;
   createEnrollment(studentId: string, courseId: string, status?: string): Promise<any>;
   updateEnrollment(enrollmentId: string, updates: Partial<any>): Promise<any>;
   deleteEnrollment(enrollmentId: string): Promise<void>;
+  checkUserEnrollmentInCourse(userId: string, courseId: string): Promise<boolean>;
 }
 
-function mapEnrollment(e: any) {
+function mapEnrollment(e: any, courseObj?: any) {
   const { _id, courseId, studentId, progress, lastLessonId, completed, rating, updatedAt, createdAt, status, ...rest } = e || {};
   let course = null;
-  if (courseId) {
-    const { _id: courseObjId, ...courseRest } = courseId as any;
-    course = { id: String(courseObjId), ...courseRest };
+  if (courseObj) {
+    course = { id: courseObj.courseId || String(courseObj._id), ...courseObj };
+  } else if (courseId) {
+    course = { id: String(courseId) };
   }
 
   return {
@@ -34,35 +37,29 @@ function mapEnrollment(e: any) {
 
 const enrollmentService: IEnrollmentService = {
   async listEnrollmentsByUser(studentId: string): Promise<any[]> {
-    const raw = await Enrollment.find({ studentId })
-      .populate({
-        path: 'courseId',
-        populate: { path: 'instructor', select: 'name email' },
-      })
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+    const raw = await Enrollment.find({ studentId }).sort({ createdAt: -1 }).lean().exec();
 
-    return raw.map(mapEnrollment);
+    // batch fetch course documents for enrichment
+    const courseIds = Array.from(new Set((raw || []).map((r: any) => r.courseId).filter(Boolean)));
+    const courses = courseIds.length ? await Course.find({ courseId: { $in: courseIds } }).lean().exec() : [];
+    const courseMap: Record<string, any> = {};
+    (courses || []).forEach((c: any) => { if (c && c.courseId) courseMap[String(c.courseId)] = c; });
+
+    return raw.map((r: any) => mapEnrollment(r, courseMap[String(r.courseId)]));
   },
 
   async createEnrollment(studentId: string, courseId: string, status = 'enrolled'): Promise<any> {
-    // normalize courseId to ObjectId when possible
-    let courseIdToUse: any = courseId;
-    if (mongoose.Types.ObjectId.isValid(courseId)) courseIdToUse = new mongoose.Types.ObjectId(courseId);
-
-    // Prevent duplicate enrollment for same student and course
-    const existing = await Enrollment.findOne({ studentId, courseId: courseIdToUse }).exec();
+    // store courseId as string; prevent duplicate enrollments
+    const existing = await Enrollment.findOne({ studentId, courseId }).lean().exec();
     if (existing) {
-      // populate and return mapped existing
-      const pop = await Enrollment.findById(existing._id).populate({ path: 'courseId', populate: { path: 'instructor', select: 'name email' } }).lean().exec();
-      return mapEnrollment(pop);
+      const course = await Course.findOne({ courseId: existing.courseId }).lean().exec();
+      return mapEnrollment(existing, course);
     }
 
-    const created = await Enrollment.create({ studentId, courseId: courseIdToUse, status, progress: 0, lastLessonId: null, completed: false, rating: null });
-
-    const populated = await Enrollment.findById(created._id).populate({ path: 'courseId', populate: { path: 'instructor', select: 'name email' } }).lean().exec();
-    return mapEnrollment(populated);
+    const created = await Enrollment.create({ studentId, courseId, status, progress: 0, lastLessonId: null, completed: false, rating: null });
+    const populated = await Enrollment.findById(created._id).lean().exec();
+    const course = await Course.findOne({ courseId }).lean().exec();
+    return mapEnrollment(populated, course);
   },
 
   async updateEnrollment(enrollmentId: string, updates: Partial<any>): Promise<any> {
@@ -72,14 +69,21 @@ const enrollmentService: IEnrollmentService = {
     if (typeof updates.completed !== 'undefined') allowed.completed = updates.completed;
     if (typeof updates.rating !== 'undefined') allowed.rating = updates.rating;
 
-    const updated = await Enrollment.findByIdAndUpdate(enrollmentId, allowed, { new: true }).populate({ path: 'courseId', populate: { path: 'instructor', select: 'name email' } }).lean().exec();
+    const updated = await Enrollment.findByIdAndUpdate(enrollmentId, allowed, { new: true }).lean().exec();
     if (!updated) throw new Error('Enrollment not found');
-    return mapEnrollment(updated);
+    const course = updated.courseId ? await Course.findOne({ courseId: updated.courseId }).lean().exec() : null;
+    return mapEnrollment(updated, course);
   },
 
   async deleteEnrollment(enrollmentId: string): Promise<void> {
     await Enrollment.findByIdAndDelete(enrollmentId).exec();
   },
+  async checkUserEnrollmentInCourse(userId: string, courseId: string): Promise<boolean> {
+    // studentId là ObjectId tham chiếu đến User
+
+    const enrollment = await Enrollment.findOne({ studentId: new mongoose.Types.ObjectId(userId), courseId }).lean().exec();
+    return enrollment !== null;
+  }
 };
 
 export default enrollmentService;

@@ -6,60 +6,31 @@ import ImageChoiceAnswer from "./questions/QuestionImage";
 import DragDropAnswer from "./questions/QuestionDragDrop";
 import type { Question } from "@/types/question";
 import HeaderComponent from "./HeaderComponent";
-import { set } from "react-hook-form";
-import { Button } from "./ui/button";
+import { useParams, useNavigate } from 'react-router-dom';
+import { getLessonsByCourse } from "@/services/lessonService";
+import { getQuizById, submitQuiz, getQuizHistory } from "@/services/quizService";
+import QuizLeft from './QuizLeft';
+import QuizMain from './QuizMain';
+import QuizRight from './QuizRight';
+import HistorySelector from './HistorySelector';
 
 
 
-function renderQuestion(q: Question, onAnswered: () => void) {
+function renderQuestion(q: Question, onAnswered: (answer: any) => void, disabled = false) {
     switch (q.type) {
         case "multiple":
-            return <MultipleChoiceAnswer item={q} onAnswered={onAnswered} />;
+            return <MultipleChoiceAnswer item={q} onAnswered={onAnswered} disabled={disabled} />;
         case "single":
-            return <SingleChoiceAnswer item={q} onAnswered={onAnswered} />;
+            return <SingleChoiceAnswer item={q} onAnswered={onAnswered} disabled={disabled} />;
         case "image":
-            return <ImageChoiceAnswer item={q} onAnswered={onAnswered} />;
+            return <ImageChoiceAnswer item={q} onAnswered={onAnswered} disabled={disabled} />;
         case "dragdrop":
-            return <DragDropAnswer item={q} onAnswered={onAnswered} />;
+            return <DragDropAnswer item={q} onAnswered={onAnswered} disabled={disabled} />;
         default:
             return null;
     }
 }
 
-
-// Generate 5 mock questions per quiz id
-function generateMockQuestions(quizId: string): Question[] {
-    const types: Question['type'][] = ["multiple", "single", "image", "dragdrop"];
-    const imageOptions = [
-        "https://picsum.photos/200?random=1",
-        "https://picsum.photos/200?random=2",
-        "https://picsum.photos/200?random=3",
-        "https://picsum.photos/200?random=4"
-    ];
-
-    return Array.from({ length: 5 }).map((_, i) => {
-        const type = types[i % types.length];
-        const id = `${quizId}-q${i + 1}`;
-        let options: string[] = [];
-
-        if (type === "image") {
-            options = imageOptions;
-        } else if (type === "dragdrop") {
-            options = ["Step 1", "Step 2", "Step 3"];
-        } else if (type === "multiple") {
-            options = ["Option A", "Option B", "Option C", "Option D"];
-        } else {
-            options = ["A", "B", "C", "D"];
-        }
-
-        return {
-            id,
-            type,
-            text: `${quizId} - Mock question ${i + 1} (${type})`,
-            options
-        } as Question;
-    });
-}
 function formatTime(seconds: number) {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
@@ -67,33 +38,139 @@ function formatTime(seconds: number) {
 }
 
 
-
 export default function QuizPage() {
-    // Lesson mở sẵn là lesson 1, quiz mặc định 1.1
-    const [openLesson, setOpenLesson] = useState<number | null>(1);
-    const [activeQuiz, setActiveQuiz] = useState<string>("1.1");
-    const [questions, setQuestions] = useState<Question[]>(() => generateMockQuestions(activeQuiz));
+    // use route params to determine course and lesson
+    const { courseId, quizId } = useParams<{ courseId: string; quizId: string }>();
+    const navigate = useNavigate();
+    const [openLesson, setOpenLesson] = useState<string | null>(null);
+    const [activeQuiz, setActiveQuiz] = useState<string>(quizId || "");
+    const [questions, setQuestions] = useState<Question[]>([]);
     const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+    const [answers, setAnswers] = useState<Record<string, any>>({});
     const [timeRemaining, setTimeRemaining] = useState(1200); // seconds
     const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const [lessons, setLessons] = useState<any[]>([]);
+    const [timeLimit, setTimeLimit] = useState<number>(1200); // default 20 minutes
+    const [started, setStarted] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [submissionResult, setSubmissionResult] = useState<any | null>(null);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
+    const [reviewMode, setReviewMode] = useState(false);
+    const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+    const [showAutoSubmitted, setShowAutoSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [pendingSwitch, setPendingSwitch] = useState<{ id: string; lessonId: string } | null>(null);
+    const [showConfirmSwitch, setShowConfirmSwitch] = useState(false);
 
+    // Show confirmation modal when user clicks Submit
+    function handleSubmit() {
+        setShowConfirmSubmit(true);
+    }
+
+    // Perform submission. If auto=true we consider it an auto-submit.
+    async function doSubmit(auto = false) {
+        if (!activeQuiz) return;
+        setIsSubmitting(true);
+
+        // Build answers, unanswered -> empty array
+        const payloadAnswers = (questions || []).map(q => ({
+            questionId: q.id,
+            answer: typeof answers[q.id] === 'undefined' ? [] : answers[q.id],
+        }));
+
+        const data = {
+            quizId: activeQuiz,
+            answers: payloadAnswers,
+            duration: timeLimit - timeRemaining,
+        };
+
+        try {
+            const result = await submitQuiz(data);
+            setSubmissionResult(result);
+            setIsSubmitted(true);
+
+            // fetch and update history
+            try {
+                const hist = await getQuizHistory(activeQuiz);
+                setHistoryData(hist);
+            } catch (err) {
+                // ignore history fetch errors
+            }
+
+            // Enter review mode and show the newly created submission (or latest history)
+            if (result) {
+                setSelectedAttempt(result);
+            } else if (historyData && historyData.length > 0) {
+                setSelectedAttempt(historyData[0]);
+            }
+            setReviewMode(true);
+            setHistoryOpen(false);
+
+            if (auto) {
+                setShowAutoSubmitted(true);
+            } else {
+                setShowConfirmSubmit(false);
+            }
+        } catch (err) {
+            console.error('Submit failed', err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
     function handleAutoSubmit() {
-        alert("Time's up! Submitting your quiz automatically.");
-        console.log("SUBMITTED:", [...answeredQuestions]);
+        // Auto-submit immediately (no confirmation) and show notification modal
+        doSubmit(true);
     }
+
+    
+
     useEffect(() => {
-        setQuestions(generateMockQuestions(activeQuiz));
-        setTimeRemaining( Math.floor(Math.random() * 300) + 900 ); // 15-20 phút
-        // reset refs array when quiz changes
-        questionRefs.current = [];
+        // when activeQuiz changes, fetch quiz details from server
+        if (!activeQuiz) return;
+        let mounted = true;
+        (async () => {
+            try {
+                const quiz = await getQuizById(activeQuiz);
+                if (!mounted) return;
+                const q = Array.isArray(quiz.questions) ? quiz.questions : [];
+                setQuestions(q as Question[]);
+                setTimeRemaining(typeof quiz.timelimit === 'number' ? Math.max(0, quiz.timelimit) : 1200);
+                setAnsweredQuestions(new Set());
+                setAnswers({});
+                questionRefs.current = [];
+            } catch (err) {
+                // fallback: clear questions
+                setQuestions([]);
+            }
+        })();
+        return () => {
+            mounted = false;
+        };
     }, [activeQuiz]);
 
-    function handleAnswered(id: string) {
-        setAnsweredQuestions(prev => new Set(prev).add(id));
+    function handleAnswered(id: string, answer: any) {
+        setAnswers(prev => {
+            // avoid unnecessary object overwrite if same value
+            const prevVal = prev[id];
+            const newVal = answer;
+            const equal = JSON.stringify(prevVal) === JSON.stringify(newVal);
+            if (equal) return prev;
+            return { ...prev, [id]: newVal };
+        });
+
+        setAnsweredQuestions(prev => {
+            if (prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
     }
 
     useEffect(() => {
+        if (!started) return;
         const interval = setInterval(() => {
             setTimeRemaining((prev) => {
                 if (prev <= 1) {
@@ -106,103 +183,171 @@ export default function QuizPage() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [started]);
+
+    // Fetch lessons for the course and pick initial quiz when available
+    useEffect(() => {
+        if (!courseId) return;
+        let mounted = true;
+        (async () => {
+            try {
+                const data = await getLessonsByCourse(courseId);
+                if (!mounted) return;
+                setLessons(data);
+
+                // Determine which lesson to open: prefer route param, else first
+                // initialLessonId is derived from quizId if available
+                const initialLessonId = data.find((lesson: any) =>
+                    lesson.quizzes && lesson.quizzes.some((q: any) => q.id === quizId)
+                )?.id;
+
+                // pick quiz that is equal quizId from route param, else first quiz of first lesson
+                setOpenLesson(initialLessonId ?? (data.length > 0 ? data[0].id : null));
+                if (quizId) {
+                    setActiveQuiz(quizId);
+                } else if (data.length > 0 && data[0].quizzes && data[0].quizzes.length > 0) {
+                    setActiveQuiz(data[0].quizzes[0].id);
+                }
+
+            } catch (err) {
+                setLessons([]);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [courseId, quizId]);
+
+    // reset interactive state when switching quizzes so quiz appears locked until started
+    useEffect(() => {
+        setStarted(false);
+        setIsSubmitted(false);
+        setSubmissionResult(null);
+        setSelectedAttempt(null);
+        setReviewMode(false);
+    }, [activeQuiz]);
+
+    const locked = isSubmitted || timeRemaining <= 0;
+
+    async function openHistory() {
+        setHistoryOpen(true);
+        try {
+            const hist = await getQuizHistory(activeQuiz);
+            setHistoryData(hist);
+        } catch (err) {
+            setHistoryData([]);
+        }
+    }
+
+    function startQuiz() {
+        if (timeRemaining <= 0) setTimeRemaining(timeLimit);
+        setStarted(true);
+    }
+
+    function retryQuiz() {
+        // Reset state for a new attempt
+        setIsSubmitted(false);
+        setSubmissionResult(null);
+        setSelectedAttempt(null);
+        setReviewMode(false);
+        setAnswers({});
+        setAnsweredQuestions(new Set());
+        setTimeRemaining(timeLimit);
+        setStarted(true);
+        questionRefs.current = [];
+        // refetch quiz to reset questions if needed
+        if (activeQuiz) {
+            (async () => {
+                try {
+                    const quiz = await getQuizById(activeQuiz);
+                    const q = Array.isArray(quiz.questions) ? quiz.questions : [];
+                    setQuestions(q as Question[]);
+                } catch (err) {
+                    // ignore
+                }
+            })();
+        }
+    }
+
+    function handleSelectQuiz(id: string, lessonId: string) {
+        // If the user already started the quiz and hasn't submitted yet, show in-app confirmation modal
+        if (started && !isSubmitted && !reviewMode) {
+            setPendingSwitch({ id, lessonId });
+            setShowConfirmSwitch(true);
+            return;
+        }
+        // navigate and switch active quiz immediately
+        navigate(`/courses/${courseId}/quiz/${id}`);
+        setActiveQuiz(id);
+        setOpenLesson(lessonId);
+    }
 
     return (
         <div className="min-h-screen bg-background pb-10">
             <HeaderComponent />
             <div className="w-full h-screen grid grid-cols-12 bg-gray-50">
-                {/* Sidebar: Lessons and Quizzes */}
-                <aside className="col-span-3 border-r p-4 overflow-y-auto">
-                    <h2 className="text-xl font-semibold mb-4">Lessons</h2>
+                <QuizLeft lessons={lessons} openLesson={openLesson} setOpenLesson={setOpenLesson} activeQuiz={activeQuiz} setActiveQuiz={setActiveQuiz} onSelectQuiz={handleSelectQuiz} courseId={courseId} />
 
-                    <Card className="shadow-sm">
-                        <CardContent className="p-4 space-y-4">
-                            {[1, 2, 3].map((lesson) => (
-                                <div key={lesson} className="border-b pb-2">
-                                    <div
-                                        className="flex justify-between items-center cursor-pointer"
-                                        onClick={() => setOpenLesson(openLesson === lesson ? null : lesson)}
-                                    >
-                                        <h3 className="font-semibold mb-2">Lesson {lesson}</h3>
-                                        <span>{openLesson === lesson ? "-" : "+"}</span>
-                                    </div>
-
-                                    {openLesson === lesson && (
-                                        <div className="space-y-1 ml-2 mt-2">
-                                            {[1, 2, 3].map((quiz) => {
-                                                const id = `${lesson}.${quiz}`;
-                                                return (
-                                                    <div
-                                                        key={id}
-                                                        onClick={() => {
-                                                            setActiveQuiz(id);
-                                                            setOpenLesson(lesson);
-                                                        }}
-                                                        className={`text-sm cursor-pointer p-1 rounded-md transition-colors duration-150 ${activeQuiz === id
-                                                            ? "bg-blue-100 text-blue-700 font-semibold"
-                                                            : "hover:underline hover:bg-gray-50"
-                                                            }`}
-                                                    >
-                                                        Quiz {lesson}.{quiz}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </aside>
-
-                {/* Main Content: Quiz Questions */}
-                <main className="col-span-6 p-6 overflow-y-auto">
-                    <h1 className="text-2xl font-bold mb-4">Quiz {activeQuiz}</h1>
-
-                    {questions.map((q, index) => (
-                        <div key={q.id} ref={(el) => { questionRefs.current[index] = el; }}>
-                            <Card className="mb-6">
-                                <CardContent className="p-6 space-y-6">
-                                    <h2 className="text-lg font-semibold">Question {index + 1}</h2>
-                                    <p>{q.text}</p>
-
-                                    {/* Render đúng câu trả lời */}
-                                    {renderQuestion(q, () => handleAnswered(q.id))}
-
-                                </CardContent>
-                            </Card>
-                        </div>
-                    ))}
-                </main>
-                {/* Sidebar: Timer and Question Navigation */}
-                <aside className="col-span-3 border-l p-4 flex flex-col gap-6">
-                    <Card className="shadow-sm">
-                        <CardContent className="p-4 text-center">
-                            <h3 className="text-lg font-semibold mb-2">Time Remaining</h3>
-                            <div className="text-3xl font-bold">{formatTime(timeRemaining)}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardContent className="p-4">
-                            <h3 className="text-lg font-semibold mb-3">Questions</h3>
-                            <div className="grid grid-cols-5 gap-2">
-                                {questions.map((q, i) => (
-                                    <button
-                                        key={q.id}
-                                        onClick={() => questionRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                                        className={`${answeredQuestions.has(q.id) ? "bg-green-200" : "bg-gray-200"} rounded-lg p-2 text-sm hover:bg-gray-300`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Button className="mt-1  w-full">Submit Answer</Button>
-                </aside>
+                <QuizMain activeQuiz={activeQuiz} questions={questions} questionRefs={questionRefs} renderQuestion={renderQuestion} handleAnswered={handleAnswered} locked={locked} reviewMode={reviewMode} selectedAttempt={selectedAttempt} started={started} />
+                <QuizRight questions={questions} questionRefs={questionRefs} answeredQuestions={answeredQuestions} reviewMode={reviewMode} selectedAttempt={selectedAttempt} timeRemaining={timeRemaining} locked={locked} handleSubmit={handleSubmit} openHistory={openHistory} onRetry={retryQuiz} isSubmitting={isSubmitting} isSubmitted={isSubmitted} submissionResult={submissionResult} started={started} startQuiz={startQuiz} />
             </div>
+
+            {/* Confirm submit modal */}
+            {showConfirmSubmit && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg w-96 p-6">
+                        <h3 className="text-lg font-semibold mb-3">Confirm Submit</h3>
+                        <p className="text-sm text-gray-700 mb-4">Are you sure you want to submit the quiz? You won't be able to change answers after submitting.</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2" onClick={() => setShowConfirmSubmit(false)}>Cancel</button>
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={() => doSubmit(false)} disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Confirm'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Auto-submit notification modal */}
+            {showAutoSubmitted && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg w-96 p-6">
+                        <h3 className="text-lg font-semibold mb-3">Time's up</h3>
+                        <p className="text-sm text-gray-700 mb-4">Time is up and your quiz was auto-submitted. You can review your attempt now.</p>
+                        <div className="flex justify-end">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={() => setShowAutoSubmitted(false)}>OK</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm switch quiz modal (when leaving a started, unsent attempt) */}
+            {showConfirmSwitch && pendingSwitch && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg w-96 p-6">
+                        <h3 className="text-lg font-semibold mb-3">Xác nhận rời bài</h3>
+                        <p className="text-sm text-gray-700 mb-4">Bạn đã bắt đầu làm bài; rời đi sẽ bỏ tiến trình hiện tại và không nộp. Bạn có muốn tiếp tục và chuyển sang quiz khác không?</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2" onClick={() => { setShowConfirmSwitch(false); setPendingSwitch(null); }}>Hủy</button>
+                            <button className="px-4 py-2 bg-red-600 text-white rounded" onClick={() => {
+                                // proceed with switch
+                                navigate(`/courses/${courseId}/quiz/${pendingSwitch.id}`);
+                                setActiveQuiz(pendingSwitch.id);
+                                setOpenLesson(pendingSwitch.lessonId);
+                                setShowConfirmSwitch(false);
+                                setPendingSwitch(null);
+                                // reset interactive state for new quiz
+                                setStarted(false);
+                                setReviewMode(false);
+                                setIsSubmitted(false);
+                                setSubmissionResult(null);
+                            }}>Tiếp tục</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <HistorySelector open={historyOpen} historyData={historyData} onClose={() => setHistoryOpen(false)} onSelect={(attempt) => {
+                setSelectedAttempt(attempt);
+                setReviewMode(true);
+                setHistoryOpen(false);
+            }} />
         </div>
     );
 }

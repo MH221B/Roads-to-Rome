@@ -7,6 +7,7 @@ import { adminRouter } from './routes/admin.route';
 import { courseRouter } from './routes/course.route';
 import { enrollmentRouter } from './routes/enrollment.route';
 import { lessonRouter } from './routes/lesson.route';
+import { quizRouter } from './routes/quiz.route';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/courses', courseRouter);
 app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/lessons', lessonRouter);
 app.use('/api/courses', courseRouter);
+app.use('/api/quiz', quizRouter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

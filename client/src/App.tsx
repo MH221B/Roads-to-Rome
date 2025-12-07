@@ -50,7 +50,7 @@ function App() {
               </RequireRole>
             }
           />
-          <Route path="/courses/:courseId/lessons/:lessonId/quiz" element={<QuizPage />} />
+          <Route path="/courses/:courseId/quiz/:quizId" element={<QuizPage />} />
           // ex: /courses/123/lessons/456/quiz
 
           <Route path="*" element={<Navigate to="/" />} />

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ICourse extends Document {
+  courseId: string; // primary key
   title: string;
   thumbnail?: string;
   category?: string;
@@ -12,6 +13,7 @@ export interface ICourse extends Document {
 
 const CourseSchema: Schema = new Schema(
   {
+    courseId: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     thumbnail: { type: String },
     category: { type: String },

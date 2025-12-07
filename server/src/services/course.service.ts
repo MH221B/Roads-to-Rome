@@ -23,30 +23,33 @@ const courseService: ICourseService = {
         .exec()) as any[];
 
       return raw.map((c) => {
-        const { _id, ...rest } = c || {};
-        return { id: String(_id), ...rest };
+        const { _id, courseId, ...rest } = c || {};
+        return { id: courseId || String(_id), ...rest };
       });
     }
 
     // return all courses sorted by createdAt desc (lean returns plain objects)
     const raw = (await Course.find().sort({ createdAt: -1 }).lean().exec()) as any[];
     return raw.map((c) => {
-      const { _id, ...rest } = c || {};
-      return { id: String(_id), ...rest };
+      const { _id, courseId, ...rest } = c || {};
+      return { id: courseId || String(_id), ...rest };
     });
   },
 
   async getCourseById(id: string): Promise<any | null> {
-    // find course
-    const course = await Course.findById(id).lean().exec();
+    // find course: prefer matching by Course.courseId string, fallback to _id
+    let course = await Course.findOne({ courseId: id }).lean().exec();
+    if (!course) {
+      course = await Course.findById(id).lean().exec();
+    }
     if (!course) return null;
 
-    // lessons: try matching by course._id as string or as ObjectId
-    const courseIdStr = course._id ? String((course as any)._id) : id;
+    // lessons: match by course.courseId if present, otherwise by _id string
+    const courseIdStr = course.courseId || (course._id ? String((course as any)._id) : id);
     const lessons = await Lesson.find({ course_id: courseIdStr }).sort({ order: 1 }).lean().exec();
 
-    // comments: stored with courseId as ObjectId ref
-    const commentsRaw = await Comment.find({ courseId: (course as any)._id })
+    // comments: stored with courseId as course identifier string
+    const commentsRaw = await Comment.find({ courseId: course.courseId || String((course as any)._id) })
       .populate({ path: 'userId', select: 'email role' })
       .sort({ createdAt: -1 })
       .lean()
@@ -71,7 +74,7 @@ const courseService: ICourseService = {
       : { name: (course as any).instructor || 'Unknown Instructor', email: null };
 
     return {
-      id: String((course as any)._id),
+      id: course.courseId || String((course as any)._id),
       ...course,
       instructor,
       lessons,

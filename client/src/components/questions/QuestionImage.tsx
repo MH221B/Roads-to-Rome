@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-export default function ImageChoiceAnswer({ item, onAnswered }: any) {
+export default function ImageChoiceAnswer({ item, onAnswered, disabled }: any) {
   const [selected, setSelected] = useState<string | null>(null);
 
   // Shuffle image options only once
@@ -21,13 +21,14 @@ export default function ImageChoiceAnswer({ item, onAnswered }: any) {
             <div
               key={idx}
               tabIndex={0}
-              className={`border rounded-lg p-2 cursor-pointer flex flex-col items-center transition 
-                ${isActive ? "bg-blue-100 border-blue-500" : "hover:bg-gray-100"}`}
-              onClick={() => {
-                setSelected(img);
-                onAnswered();
-              }}            // chỉ đổi màu
-              onKeyDown={(e) => e.key === "Enter" && setSelected(img)}
+              className={`border rounded-lg p-2 ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} flex flex-col items-center transition 
+                  ${isActive ? "bg-blue-100 border-blue-500" : "hover:bg-gray-100"}`}
+                onClick={() => {
+                  if (disabled) return;
+                  setSelected(img);
+                  onAnswered(img);
+                }}
+                onKeyDown={(e) => !disabled && e.key === "Enter" && setSelected(img)}
             >
               <img
                 src={img}

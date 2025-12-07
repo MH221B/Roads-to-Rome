@@ -6,4 +6,6 @@ export interface Question {
   text: string;
   options?: string[];
   slotCount?: number; // Chỉ dành cho câu hỏi dragdrop
+  // server provides correctAnswers as array of strings for each question
+  correctAnswers?: string[];
 }

@@ -1,4 +1,5 @@
 import lessonModel from "../models/lesson.model";
+import quizModel from "../models/quiz.model";
 
 interface ILessonService {
   GetLessonsByCourseId(courseId: string): Promise<unknown[]>;
@@ -8,7 +9,14 @@ interface ILessonService {
 const lessonService: ILessonService = {
   GetLessonsByCourseId: async (courseId: string): Promise<unknown[]> => {
     const lessons = await lessonModel.find({ course_id: courseId }).sort({ order: 1 }).exec();
-    return lessons;
+    const lessonsWithQuizzes = await Promise.all(lessons.map(async (lesson) => {
+      const quizzes = await quizModel.find({ lesson_id: lesson.id }).sort({ order: 1 }).exec();
+      return {
+        ...lesson.toObject(),
+        quizzes
+      };
+    }));
+    return lessonsWithQuizzes;
   },
 
   GetLessonById: async (courseId: string, lessonId: string): Promise<unknown> => {

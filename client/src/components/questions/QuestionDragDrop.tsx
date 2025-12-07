@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 
-export default function DragDropAnswer({ item, onAnswered }: any) {
+export default function DragDropAnswer({ item, onAnswered, disabled }: any) {
   // Shuffle chỉ 1 lần
   const shuffled = useMemo(
     () => [...item.options].sort(() => Math.random() - 0.5),
@@ -17,11 +17,13 @@ export default function DragDropAnswer({ item, onAnswered }: any) {
     const leftEmpty = dragItems.length === 0;
     const rightFull = dropSlots.every((slot) => slot !== null);
     if (leftEmpty || rightFull) {
-      onAnswered();
+      // report the current dropSlots as the answer (order matters)
+      onAnswered([...dropSlots]);
     }
   }, [dragItems, dropSlots, onAnswered]);
 
   const handleDragStartFromLeft = (e: React.DragEvent, item: string) => {
+    if (disabled) return;
     e.dataTransfer.setData(
       "application/json",
       JSON.stringify({ source: "left", item })
@@ -30,6 +32,7 @@ export default function DragDropAnswer({ item, onAnswered }: any) {
   };
 
   const handleDragStartFromSlot = (e: React.DragEvent, index: number) => {
+    if (disabled) return;
     if (!dropSlots[index]) return;
     e.dataTransfer.setData(
       "application/json",
@@ -39,6 +42,7 @@ export default function DragDropAnswer({ item, onAnswered }: any) {
   };
 
   const handleDropToSlot = (e: React.DragEvent, slotIndex: number) => {
+    if (disabled) return;
     e.preventDefault();
     const raw = e.dataTransfer.getData("application/json");
     if (!raw) return;
@@ -71,6 +75,7 @@ export default function DragDropAnswer({ item, onAnswered }: any) {
   };
 
   const handleDropToLeft = (e: React.DragEvent) => {
+    if (disabled) return;
     e.preventDefault();
     const raw = e.dataTransfer.getData("application/json");
     if (!raw) return;
