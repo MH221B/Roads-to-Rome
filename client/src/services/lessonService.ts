@@ -9,7 +9,7 @@ export type LessonSummary = {
 };
 
 export async function getLessonsByCourse(courseId: string): Promise<LessonSummary[]> {
-  const resp = await api.get(`/api/lessons/course/${courseId}`);
+  const resp = await api.get(`/api/courses/${courseId}/lessons`);
   // server returns full lesson objects; map to a lightweight summary
   const payload = resp.data ?? [];
   return payload.map((l: any) => ({

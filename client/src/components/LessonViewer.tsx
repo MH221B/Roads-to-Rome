@@ -35,21 +35,22 @@ interface Course {
 // --- API Functions ---
 const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
   console.log('Fetching course:', courseId);
-  const response = await api.get(`/api/lessons/course/${courseId}`);
+  const response = await api.get(`/api/courses/${courseId}/lessons`);
   const lessons: Lesson[] = response.data.map((l: any) => ({
     ...l,
-    content_type: l.contentType,
-    duration: l.duration ? Math.round(l.duration / 60) : undefined, // convert seconds to minutes
+    // server returns `content_type` and `duration` in seconds
+    content_type: l.content_type || l.contentType,
+    duration: l.duration ? Math.round(l.duration / 60) : undefined,
   }));
   return { id: courseId, title: `Course ${courseId}`, lessons };
 };
 
 const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<Lesson> => {
-  const response = await api.get(`/api/lessons/${lessonId}?courseId=${courseId}`);
+  const response = await api.get(`/api/courses/${courseId}/lessons/${lessonId}`);
   const data = response.data;
   return {
     ...data,
-    content_type: data.contentType,
+    content_type: data.content_type || data.contentType,
     duration: data.duration ? Math.round(data.duration / 60) : undefined,
   };
 };
