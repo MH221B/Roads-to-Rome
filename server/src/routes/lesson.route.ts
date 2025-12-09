@@ -1,16 +1,33 @@
 import { Router } from 'express';
 import lessonController from '../controllers/lesson.controller';
+import { authenticateToken, authorizeRoles } from '../middlewares/auth.middleware';
+import Role from '../enums/user.enum';
 
 const lessonRouter = Router({ mergeParams: true }); // Enable merging parent params
 
-// Route: POST /api/courses/:courseId/lessons
-lessonRouter.post('/', lessonController.CreateLesson);
+// Route: POST /api/courses/:courseId/lessons (requires auth + instructor/admin)
+lessonRouter.post(
+  '/',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  lessonController.CreateLesson
+);
 
-// Route: PUT /api/courses/:courseId/lessons/:lessonId
-lessonRouter.put('/:lessonId', lessonController.UpdateLesson);
+// Route: PUT /api/courses/:courseId/lessons/:lessonId (requires auth + instructor/admin)
+lessonRouter.put(
+  '/:lessonId',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  lessonController.UpdateLesson
+);
 
-// Route: DELETE /api/courses/:courseId/lessons/:lessonId
-lessonRouter.delete('/:lessonId', lessonController.DeleteLesson);
+// Route: DELETE /api/courses/:courseId/lessons/:lessonId (requires auth + instructor/admin)
+lessonRouter.delete(
+  '/:lessonId',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  lessonController.DeleteLesson
+);
 
 // Route: GET /api/courses/:courseId/lessons
 lessonRouter.get('/', lessonController.GetLessonsByCourseId);

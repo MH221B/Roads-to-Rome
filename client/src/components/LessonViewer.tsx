@@ -286,11 +286,14 @@ export default function LessonViewer() {
                       </div>
                     </div>
                   ) : (
-                    <CardContent className="prose max-w-none p-8 text-slate-700">
-                      {/* Placeholder for Article/Text Content */}
-                      <div className="whitespace-pre-wrap">
-                        {lesson.content || 'No content available for this lesson.'}
-                      </div>
+                    <CardContent className="prose prose-sm md:prose-base max-w-none p-8 text-slate-700">
+                      {/* HTML Content Renderer */}
+                      <div
+                        className="prose-a:text-primary prose-a:underline prose-h1:text-slate-900 prose-h2:text-slate-900 prose-h3:text-slate-800 prose-strong:text-slate-900 prose-code:bg-slate-100 prose-code:text-slate-900 prose-code:px-2 prose-code:py-1 prose-code:rounded"
+                        dangerouslySetInnerHTML={{
+                          __html: lesson.content || '<p>No content available for this lesson.</p>',
+                        }}
+                      />
                     </CardContent>
                   )}
                 </Card>

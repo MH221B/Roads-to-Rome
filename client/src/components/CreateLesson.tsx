@@ -3,30 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
-import { api } from '@/services/axiosClient';
+import { uploadFile, createLesson } from '@/services/lessonService';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import LessonEditor from './LessonEditor';
 import { Upload } from 'lucide-react';
 
+type LessonType = 'theory' | 'practical' | 'lab';
+
 interface FormValues {
   title: string;
+  lessonType: LessonType;
+  order: number;
 }
-
-const uploadFile = async (file: File) => {
-  const fd = new FormData();
-  fd.append('file', file);
-  const { data } = await api.post('/api/uploads', fd, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return data; // expect { url }
-};
-
-const createLesson = async (courseId: string, payload: any) => {
-  const { data } = await api.post(`/api/courses/${courseId}/lessons`, payload);
-  return data;
-};
 
 export default function CreateLesson() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -34,7 +31,7 @@ export default function CreateLesson() {
   const queryClient = useQueryClient();
 
   const { register, handleSubmit } = useForm<FormValues>({
-    defaultValues: { title: '' },
+    defaultValues: { title: '', lessonType: 'theory', order: 0 },
   });
 
   const [htmlContent, setHtmlContent] = React.useState<string>('');
@@ -47,6 +44,8 @@ export default function CreateLesson() {
 
       const payload: any = {
         title: values.title,
+        lessonType: values.lessonType,
+        order: values.order,
         content_type: 'html',
         content: htmlContent,
       };
@@ -56,6 +55,14 @@ export default function CreateLesson() {
         const uploadRes = await uploadFile(videoFile);
         payload.content_type = 'video';
         payload.content = uploadRes?.url ?? null;
+      }
+
+      // Upload attachments and collect their URLs
+      if (attachmentFiles.length > 0) {
+        const attachmentUrls = await Promise.all(
+          attachmentFiles.map((file) => uploadFile(file).then((res) => res?.url))
+        );
+        payload.attachments = attachmentUrls;
       }
 
       return await createLesson(courseId, payload);
@@ -118,6 +125,41 @@ export default function CreateLesson() {
           <div>
             <Label className="mb-1 block text-sm font-medium">Title</Label>
             <Input {...register('title', { required: true })} placeholder="Lesson title" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="mb-1 block text-sm font-medium">Lesson Type</Label>
+              <Select
+                value={undefined}
+                onValueChange={(value) => {
+                  // Get the hidden input from react-hook-form
+                  const input = document.querySelector(
+                    'input[name="lessonType"]'
+                  ) as HTMLInputElement;
+                  if (input) input.value = value;
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select lesson type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="theory">Theory</SelectItem>
+                  <SelectItem value="practical">Practical</SelectItem>
+                  <SelectItem value="lab">Lab</SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" {...register('lessonType', { required: true })} />
+            </div>
+            <div>
+              <Label className="mb-1 block text-sm font-medium">Order</Label>
+              <Input
+                type="number"
+                {...register('order', { required: true, valueAsNumber: true })}
+                placeholder="Lesson order"
+                min="0"
+              />
+            </div>
           </div>
 
           <div>

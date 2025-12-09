@@ -8,6 +8,7 @@ interface CreateLessonPayload {
   content: string;
   lessonType?: string;
   duration?: number;
+  order?: number;
   attachments?: string[];
 }
 
@@ -35,13 +36,15 @@ const lessonService: ILessonService = {
       throw new Error('title, content_type, and content are required');
     }
 
-    // Get the highest order in this course
-    const maxOrderLesson = await lessonModel
-      .findOne({ course_id: courseId })
-      .sort({ order: -1 })
-      .exec();
-
-    const nextOrder = (maxOrderLesson?.order ?? -1) + 1;
+    // Use provided order or calculate next order
+    let lessonOrder = payload.order;
+    if (lessonOrder === undefined) {
+      const maxOrderLesson = await lessonModel
+        .findOne({ course_id: courseId })
+        .sort({ order: -1 })
+        .exec();
+      lessonOrder = (maxOrderLesson?.order ?? -1) + 1;
+    }
 
     const newLesson = new lessonModel({
       id: uuidv4(),
@@ -51,7 +54,7 @@ const lessonService: ILessonService = {
       content: payload.content,
       lessonType: payload.lessonType,
       duration: payload.duration,
-      order: nextOrder,
+      order: lessonOrder,
       attachments: payload.attachments || [],
       created_at: new Date(),
       updated_at: new Date(),

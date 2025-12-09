@@ -342,7 +342,7 @@ export default function CourseDetail() {
               <Card>
                 <div className="divide-y">
                   {course.lessons?.map((lesson) => {
-                    const clickable = !isInstructorOwner;
+                    const clickable = true;
                     return (
                       <div
                         key={lesson.id}
