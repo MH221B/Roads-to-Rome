@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../app';
 import lessonModel from '../models/lesson.model';
 import { LessonType } from '../enums/lesson.enum';
+import Role from '../enums/user.enum';
 
 const mockLessons = [
   {
@@ -44,7 +46,15 @@ const mockLessons = [
 ];
 
 describe('Lesson Routes', () => {
+  let authToken: string;
+
   beforeEach(async () => {
+    // Generate a valid JWT token for testing
+    const secret = process.env.ACCESS_TOKEN_SECRET || 'test-secret';
+    authToken = jwt.sign({ userId: 'test-user-id', role: Role.INSTRUCTOR }, secret, {
+      expiresIn: '1h',
+    });
+
     // Clear the database before each test
     await lessonModel.deleteMany({});
     // Insert mock data
@@ -134,6 +144,7 @@ describe('Lesson Routes', () => {
       const courseId = 'course1';
       const response = await request(app)
         .post(`/api/courses/${courseId}/lessons`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           title: 'New Lesson',
           content_type: 'html',
@@ -156,6 +167,7 @@ describe('Lesson Routes', () => {
       const lessonId = 'l1';
       const response = await request(app)
         .put(`/api/courses/${courseId}/lessons/${lessonId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           title: 'Updated Title',
         })
@@ -172,6 +184,7 @@ describe('Lesson Routes', () => {
       const lessonId = 'l1';
       const response = await request(app)
         .delete(`/api/courses/${courseId}/lessons/${lessonId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
