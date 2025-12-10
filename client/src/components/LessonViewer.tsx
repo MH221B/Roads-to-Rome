@@ -17,6 +17,7 @@ import {
   FaEdit,
 } from 'react-icons/fa';
 import HeaderComponent from './HeaderComponent';
+import { decodeJwtPayload } from '../lib/utils';
 
 // --- Types ---
 interface Lesson {
@@ -32,20 +33,6 @@ interface Course {
   id: string;
   title: string;
   lessons: Lesson[];
-}
-
-// --- Helper Functions ---
-function decodeJwtPayload(token: string | null): any | null {
-  if (!token) return null;
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = parts[1];
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
 }
 
 // --- API Functions ---

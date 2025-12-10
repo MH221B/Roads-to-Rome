@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { Course } from '@/services/courseService';
 import { getCourses, getInstructorCourses } from '@/services/courseService';
+import { decodeJwtPayload } from '@/lib/utils';
 
 const mockCategories: string[] = [
   'Web Development',
@@ -40,19 +41,6 @@ import { useAuth } from '@/contexts/AuthProvider';
 
 // local UI-only state for courses loaded from the backend
 // `Course` type is imported from the service and matches the API shape
-
-function decodeJwtPayload(token: string | null): any | null {
-  if (!token) return null;
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = parts[1];
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
-}
 
 const HomePage: React.FC = () => {
   const { accessToken } = useAuth();

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/axiosClient';
+import { decodeJwtPayload } from '@/lib/utils';
 
 type Course = {
   id: string;
@@ -27,19 +28,6 @@ export type UserCourseProgress = {
   rating?: number | null; // decimal like 4.5
   updated_at?: string | null;
 };
-
-function decodeJwtPayload(token: string | null): any | null {
-  if (!token) return null;
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = parts[1];
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
-}
 
 const Dashboard: React.FC = () => {
   const { accessToken, isAuthenticated } = useAuth();
@@ -96,17 +84,26 @@ const Dashboard: React.FC = () => {
                 ? ({
                     id: item.course.id || item.course._id,
                     title: item.course.title || item.course.name || 'Untitled',
-                    thumbnail: item.course.thumbnail || `https://picsum.photos/seed/${item.course.id || 'course'}/640/360`,
+                    thumbnail:
+                      item.course.thumbnail ||
+                      `https://picsum.photos/seed/${item.course.id || 'course'}/640/360`,
                     category: item.course.category,
                     tags: item.course.tags || [],
-                    instructor: typeof item.course.instructor === 'string' ? item.course.instructor : (item.course.instructor?.name || item.course.instructor?.email || 'Unknown'),
+                    instructor:
+                      typeof item.course.instructor === 'string'
+                        ? item.course.instructor
+                        : item.course.instructor?.name ||
+                          item.course.instructor?.email ||
+                          'Unknown',
                     shortDescription: item.course.shortDescription || item.course.description || '',
                   } as Course)
                 : item;
 
               const extra: Partial<UserCourseProgress> = isEnrollment
                 ? { progress: item.progress, rating: item.rating }
-                : (isStudent && isAuthenticated ? stableFromId(course.id) : { progress: null, rating: null });
+                : isStudent && isAuthenticated
+                  ? stableFromId(course.id)
+                  : { progress: null, rating: null };
 
               return (
                 <CourseCard

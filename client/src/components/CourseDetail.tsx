@@ -20,6 +20,7 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import HeaderComponent from './HeaderComponent';
 import LessonListDraggable from './LessonListDraggable';
+import { decodeJwtPayload } from '@/lib/utils';
 
 // Types based on the provided database design
 interface User {
@@ -145,15 +146,7 @@ export default function CourseDetail() {
 
   const { accessToken } = useAuth();
   const payload = useMemo(() => {
-    if (!accessToken) return null;
-    try {
-      const parts = accessToken.split('.');
-      if (parts.length < 2) return null;
-      const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-      return JSON.parse(json);
-    } catch (e) {
-      return null;
-    }
+    return decodeJwtPayload(accessToken);
   }, [accessToken]);
 
   const rawRoles = payload?.roles ?? payload?.role;
