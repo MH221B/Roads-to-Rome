@@ -19,6 +19,7 @@ import ReviewForm from './ReviewForm';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import HeaderComponent from './HeaderComponent';
+import LessonListDraggable from './LessonListDraggable';
 
 // Types based on the provided database design
 interface User {
@@ -34,6 +35,7 @@ interface Lesson {
   title: string;
   content_type: string;
   content: string;
+  order?: number;
 }
 
 interface Comment {
@@ -75,6 +77,7 @@ const fetchCourse = async (courseId: string) => {
       content_type:
         l.content_type || l.contentType || (l.content_type ? l.content_type : undefined),
       content: l.content,
+      order: l.order ?? 0,
     }));
 
     const comments = (data.comments || []).map((c: any) => ({
@@ -338,36 +341,22 @@ export default function CourseDetail() {
 
               <div className="text-muted-foreground mb-4 text-sm">
                 {course.lessons?.length || 0} lessons
+                {isInstructorOwner && <span className="ml-2">(drag to reorder)</span>}
               </div>
               <Card>
-                <div className="divide-y">
-                  {course.lessons?.map((lesson) => {
-                    const clickable = true;
-                    return (
-                      <div
-                        key={lesson.id}
-                        className={`flex ${clickable ? 'cursor-pointer' : 'cursor-default'} items-center justify-between p-4 transition-colors ${
-                          clickable ? 'hover:bg-slate-50' : ''
-                        }`}
-                        onClick={
-                          clickable
-                            ? () => navigate(`/courses/${id}/lessons/${lesson.id}`)
-                            : undefined
-                        }
-                      >
-                        <div className="flex items-center gap-3">
-                          <FaPlayCircle className="h-5 w-5 text-slate-400" />
-                          <span className="font-medium">{lesson.title}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-muted-foreground rounded border px-2 py-0.5 text-xs uppercase">
-                            {lesson.content_type}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {course.lessons && course.lessons.length > 0 ? (
+                  <LessonListDraggable
+                    lessons={course.lessons}
+                    isInstructor={isInstructorOwner}
+                    courseId={id!}
+                    onOrderChange={() => {
+                      // Optionally refetch the course data to ensure sync
+                      queryClient.invalidateQueries({ queryKey: ['course', id] });
+                    }}
+                  />
+                ) : (
+                  <div className="p-4 text-center text-gray-500">No lessons yet</div>
+                )}
               </Card>
             </div>
 

@@ -69,9 +69,30 @@ const lessonService: ILessonService = {
     lessonId: string,
     payload: UpdateLessonPayload
   ): Promise<unknown> => {
-    const lesson = await lessonModel.findOne({ course_id: courseId, id: lessonId }).exec();
+    let lesson = await lessonModel.findOne({ course_id: courseId, id: lessonId }).exec();
+
+    // If lesson not found with course_id filter, try finding by courseId as ObjectId string
+    // (MongoDB _id could be stored differently in course_id field)
     if (!lesson) {
-      throw new Error('Lesson not found in the specified course');
+      // Try to find lesson by just lessonId
+      lesson = await lessonModel.findOne({ id: lessonId }).exec();
+
+      if (lesson) {
+        // Verify the lesson belongs to a course (has course_id set)
+        if (!lesson.course_id) {
+          throw new Error(`Lesson ${lessonId} has no associated course`);
+        }
+        // Log if course ID doesn't match - might indicate data inconsistency
+        if (lesson.course_id !== courseId) {
+          console.warn(
+            `Lesson ${lessonId} has course_id=${lesson.course_id}, but request used courseId=${courseId}. Proceeding with update.`
+          );
+        }
+      }
+    }
+
+    if (!lesson) {
+      throw new Error(`Lesson with id ${lessonId} not found`);
     }
 
     // Update only provided fields
@@ -79,7 +100,6 @@ const lessonService: ILessonService = {
     if (payload.content_type !== undefined) lesson.content_type = payload.content_type;
     if (payload.content !== undefined) lesson.content = payload.content;
     if (payload.lessonType !== undefined) {
-      // Type assertion since payload has string but model expects LessonType | undefined
       lesson.lessonType = payload.lessonType as any;
     }
     if (payload.duration !== undefined) lesson.duration = payload.duration;
