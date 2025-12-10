@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaPlayCircle, FaGripVertical } from 'react-icons/fa';
+import { FaPlayCircle, FaGripVertical, FaCheckCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/axiosClient';
 
@@ -151,7 +151,7 @@ export default function LessonListDraggable({
         .then(() => {
           console.log('All lesson orders updated successfully');
           setUpdateSuccess(true);
-          setTimeout(() => setUpdateSuccess(false), 2000);
+          setTimeout(() => setUpdateSuccess(false), 500);
         })
         .catch((error: any) => {
           console.error('Failed to update lesson order:', error);
@@ -176,8 +176,9 @@ export default function LessonListDraggable({
     >
       <div className="relative">
         {updateSuccess && (
-          <div className="mb-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
-            ✓ Lesson order updated successfully
+          <div className="mb-3 flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-700">
+            <FaCheckCircle className="h-4 w-4" />
+            Lesson order updated successfully
           </div>
         )}
         <SortableContext items={items.map((l) => l.id)} strategy={verticalListSortingStrategy}>
