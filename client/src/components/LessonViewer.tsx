@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/axiosClient';
+import { useAuth } from '../contexts/AuthProvider';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
@@ -13,6 +14,7 @@ import {
   FaChevronRight,
   FaTimes,
   FaCode,
+  FaEdit,
 } from 'react-icons/fa';
 import HeaderComponent from './HeaderComponent';
 
@@ -30,6 +32,20 @@ interface Course {
   id: string;
   title: string;
   lessons: Lesson[];
+}
+
+// --- Helper Functions ---
+function decodeJwtPayload(token: string | null): any | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1];
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
+  }
 }
 
 // --- API Functions ---
@@ -58,7 +74,17 @@ const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<L
 export default function LessonViewer() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const navigate = useNavigate();
+  const { accessToken } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Decode JWT and extract roles
+  const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
+  const rawRoles = payload?.roles ?? payload?.role;
+  const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
+    (r) => String(r).toUpperCase()
+  );
+
+  const isInstructor = roles.includes('INSTRUCTOR') || roles.includes('ADMIN');
 
   // Resizable Editor Logic
   const [editorWidth, setEditorWidth] = useState(320);
@@ -269,7 +295,22 @@ export default function LessonViewer() {
                       {lesson.content_type}
                     </Badge>
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">{lesson.title}</h2>
+                  <div className="flex items-center justify-between gap-4">
+                    <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
+                      {lesson.title}
+                    </h2>
+                    {isInstructor && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/courses/${courseId}/lessons/${lessonId}/edit`)}
+                        className="shrink-0 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <FaEdit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Content Viewer */}
