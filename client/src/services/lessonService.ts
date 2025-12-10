@@ -8,6 +8,19 @@ export type LessonSummary = {
   quizzes?: Array<{ id: string; title?: string; order?: number }>;
 };
 
+export type Lesson = {
+  id: string;
+  course_id?: string;
+  courseId?: string;
+  title: string;
+  lessonType?: 'theory' | 'practical' | 'lab';
+  order?: number;
+  content_type?: string;
+  content?: string;
+  attachments?: Array<{ name: string; url: string }>;
+  quizzes?: Array<{ id: string; title?: string; order?: number }>;
+};
+
 export type CreateLessonPayload = {
   title: string;
   lessonType: 'theory' | 'practical' | 'lab';
@@ -16,6 +29,8 @@ export type CreateLessonPayload = {
   content: string;
   attachments?: string[];
 };
+
+export type UpdateLessonPayload = Partial<CreateLessonPayload>;
 
 export async function getLessonsByCourse(courseId: string): Promise<LessonSummary[]> {
   const resp = await api.get(`/api/courses/${courseId}/lessons`);
@@ -32,6 +47,11 @@ export async function getLessonsByCourse(courseId: string): Promise<LessonSummar
   }));
 }
 
+export async function getLesson(courseId: string, lessonId: string): Promise<Lesson> {
+  const resp = await api.get(`/api/courses/${courseId}/lessons/${lessonId}`);
+  return resp.data;
+}
+
 export async function uploadFile(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('file', file);
@@ -46,4 +66,19 @@ export async function createLesson(courseId: string, payload: CreateLessonPayloa
   return resp.data;
 }
 
-export default { getLessonsByCourse, uploadFile, createLesson };
+export async function updateLesson(
+  courseId: string,
+  lessonId: string,
+  payload: UpdateLessonPayload
+): Promise<any> {
+  const resp = await api.patch(`/api/courses/${courseId}/lessons/${lessonId}`, payload);
+  return resp.data;
+}
+
+export default {
+  getLessonsByCourse,
+  getLesson,
+  uploadFile,
+  createLesson,
+  updateLesson,
+};

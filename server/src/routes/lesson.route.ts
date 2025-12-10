@@ -13,6 +13,14 @@ lessonRouter.post(
   lessonController.CreateLesson
 );
 
+// Route: PATCH /api/courses/:courseId/lessons/:lessonId (requires auth + instructor/admin)
+lessonRouter.patch(
+  '/:lessonId',
+  authenticateToken,
+  authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  lessonController.UpdateLesson
+);
+
 // Route: PUT /api/courses/:courseId/lessons/:lessonId (requires auth + instructor/admin)
 lessonRouter.put(
   '/:lessonId',
@@ -29,10 +37,10 @@ lessonRouter.delete(
   lessonController.DeleteLesson
 );
 
-// Route: GET /api/courses/:courseId/lessons
-lessonRouter.get('/', lessonController.GetLessonsByCourseId);
-
-// Route: GET /api/lessons/:lessonId
+// Route: GET /api/courses/:courseId/lessons/:lessonId (specific route before generic)
 lessonRouter.get('/:lessonId', lessonController.GetLessonById);
+
+// Route: GET /api/courses/:courseId/lessons (generic route after specific ones)
+lessonRouter.get('/', lessonController.GetLessonsByCourseId);
 
 export { lessonRouter };
