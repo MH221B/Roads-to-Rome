@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
-import { uploadFile, createLesson } from '@/services/lessonService';
+import { uploadFile, createLesson, getLessonsByCourse } from '@/services/lessonService';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,6 @@ type LessonType = 'theory' | 'practical' | 'lab';
 interface FormValues {
   title: string;
   lessonType: LessonType;
-  order: number;
 }
 
 export default function CreateLesson() {
@@ -30,8 +29,18 @@ export default function CreateLesson() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Fetch existing lessons to calculate next order
+  const { data: lessons = [] } = useQuery({
+    queryKey: ['lessons', courseId],
+    queryFn: () => (courseId ? getLessonsByCourse(courseId) : Promise.resolve([])),
+    enabled: !!courseId,
+  });
+
+  // Calculate next order number
+  const nextOrder = lessons.length > 0 ? Math.max(...lessons.map((l) => l.order || 0)) + 1 : 0;
+
   const { register, handleSubmit } = useForm<FormValues>({
-    defaultValues: { title: '', lessonType: 'theory', order: 0 },
+    defaultValues: { title: '', lessonType: 'theory' },
   });
 
   const [htmlContent, setHtmlContent] = React.useState<string>('');
@@ -45,7 +54,7 @@ export default function CreateLesson() {
       const payload: any = {
         title: values.title,
         lessonType: values.lessonType,
-        order: values.order,
+        order: nextOrder,
         content_type: 'html',
         content: htmlContent,
       };
@@ -127,39 +136,28 @@ export default function CreateLesson() {
             <Input {...register('title', { required: true })} placeholder="Lesson title" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="mb-1 block text-sm font-medium">Lesson Type</Label>
-              <Select
-                value={undefined}
-                onValueChange={(value) => {
-                  // Get the hidden input from react-hook-form
-                  const input = document.querySelector(
-                    'input[name="lessonType"]'
-                  ) as HTMLInputElement;
-                  if (input) input.value = value;
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select lesson type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="theory">Theory</SelectItem>
-                  <SelectItem value="practical">Practical</SelectItem>
-                  <SelectItem value="lab">Lab</SelectItem>
-                </SelectContent>
-              </Select>
-              <input type="hidden" {...register('lessonType', { required: true })} />
-            </div>
-            <div>
-              <Label className="mb-1 block text-sm font-medium">Order</Label>
-              <Input
-                type="number"
-                {...register('order', { required: true, valueAsNumber: true })}
-                placeholder="Lesson order"
-                min="0"
-              />
-            </div>
+          <div>
+            <Label className="mb-1 block text-sm font-medium">Lesson Type</Label>
+            <Select
+              value={undefined}
+              onValueChange={(value) => {
+                // Get the hidden input from react-hook-form
+                const input = document.querySelector(
+                  'input[name="lessonType"]'
+                ) as HTMLInputElement;
+                if (input) input.value = value;
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select lesson type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="theory">Theory</SelectItem>
+                <SelectItem value="practical">Practical</SelectItem>
+                <SelectItem value="lab">Lab</SelectItem>
+              </SelectContent>
+            </Select>
+            <input type="hidden" {...register('lessonType', { required: true })} />
           </div>
 
           <div>
