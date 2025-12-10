@@ -208,7 +208,7 @@ export default function LessonEditor({ initialContent = '', onChange }: LessonEd
       Placeholder.configure({
         placeholder: 'Start typing your amazing lesson...',
         emptyEditorClass:
-          'cursor-text before:content-[attr(data-placeholder)] before:text-gray-400 before:float-left before:pointer-events-none',
+          'cursor-text before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none before:float-left before:h-0',
       }),
       Link.configure({
         openOnClick: false,
