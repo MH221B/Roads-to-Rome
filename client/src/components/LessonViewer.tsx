@@ -184,6 +184,15 @@ export default function LessonViewer() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => navigate(`/courses/${courseId}`)}
+            className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            title="Back to course"
+          >
+            <FaChevronLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
           >
