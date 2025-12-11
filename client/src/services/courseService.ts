@@ -47,6 +47,24 @@ export async function getInstructorCourses(
   return all.filter((c) => (c.instructor && (c.instructor as any)?.id) === instructorId);
 }
 
+export async function getCoursesByInstructor(
+  instructorId: string | null | undefined
+): Promise<Course[]> {
+  if (!instructorId) return [];
+  const resp = await api.get(`/api/instructors/${instructorId}/courses`);
+  const payload = resp.data;
+
+  if (Array.isArray(payload)) {
+    return payload as Course[];
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data as Course[];
+  }
+
+  return [];
+}
+
 export async function deleteCourse(id: string): Promise<void> {
   await api.delete(`/api/courses/${id}`);
 }

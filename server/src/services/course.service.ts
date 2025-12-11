@@ -9,6 +9,7 @@ interface IListOptions {
   limit?: number;
   category?: string | null;
   tags?: string[];
+  instructorId?: string | null;
 }
 
 interface ICourseService {
@@ -48,6 +49,16 @@ const courseService: ICourseService = {
       if (options?.tags && options.tags.length) {
         // match documents that contain all specified tags
         filter.tags = { $all: options.tags };
+      }
+
+      if (options?.instructorId) {
+        // instructor is stored as ObjectId reference; ensure the provided id is valid
+        if (mongoose.Types.ObjectId.isValid(String(options.instructorId))) {
+          filter.instructor = new mongoose.Types.ObjectId(String(options.instructorId));
+        } else {
+          // invalid field -> include impossible filter so no records are returned
+          filter._id = { $exists: false } as any;
+        }
       }
 
       // compute total count for the filter

@@ -3,6 +3,7 @@ import { api } from './axiosClient';
 export type QuizDto = {
   id: string;
   lesson_id?: string;
+  course_id?: string;
   title?: string;
   timelimit?: number; // seconds
   questions?: Array<any>;

@@ -9,8 +9,11 @@ type Props = {
 };
 
 const RequireRole: React.FC<Props> = ({ children, roles }) => {
-  const { accessToken, isAuthenticated } = useAuth();
+  const { accessToken, isAuthenticated, initialized } = useAuth();
   const location = useLocation();
+
+  // Avoid redirecting while auth initialization (e.g., silent refresh) is pending
+  if (!initialized) return null;
 
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
 
@@ -24,7 +27,9 @@ const RequireRole: React.FC<Props> = ({ children, roles }) => {
 
   const allowed = required.some((r) => userRoles.includes(r));
 
-  if (!allowed) return <Navigate to="/" replace />;
+  // If user is authenticated but doesn't have the required role, send them to login
+  // so they can switch accounts.
+  if (!allowed) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return children;
 };

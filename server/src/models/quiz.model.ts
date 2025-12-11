@@ -1,9 +1,9 @@
-import { time } from 'console';
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IQuiz extends Document {
     id: string; // primary key
-    lesson_id: string; // foreign key to Lesson
+  lesson_id?: string; // foreign key to Lesson (optional)
+  course_id: string; // foreign key to Course (required)
     title: string;
     description?: string;
     timelimit?: number; // in seconds
@@ -23,11 +23,11 @@ export interface IQuiz extends Document {
 const quizSchema = new Schema(
   {
     id: { type: String, required: true, unique: true },
-    lesson_id: { type: String, required: true },
+    lesson_id: { type: String , required: false},
+    course_id: { type: String, required: true },
     title: { type: String, required: true },
     description: { type: String },
     timelimit: { type: Number }, // in seconds
-
     questions: [
       {
         _id: false,
