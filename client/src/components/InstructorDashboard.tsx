@@ -11,6 +11,7 @@ import {
   FiTarget,
   FiTrash2,
   FiEdit,
+  FiPlus,
 } from 'react-icons/fi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -231,7 +232,11 @@ export default function InstructorDashboard() {
   const quizzesQuery = useQuery({
     // Avoid passing the full courses array as a query key (it may be unstable).
     // Instead use a derived array of course ids to trigger refetch when courses change.
-    queryKey: ['instructor-quizzes', instructorId, (coursesQuery.data ?? []).map((c) => c.id ?? c.courseId ?? '')],
+    queryKey: [
+      'instructor-quizzes',
+      instructorId,
+      (coursesQuery.data ?? []).map((c) => c.id ?? c.courseId ?? ''),
+    ],
     queryFn: () => fetchInstructorQuizzes(instructorId, coursesQuery.data ?? []),
     enabled: Boolean(instructorId) && Boolean(coursesQuery.data),
   });
@@ -494,8 +499,16 @@ export default function InstructorDashboard() {
 
           <Card>
             <CardHeader className="gap-1">
-              <CardTitle>Your Quizzes</CardTitle>
-              <CardDescription>Manage the quizzes you have created.</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Your Quizzes</CardTitle>
+                  <CardDescription>Manage the quizzes you have created.</CardDescription>
+                </div>
+                <Button onClick={() => navigate('/quizzes/new')} className="gap-2">
+                  <FiPlus className="h-4 w-4" />
+                  Create Quiz
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {quizzesQuery.isLoading && (
@@ -530,27 +543,27 @@ export default function InstructorDashboard() {
                         else navigate(`/quizzes/${qId}`);
                       }}
                     >
-                    <CardHeader className="gap-1 pb-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                          <CardDescription>{quiz.courseTitle || 'No course'}</CardDescription>
+                      <CardHeader className="gap-1 pb-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                            <CardDescription>{quiz.courseTitle || 'No course'}</CardDescription>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // preserve existing edit route (quizzes/:id/edit) when courseId not present
+                              navigate(`/quizzes/${quiz.id ?? quiz._id}/edit`);
+                            }}
+                            aria-label="Edit quiz"
+                          >
+                            <FiEdit className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // preserve existing edit route (quizzes/:id/edit) when courseId not present
-                            navigate(`/quizzes/${quiz.id ?? quiz._id}/edit`);
-                          }}
-                          aria-label="Edit quiz"
-                        >
-                          <FiEdit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                      </CardHeader>
+                    </Card>
                   );
                 })}
               </div>
@@ -657,8 +670,9 @@ export default function InstructorDashboard() {
                         {(insightQuery.data?.quizInsights ?? []).map((quiz: any) => {
                           const questionsCount = Number(
                             quiz.totalQuestions ??
-                              quizzesQuery.data?.find((q) => q._id === quiz.quizId || q.id === quiz.quizId)?.questions
-                                ?.length ??
+                              quizzesQuery.data?.find(
+                                (q) => q._id === quiz.quizId || q.id === quiz.quizId
+                              )?.questions?.length ??
                               0
                           );
                           const avgRaw = Number(quiz.averageScore ?? quiz.avgScore ?? 0);
