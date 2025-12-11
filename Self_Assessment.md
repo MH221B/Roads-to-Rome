@@ -37,3 +37,26 @@
 |                                      | ESLint/Prettier/Husky and CI setup                                   | 3      | 3               |
 |                                      | README / docs for feature usage and endpoints                        | 3      | 3               |
 | **Total**                            |                                                                      | 100    | 100             |
+
+## Week 3 - Instructor Features + Manual Quiz
+
+| Category                           | Criteria                                                         | Points | Self-Assessment |
+| ---------------------------------- | ---------------------------------------------------------------- | ------ | --------------- |
+| **Course Management** (20 pts)     | Create course (title, summary, tags, category, level, thumbnail) | 6      | 6               |
+|                                    | Edit/update/delete course functionality                          | 8      | 8               |
+|                                    | Publish/unpublish (draft vs published states)                    | 6      | 6               |
+| **Lesson Management** (20 pts)     | Add/edit lessons with text content                               | 8      | 8               |
+|                                    | Attach video link/file to lessons                                | 8      | 8               |
+|                                    | Lesson ordering and management UI                                | 4      | 4               |
+| **Quiz Management** (25 pts)       | Create quiz per course or lesson                                 | 8      | 8               |
+|                                    | Add MCQ questions (A/B/C/D + correct answer)                     | 10     | 10              |
+|                                    | Edit/update/delete quiz functionality                            | 7      | 7               |
+| **Student Quiz Features** (20 pts) | Quiz taking interface                                            | 7      | 7               |
+|                                    | Submit answers → auto-grade with instant scoring                 | 10     | 10              |
+|                                    | Save submission + score to database                              | 3      | 3               |
+| **Instructor Dashboard** (10 pts)  | Show created courses and lesson counts                           | 4      | 4               |
+|                                    | Show student enrollment + average quiz score                     | 6      | 6               |
+| **Tooling & Quality** (5 pts)      | Tests present & passing (unit/integration where applicable)      | 2      | 2               |
+|                                    | ESLint/Prettier/Husky configured and working                     | 2      | 2               |
+|                                    | README / docs for feature usage and API endpoints                | 1      | 1               |
+| **Total**                          |                                                                  | 100    | 100             |
