@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import paginate from 'mongoose-paginate-v2';
 import Lesson from './lesson.model';
 import Comment from './comment.model';
 
@@ -60,6 +61,9 @@ CourseSchema.pre('deleteMany', { document: false, query: true }, async function 
   }
   next();
 });
+
+// Apply the paginate plugin to the schema
+CourseSchema.plugin(paginate);
 
 const Course = mongoose.model<ICourse>('Course', CourseSchema);
 

@@ -61,30 +61,39 @@ const courseService: ICourseService = {
         }
       }
 
-      // compute total count for the filter
-      const total = await Course.countDocuments(filter).exec();
+      // Prepare pagination options
+      const paginateOptions: any = {
+        page,
+        limit,
+        populate: { path: 'instructor', select: 'fullName email' },
+        lean: true,
+        select: '-__v',
+      };
 
-      // build query
-      let query = Course.find(filter)
-        .populate({ path: 'instructor', select: 'fullName email' })
-        .lean();
-
-      // If text search is used, request the text score and sort by relevance then createdAt
+      // If text search is used, include custom sort for relevance
       if (filter.$text) {
-        query = Course.find(filter, { score: { $meta: 'textScore' } })
-          .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
-          .populate({ path: 'instructor', select: 'fullName email' })
-          .lean();
+        paginateOptions.customLabels = {
+          totalDocs: 'total',
+          docs: 'data',
+          page: 'page',
+          limit: 'limit',
+        };
+        paginateOptions.sort = { score: { $meta: 'textScore' }, createdAt: -1 };
       } else {
-        query = query.sort({ createdAt: -1 });
+        paginateOptions.customLabels = {
+          totalDocs: 'total',
+          docs: 'data',
+          page: 'page',
+          limit: 'limit',
+        };
+        paginateOptions.sort = { createdAt: -1 };
       }
 
-      const docs = (await query
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec()) as any[];
+      // Use paginate method
+      const result: any = await (Course as any).paginate(filter, paginateOptions);
 
-      const data = docs.map((c) => {
+      // Normalize response data
+      const data = (result.data || []).map((c: any) => {
         const { _id, instructor, ...rest } = c || {};
         const instr = instructor
           ? {
@@ -95,7 +104,7 @@ const courseService: ICourseService = {
         return { id: String(_id), ...rest, instructor: instr };
       });
 
-      return { data, total, page, limit };
+      return { data, total: result.total, page: result.page, limit: result.limit };
     } catch (error) {
       console.error('Error in courseService.listCourses:', error);
       throw error;
@@ -115,7 +124,9 @@ const courseService: ICourseService = {
     const lessons = await Lesson.find({ course_id: courseIdStr }).sort({ order: 1 }).lean().exec();
 
     // comments: stored with courseId as course identifier string
-    const commentsRaw = await Comment.find({ courseId: course.courseId || String((course as any)._id) })
+    const commentsRaw = await Comment.find({
+      courseId: course.courseId || String((course as any)._id),
+    })
       .populate({ path: 'userId', select: 'email role' })
       .sort({ createdAt: -1 })
       .lean()
