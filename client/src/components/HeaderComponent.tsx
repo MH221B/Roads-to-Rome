@@ -48,7 +48,10 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
 
   const isActive = (path: string) => {
     if (!location) return false;
-    if (path === '/') return location.pathname === '/';
+    if (path === '/') {
+      if (isAdmin) return location.pathname === '/' || location.pathname === '/users';
+      return location.pathname === '/';
+    }
     return location.pathname.startsWith(path);
   };
 
@@ -65,15 +68,27 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
-            <Link
-              to="/"
-              className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                isActive('/') ? '' : 'text-muted-foreground'
-              }`}
-              aria-current={isActive('/') ? 'page' : undefined}
-            >
-              Home
-            </Link>
+            {isAdmin ? (
+              <Link
+                to="/users"
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                  isActive('/') ? '' : 'text-muted-foreground'
+                }`}
+                aria-current={isActive('/') ? 'page' : undefined}
+              >
+                Users
+              </Link>
+            ) : (
+              <Link
+                to="/"
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                  isActive('/') ? '' : 'text-muted-foreground'
+                }`}
+                aria-current={isActive('/') ? 'page' : undefined}
+              >
+                Home
+              </Link>
+            )}
 
             <Link
               to="/courses"
@@ -101,16 +116,6 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
 
         {/* Right Side: Actions & Profile */}
         <div className="flex items-center gap-4">
-          {showAdmin && isAdmin && (
-            <Button
-              asChild
-              variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-            >
-              <Link to="/admin">Admin</Link>
-            </Button>
-          )}
-
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
