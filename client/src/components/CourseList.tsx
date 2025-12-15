@@ -1,12 +1,13 @@
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { CiCircleRemove } from 'react-icons/ci';
 import { FaSearch } from 'react-icons/fa';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 import {
   Select,
@@ -21,82 +22,35 @@ import { getCourses } from '@/services/courseService';
 
 type Course = Omit<CourseType, 'difficulty'> & { difficulty?: string | null };
 
-const mockCourses: Course[] = [];
-
 export default function CourseList() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [courses, setCourses] = useState<Course[]>(mockCourses);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const isMountedRef = useRef(true);
 
-  const loadPage = useCallback(
-    async (targetPage = 1, replace = false) => {
-      const limit = 6;
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getCourses(targetPage, limit, {
-          category: selectedCategory,
-          tags: selectedTags,
-          search: searchQuery,
-        });
-        if (!isMountedRef.current) return;
-        if (replace) {
-          setCourses(data);
-        } else {
-          setCourses((prev) => [...prev, ...data]);
-        }
-
-        // if fewer results than a full page, there are no more pages
-        if (data.length < limit) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        // advance the next page pointer
-        setPage(targetPage + 1);
-      } catch (err: any) {
-        if (!isMountedRef.current) return;
-        setError(err?.message ?? 'Failed to load courses');
-      } finally {
-        if (isMountedRef.current) setLoading(false);
-      }
+  // Define the fetcher function that accepts page and returns Promise<Course[]>
+  const fetchCourses = useCallback(
+    async (page: number) => {
+      return await getCourses(page, 6, {
+        category: selectedCategory,
+        tags: selectedTags,
+        search: searchQuery,
+      });
     },
     [selectedCategory, selectedTags, searchQuery]
   );
 
-  const resetAndLoad = useCallback(() => {
-    setCourses([]);
-    setPage(1);
-    setHasMore(true);
-    loadPage(1, true);
-  }, [loadPage]);
-
-  const loadMore = useCallback(() => {
-    if (loading || !hasMore) return;
-    loadPage(page);
-  }, [loading, hasMore, page, loadPage]);
-
-  const observer = useRef<IntersectionObserver | null>(null);
-
-  const bottomRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          loadMore();
-        }
-      });
-      if (node) observer.current.observe(node);
-    },
-    [hasMore, loadMore]
-  );
+  // Use the infinite scroll hook
+  const {
+    data: courses,
+    loading,
+    error,
+    hasMore,
+    bottomRef,
+  } = useInfiniteScroll<Course>({
+    fetchData: fetchCourses,
+    dependencies: [selectedCategory, selectedTags, searchQuery],
+    limit: 6,
+  });
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -129,37 +83,6 @@ export default function CourseList() {
     setSelectedCategory(null);
     setSelectedTags([]);
   };
-
-  const filtered = useMemo(() => {
-    return courses.filter((c) => {
-      const categoryMatch = !selectedCategory || c.category === selectedCategory;
-      const tagsMatch = selectedTags.length === 0 || selectedTags.every((t) => c.tags.includes(t));
-      const q = searchQuery.trim().toLowerCase();
-      const instructorName = String((c.instructor as any)?.name ?? '');
-
-      const queryMatch =
-        !q ||
-        c.title.toLowerCase().includes(q) ||
-        c.shortDescription.toLowerCase().includes(q) ||
-        instructorName.toLowerCase().includes(q) ||
-        c.tags.some((t) => t.toLowerCase().includes(q));
-
-      return categoryMatch && tagsMatch && queryMatch;
-    });
-  }, [courses, selectedCategory, selectedTags, searchQuery]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    resetAndLoad();
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [resetAndLoad]);
-
-  // Reload courses whenever filters change (category, tags, search)
-  useEffect(() => {
-    resetAndLoad();
-  }, [resetAndLoad]);
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
@@ -261,15 +184,13 @@ export default function CourseList() {
           )}
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((course) => (
+            {courses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
-            {!loading && filtered.length === 0 && courses.length > 0 && (
-              <div>No courses match your filters.</div>
-            )}
+            {!loading && courses.length === 0 && <div>No courses match your filters.</div>}
           </div>
 
-          {/* SPINNER 2: LOAD MORE ONLY (Small Spinner at the bottom) */}
+          {/* SPINNER: LOAD MORE (Small Spinner at the bottom) */}
           {loading && courses.length > 0 && (
             <div className="flex w-full items-center justify-center py-4">
               <Spinner />

@@ -20,91 +20,48 @@ import {
   searchUsers,
   updateUserRole,
   toggleUserLocked,
-  type PaginatedUsersResponse,
 } from '@/services/adminService';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 const AdminUserList: React.FC = () => {
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = React.useState<string | null>(null);
-  const [page, setPage] = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(true);
-  const isMountedRef = React.useRef(true);
   const searchTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSearching, setIsSearching] = React.useState(false);
 
-  const loadPage = React.useCallback(
-    async (targetPage = 1, replace = false) => {
+  // 1. Define Fetcher
+  const fetchUsers = React.useCallback(
+    async (page: number) => {
       const limit = 10;
-      setLoading(true);
-      setError(null);
-      try {
-        let data: PaginatedUsersResponse;
 
-        if (searchQuery.trim()) {
-          data = await searchUsers(searchQuery, targetPage, limit);
-        } else if (selectedRole) {
-          data = await getUsersByRole(selectedRole as UserRole, targetPage, limit);
-        } else {
-          data = await getAllUsers(targetPage, limit);
-        }
-
-        if (!isMountedRef.current) return;
-
-        if (replace) {
-          setUsers(data.data);
-        } else {
-          setUsers((prev) => [...prev, ...data.data]);
-        }
-
-        // if fewer results than a full page, there are no more pages
-        if (data.data.length < limit) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        // advance the next page pointer
-        setPage(targetPage + 1);
-      } catch (err: any) {
-        if (!isMountedRef.current) return;
-        setError(err?.message ?? 'Failed to load users');
-      } finally {
-        if (isMountedRef.current) setLoading(false);
+      if (searchQuery.trim()) {
+        const response = await searchUsers(searchQuery, page, limit);
+        return response.data;
+      } else if (selectedRole) {
+        const response = await getUsersByRole(selectedRole as UserRole, page, limit);
+        return response.data;
+      } else {
+        const response = await getAllUsers(page, limit);
+        return response.data;
       }
     },
-    [selectedRole, searchQuery]
+    [searchQuery, selectedRole]
   );
 
-  const resetAndLoad = React.useCallback(() => {
-    setUsers([]);
-    setPage(1);
-    setHasMore(true);
-    loadPage(1, true);
-  }, [loadPage]);
-
-  const loadMore = React.useCallback(() => {
-    if (loading || !hasMore) return;
-    loadPage(page);
-  }, [loading, hasMore, page, loadPage]);
-
-  const observer = React.useRef<IntersectionObserver | null>(null);
-
-  const bottomRef = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          loadMore();
-        }
-      });
-      if (node) observer.current.observe(node);
-    },
-    [hasMore, loadMore]
-  );
+  // 2. Use Hook
+  const {
+    data: users,
+    setData: setUsers,
+    loading,
+    error,
+    hasMore,
+    bottomRef,
+  } = useInfiniteScroll<User>({
+    fetchData: fetchUsers,
+    dependencies: [searchQuery, selectedRole],
+    limit: 10,
+  });
 
   // Cleanup timeout on unmount
   React.useEffect(() => {
@@ -133,10 +90,7 @@ const AdminUserList: React.FC = () => {
 
     // Debounce the search
     searchTimeoutRef.current = setTimeout(() => {
-      setUsers([]);
-      setPage(1);
-      setHasMore(true);
-      if (isMountedRef.current) {
+      if (query.trim()) {
         setIsSearching(false);
       }
     }, 300); // 300ms debounce delay
@@ -157,24 +111,16 @@ const AdminUserList: React.FC = () => {
     }
   }, []);
 
-  // Reload users whenever filters change
-  React.useEffect(() => {
-    isMountedRef.current = true;
-    resetAndLoad();
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [resetAndLoad]);
-
   // Handle role change
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
       setUpdatingUserId(userId);
-      setError(null);
       const updatedUser = await updateUserRole(userId, newRole);
-      setUsers(users.map((u) => (u.id === userId ? updatedUser : u)));
+
+      // Optimistic/Local update
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update role');
+      // Handle error - data will be reset on next fetch
     } finally {
       setUpdatingUserId(null);
     }
@@ -184,11 +130,12 @@ const AdminUserList: React.FC = () => {
   const handleToggleLock = async (userId: string, currentLocked: boolean) => {
     try {
       setUpdatingUserId(userId);
-      setError(null);
       const updatedUser = await toggleUserLocked(userId, !currentLocked);
-      setUsers(users.map((u) => (u.id === userId ? updatedUser : u)));
+
+      // Optimistic/Local update
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update lock status');
+      // Handle error - data will be reset on next fetch
     } finally {
       setUpdatingUserId(null);
     }
