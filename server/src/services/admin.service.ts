@@ -126,13 +126,19 @@ const adminService: IAdminService = {
     page: number = 1,
     limit: number = 10
   ): Promise<PaginatedUsersResponse> {
-    const searchRegex = new RegExp(query, 'i');
+    // Trim and normalize the query
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      return this.getAllUsers(page, limit);
+    }
+
     const paginateOptions: any = {
       page,
       limit,
       lean: true,
       select: '-password',
-      sort: { createdAt: -1 },
+      sort: { score: { $meta: 'textScore' }, createdAt: -1 },
       customLabels: {
         totalDocs: 'total',
         docs: 'data',
@@ -141,24 +147,65 @@ const adminService: IAdminService = {
       },
     };
 
-    const result: any = await (User as any).paginate(
-      {
-        $or: [{ email: searchRegex }, { username: searchRegex }, { fullName: searchRegex }],
-      },
-      paginateOptions
-    );
+    try {
+      // Try full-text search first (text index exists)
+      const result: any = await (User as any).paginate(
+        {
+          $text: { $search: normalizedQuery },
+        },
+        {
+          ...paginateOptions,
+          select: { '-password': 0, score: { $meta: 'textScore' } },
+        }
+      );
 
-    const data = (result.data || []).map((user: any) => ({
-      id: user._id.toString(),
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role,
-      locked: user.locked || false,
-      createdAt: user.createdAt,
-    }));
+      const data = (result.data || []).map((user: any) => ({
+        id: user._id.toString(),
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        locked: user.locked || false,
+        createdAt: user.createdAt,
+      }));
 
-    return { data, total: result.total, page: result.page, limit: result.limit };
+      return { data, total: result.total, page: result.page, limit: result.limit };
+    } catch (error) {
+      // Fallback to regex-based search if text index is not available
+      const searchRegex = new RegExp(normalizedQuery, 'i');
+      const fallbackOptions: any = {
+        page,
+        limit,
+        lean: true,
+        select: '-password',
+        sort: { createdAt: -1 },
+        customLabels: {
+          totalDocs: 'total',
+          docs: 'data',
+          page: 'page',
+          limit: 'limit',
+        },
+      };
+
+      const result: any = await (User as any).paginate(
+        {
+          $or: [{ email: searchRegex }, { username: searchRegex }, { fullName: searchRegex }],
+        },
+        fallbackOptions
+      );
+
+      const data = (result.data || []).map((user: any) => ({
+        id: user._id.toString(),
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        locked: user.locked || false,
+        createdAt: user.createdAt,
+      }));
+
+      return { data, total: result.total, page: result.page, limit: result.limit };
+    }
   },
 
   async updateUserRole(userId: string, role: Role): Promise<UserListItem> {

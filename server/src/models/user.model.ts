@@ -28,6 +28,9 @@ const UserSchema: Schema = new Schema(
   }
 );
 
+// Create text indexes for full-text search
+UserSchema.index({ username: 'text', email: 'text', fullName: 'text' });
+
 // Apply the paginate plugin to the schema
 UserSchema.plugin(paginate);
 

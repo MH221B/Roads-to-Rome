@@ -11,7 +11,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { FaSearch, FaLock, FaLockOpen } from 'react-icons/fa';
+import { FaSearch, FaLock, FaLockOpen, FaTimes } from 'react-icons/fa';
 import type { User, UserRole } from '@/types/user';
 import { UserRoles } from '@/types/user';
 import {
@@ -34,6 +34,8 @@ const AdminUserList: React.FC = () => {
   const [page, setPage] = React.useState(1);
   const [hasMore, setHasMore] = React.useState(true);
   const isMountedRef = React.useRef(true);
+  const searchTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isSearching, setIsSearching] = React.useState(false);
 
   const loadPage = React.useCallback(
     async (targetPage = 1, replace = false) => {
@@ -105,9 +107,40 @@ const AdminUserList: React.FC = () => {
     [hasMore, loadMore]
   );
 
-  // Handle search
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle search with debouncing
   const handleSearch = React.useCallback((query: string) => {
     setSearchQuery(query);
+
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set searching state if query is not empty
+    if (query.trim()) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+
+    // Debounce the search
+    searchTimeoutRef.current = setTimeout(() => {
+      setUsers([]);
+      setPage(1);
+      setHasMore(true);
+      if (isMountedRef.current) {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce delay
   }, []);
 
   // Handle role filter
@@ -119,6 +152,10 @@ const AdminUserList: React.FC = () => {
   const resetFilters = React.useCallback(() => {
     setSearchQuery('');
     setSelectedRole(null);
+    setIsSearching(false);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   }, []);
 
   // Reload users whenever filters change
@@ -189,32 +226,51 @@ const AdminUserList: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {/* Search and Filter Bar */}
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="relative flex-1">
-                <FaSearch className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
-                <Input
-                  placeholder="Search by email, username, or full name..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="space-y-4">
+              <div className="flex flex-col gap-4 md:flex-row">
+                <div className="relative flex-1">
+                  <FaSearch className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
+                  <Input
+                    placeholder="Search by email, username, or full name..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pr-10 pl-10"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => handleSearch('')}
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+                      title="Clear search"
+                    >
+                      <FaTimes className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <Select value={selectedRole || 'all'} onValueChange={handleRoleFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value={UserRoles.ADMIN}>Admin</SelectItem>
+                    <SelectItem value={UserRoles.INSTRUCTOR}>Instructor</SelectItem>
+                    <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button variant="ghost" onClick={resetFilters}>
+                  Reset
+                </Button>
               </div>
 
-              <Select value={selectedRole || 'all'} onValueChange={handleRoleFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value={UserRoles.ADMIN}>Admin</SelectItem>
-                  <SelectItem value={UserRoles.INSTRUCTOR}>Instructor</SelectItem>
-                  <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant="ghost" onClick={resetFilters}>
-                Reset
-              </Button>
+              {/* Search status indicator */}
+              {isSearching && searchQuery.trim() && (
+                <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                  <Spinner />
+                  Searching for "{searchQuery}"...
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
