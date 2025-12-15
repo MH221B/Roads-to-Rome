@@ -11,7 +11,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { FaSearch, FaLock, FaLockOpen, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaLock, FaLockOpen, FaTimes, FaCheck } from 'react-icons/fa';
 import type { User, UserRole } from '@/types/user';
 import { UserRoles } from '@/types/user';
 import {
@@ -27,6 +27,8 @@ const AdminUserList: React.FC = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = React.useState<string | null>(null);
+  const [successUserId, setSuccessUserId] = React.useState<string | null>(null);
+  const successTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSearching, setIsSearching] = React.useState(false);
 
@@ -68,6 +70,9 @@ const AdminUserList: React.FC = () => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
       }
     };
   }, []);
@@ -119,6 +124,15 @@ const AdminUserList: React.FC = () => {
 
       // Optimistic/Local update
       setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
+
+      // Show success indicator
+      setSuccessUserId(userId);
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessUserId(null);
+      }, 2000);
     } catch (err) {
       // Handle error - data will be reset on next fetch
     } finally {
@@ -134,6 +148,15 @@ const AdminUserList: React.FC = () => {
 
       // Optimistic/Local update
       setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
+
+      // Show success indicator
+      setSuccessUserId(userId);
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessUserId(null);
+      }, 2000);
     } catch (err) {
       // Handle error - data will be reset on next fetch
     } finally {
@@ -264,22 +287,27 @@ const AdminUserList: React.FC = () => {
                         <td className="px-4 py-3">{user.email}</td>
                         <td className="px-4 py-3">{user.fullName}</td>
                         <td className="px-4 py-3">
-                          <Select
-                            value={user.role}
-                            onValueChange={(newRole) =>
-                              handleRoleChange(user.id, newRole as UserRole)
-                            }
-                            disabled={updatingUserId === user.id}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={UserRoles.ADMIN}>Admin</SelectItem>
-                              <SelectItem value={UserRoles.INSTRUCTOR}>Instructor</SelectItem>
-                              <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={user.role}
+                              onValueChange={(newRole) =>
+                                handleRoleChange(user.id, newRole as UserRole)
+                              }
+                              disabled={updatingUserId === user.id}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={UserRoles.ADMIN}>Admin</SelectItem>
+                                <SelectItem value={UserRoles.INSTRUCTOR}>Instructor</SelectItem>
+                                <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {successUserId === user.id && (
+                              <FaCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">{formatDate(user.createdAt)}</td>
                         <td className="px-4 py-3">
