@@ -25,7 +25,6 @@ import {
 
 const AdminUserList: React.FC = () => {
   const [users, setUsers] = React.useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -198,13 +197,13 @@ const AdminUserList: React.FC = () => {
   const getRoleColor = (role: UserRole): string => {
     switch (role) {
       case UserRoles.ADMIN:
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
+        return 'role-badge-admin';
       case UserRoles.INSTRUCTOR:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+        return 'role-badge-instructor';
       case UserRoles.STUDENT:
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+        return 'role-badge-student';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'role-badge-default';
     }
   };
 
