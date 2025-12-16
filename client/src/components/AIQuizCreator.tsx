@@ -81,7 +81,7 @@ const AIQuizCreator = () => {
             slotCount: q.slotCount,
             explanation: q.explanation || '',
             id: q.id ?? undefined,
-          };
+          }
         }),
       };
 

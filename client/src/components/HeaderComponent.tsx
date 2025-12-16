@@ -150,11 +150,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
                     <Link to="/enrolment">My Enrollments</Link>
                   </DropdownMenuItem>
                 )}
-                {isInstructor && (
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link to="/ai-quiz">AI Quiz</Link>
-                  </DropdownMenuItem>
-                )}
+
                 <DropdownMenuItem
                   onSelect={() => {
                     handleLogout();
