@@ -151,6 +151,21 @@ export default function QuizCreator() {
 
   // Prefill from location state (used by AI Quiz Creator redirect)
   const location = useLocation();
+  function blankQuestion(): QuizQuestion {
+    return {
+      question: '',
+      type: 'single',
+      optionA: '',
+      optionB: '',
+      optionC: '',
+      optionD: '',
+      correctAnswer: 'A',
+      multiCorrect: [],
+      slotCount: 1,
+      explanation: '',
+    };
+  }
+
   useEffect(() => {
     const state = (location.state as any) ?? {};
     if (state.prefill) {
