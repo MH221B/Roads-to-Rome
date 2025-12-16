@@ -17,6 +17,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import api from '@/services/axiosClient';
 import HeaderComponent from '@/components/HeaderComponent';
+import { useLocation } from 'react-router-dom';
 import { getCourses, type Course } from '@/services/courseService';
 
 type QuizTarget = 'course' | 'lesson';
@@ -147,6 +148,27 @@ export default function QuizCreator() {
     queryKey: ['quiz-courses'],
     queryFn: () => getCourses(1, 50),
   });
+
+  // Prefill from location state (used by AI Quiz Creator redirect)
+  const location = useLocation();
+  useEffect(() => {
+    const state = (location.state as any) ?? {};
+    if (state.prefill) {
+      const pre = state.prefill as Partial<QuizFormValues>;
+      reset({
+        title: pre.title ?? '',
+        description: pre.description ?? '',
+        targetType: pre.targetType ?? 'course',
+        courseId: pre.courseId ?? '',
+        lessonId: pre.lessonId ?? '',
+        timelimit: (pre as any).timelimit ?? undefined,
+        order: pre.order ?? 1,
+        questions: pre.questions?.length ? pre.questions : [blankQuestion()],
+      });
+      // Clear the history state so reloading doesn't reapply
+      try { window.history.replaceState({}, document.title); } catch (e) { /* ignore */ }
+    }
+  }, [location.state, reset]);
 
   const courseId = watch('courseId');
   const targetType = watch('targetType');

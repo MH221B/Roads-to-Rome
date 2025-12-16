@@ -20,6 +20,7 @@ import QuizPage from './components/QuizPage';
 import QuizCreator from './components/QuizCreator';
 import QuizEditor from './components/QuizEditor';
 import InstructorDashboard from './components/InstructorDashboard';
+import AIQuizCreator from './components/AIQuizCreator';
 import { decodeJwtPayload } from './lib/utils';
 import { useAuth } from './contexts/AuthProvider';
 import { useState, useMemo, useEffect } from 'react';
@@ -105,6 +106,14 @@ function App() {
             element={
               <RequireRole roles="INSTRUCTOR">
                 <QuizEditor />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ai-quiz"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <AIQuizCreator />
               </RequireRole>
             }
           />

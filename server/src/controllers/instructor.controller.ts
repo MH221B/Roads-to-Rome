@@ -5,6 +5,7 @@ import courseService from '../services/course.service';
 interface IInstructorController {
   getInstructorInsights(req: Request, res: Response): Promise<Response | void>;
   getInstructorCourses(req: Request, res: Response): Promise<Response | void>;
+  generateAIQuiz(req: Request, res: Response): Promise<Response | void>;
 }
 
 const instructorController: IInstructorController = {
@@ -20,7 +21,8 @@ const instructorController: IInstructorController = {
 
       return res.status(200).json(insightsData);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch instructor insights', error });
+      const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+      res.status(500).json({ message: 'Failed to fetch instructor insights', error: errMsg });
     }
   },
   async getInstructorCourses(req: Request, res: Response) {
@@ -35,9 +37,25 @@ const instructorController: IInstructorController = {
 
       return res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch instructor courses', error });
+      const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+      res.status(500).json({ message: 'Failed to fetch instructor courses', error: errMsg });
     }
   },
+  async generateAIQuiz(req: Request, res: Response) {
+    try {
+      const instruction = req.body.instruction;
+      if (!instruction) {
+        return res.status(400).json({ message: 'Instruction is required to generate AI quiz' });
+      }
+
+      // Call the service to generate AI quiz
+      const quizData = await instructorService.generateAIQuiz(instruction);
+      return res.status(200).json(quizData);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+      res.status(500).json({ message: 'Failed to generate AI quiz', error: errMsg });
+    }
+  }
 };
 
 export default instructorController;

@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { FaUserCircle } from 'react-icons/fa';
+import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from '@/contexts/AuthProvider';
 
 type Props = {
@@ -45,6 +45,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
   );
 
   const isAdmin = roles.includes('ADMIN');
+  const isInstructor = roles.includes('INSTRUCTOR');
 
   const isActive = (path: string) => {
     if (!location) return false;
@@ -111,6 +112,18 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
                 My Enrollments
               </Link>
             )}
+
+            {isInstructor && (
+              <Link
+                to="/ai-quiz"
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                  isActive('/ai-quiz') ? '' : 'text-muted-foreground'
+                }`}
+                aria-current={isActive('/ai-quiz') ? 'page' : undefined}
+              >
+                AI Quiz
+              </Link>
+            )} 
           </div>
         </div>
 
@@ -135,6 +148,11 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
                 {roles.includes('STUDENT') && (
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link to="/enrolment">My Enrollments</Link>
+                  </DropdownMenuItem>
+                )}
+                {isInstructor && (
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link to="/ai-quiz">AI Quiz</Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
