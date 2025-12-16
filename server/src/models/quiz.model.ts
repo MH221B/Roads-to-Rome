@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IQuiz extends Document {
-    id: string; // primary key
+  id: string; // primary key
   lesson_id?: string; // foreign key to Lesson (optional)
   course_id: string; // foreign key to Course (required)
     title: string;

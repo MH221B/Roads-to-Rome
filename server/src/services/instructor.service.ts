@@ -3,6 +3,7 @@ import quizModel, { IQuiz } from '../models/quiz.model';
 import submitQuizModel, { ISubmitQuiz } from '../models/submitQuiz.model';
 import Lesson, { ILesson } from '../models/lesson.model';
 import Enrollment from '../models/enrollment.model';
+import { GoogleGenAI } from '@google/genai';
 
 interface ICourseInsight {
   courseId: string;
@@ -24,6 +25,21 @@ interface IOverview {
   averageScore: number; // percent across all quiz submissions (0-100)
 }
 
+interface IAIQuizGenerationResponse {
+  title: string;
+  description?: string;
+  questions: Array<{
+      id: string;
+      type: string;
+      text: string;
+      options?: string[];
+      slotCount?: number;
+      correctAnswers: string[];
+      explanation?: string;
+  }>;
+  order: number; // order of the quiz in the lesson
+}
+
 interface IInstructorService {
   fetchInsightsByInstructorId(instructorId: string): Promise<{
     overview: IOverview;
@@ -32,6 +48,7 @@ interface IInstructorService {
       QuizInsights: IQuizInsight[];
     };
   }>;
+  generateAIQuiz(instruction: string): Promise<any>;
 }
 
 const instructorService: IInstructorService = {
@@ -101,6 +118,90 @@ const instructorService: IInstructorService = {
     };
     return { overview, insights: { CourseInsights: courseInsights, QuizInsights: quizInsights } };
   },
+
+  async generateAIQuiz(instruction: string): Promise<IAIQuizGenerationResponse> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured in environment variables.');
+    }
+    const gemini = new GoogleGenAI({ apiKey });
+    const systemPrompt = `
+    You are an expert quiz generator. Create a quiz based on the following instruction and knowledge of the subject provided.
+    The quiz should be in JSON format with the following structure and contains 10 questions:
+    {
+      "title": "Quiz Title",
+      "description": "Optional description of the quiz",
+      "questions": [
+        {
+          "id": "unique-question-id",
+          "type": "multiple" | "single",
+          "text": "Question text",
+          "options": ["option1", "option2", ...], // only for multiple-choice
+          "slotCount": number, // only for fill-in-the-blank
+          "correctAnswers": ["correct answer1", "correct answer2", ...]
+          "explanation": "Optional explanation for the answer, keep it concise"
+        },
+        ...
+      ],
+      "order": number // order of the quiz in the lesson
+    }
+    Ensure the JSON is properly formatted.
+    The type and structure must be strictly followed, based on this interface:
+    interface IAIQuizGenerationResponse {
+      title: string;
+      description?: string;
+      questions: Array<{
+          id: string;
+          type: string;
+          text: string;
+          options?: string[];
+          slotCount?: number;
+          correctAnswers: string[];
+          explanation?: string;
+      }>;
+      order: number;
+    }
+    Only return the JSON object without any additional text or explanation.
+    `
+
+    try {
+      const response = await gemini.models.generateContent({
+        model: process.env.GEMINI_MODEL_NAME || 'gemini-2.5-flash-lite',
+        contents: [
+        {
+          role: "user",
+          parts: [
+            { text: `Subject/Topic/Context: ${instruction}` },
+            { text: "Generate the quiz as per the instructions." }
+          ],
+        },
+      ],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.1, // Low temperature = strict adherence to structure/facts and consistent results
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json", // FORCES the model to output only JSON
+        }
+      });
+      const messageContent = response.text;
+      if (!messageContent) {
+        throw new Error('No content received from AI model.');
+      }
+      const cleaned = messageContent.replace(/\n/g, '').trim(); // Clean up formatting, replacing new lines, trimming spaces
+      // Parse the JSON response and include the raw response if parsing fails to aid debugging
+      try {
+        const quizData: IAIQuizGenerationResponse = JSON.parse(cleaned);
+        return quizData;
+      } catch (parseErr) {
+        throw new Error('Failed to parse AI response JSON: ' + (parseErr instanceof Error ? parseErr.message : String(parseErr)) + `; response_preview: ${cleaned.slice(0, 1000)}`);
+      }
+    } catch (error) {
+      // Preserve the original error message for callers
+      throw new Error('Failed to generate AI quiz: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
+    }
+  }
 };
 
 export default instructorService;
