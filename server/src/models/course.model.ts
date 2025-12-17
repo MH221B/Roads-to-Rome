@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 import paginate from 'mongoose-paginate-v2';
 import Lesson from './lesson.model';
 import Comment from './comment.model';
+import { CourseStatus } from '../enums/course.enum';
 
 export interface ICourse extends Document {
   courseId: string; // primary key
@@ -13,7 +14,10 @@ export interface ICourse extends Document {
   shortDescription?: string;
   difficulty?: string | null;
   is_premium?: boolean;
-  status?: string;
+  status: CourseStatus;
+  reviewNote?: string | null;  // admin ghi chú
+  reviewedBy?: Types.ObjectId | null; // admin id
+  reviewedAt?: Date | null;
 }
 
 const CourseSchema: Schema = new Schema(
@@ -27,7 +31,10 @@ const CourseSchema: Schema = new Schema(
     shortDescription: { type: String },
     difficulty: { type: String, default: null },
     is_premium: { type: Boolean, default: false },
-    status: { type: String, default: 'published' },
+    status: { type: String, enum: Object.values(CourseStatus), default: CourseStatus.DRAFT, required: true },
+    reviewNote: { type: String, default: null },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    reviewedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

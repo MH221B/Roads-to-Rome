@@ -3,8 +3,12 @@ import RegisterCard from '@/components/RegisterCard';
 import HomePage from '@/components/HomePage';
 import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
+import AdminGuard from '@/components/AdminGuard';
+import Forbidden from '@/components/Forbidden';
+import AdminCoursesPage from '@/components/AdminCoursesPage';
+import AdminCourseReview from '@/components/AdminCourseReview';
 import RequireAuth from '@/components/RequireAuth';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Dashboard from './components/Dashboard';
@@ -24,6 +28,11 @@ import AIQuizCreator from './components/AIQuizCreator';
 import { decodeJwtPayload } from './lib/utils';
 import { useAuth } from './contexts/AuthProvider';
 import { useState, useMemo, useEffect } from 'react';
+
+const AdminCourseLegacyRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={id ? `/course/${id}` : '/course'} replace />;
+};
 
 function App() {
   const { accessToken } = useAuth();
@@ -48,11 +57,29 @@ function App() {
           <Route
             path="/users"
             element={
-              <RequireRole roles="ADMIN">
+              <AdminGuard>
                 <AdminPage />
-              </RequireRole>
+              </AdminGuard>
             }
           />
+          <Route
+            path="/course"
+            element={
+              <AdminGuard>
+                <AdminCoursesPage />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/course/:id"
+            element={
+              <AdminGuard>
+                <AdminCourseReview />
+              </AdminGuard>
+            }
+          />
+          <Route path="/admin/courses" element={<Navigate to="/course" replace />} />
+          <Route path="/admin/courses/:id" element={<AdminCourseLegacyRedirect />} />
           <Route path="/login" element={<LoginCard />} />
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -87,11 +114,12 @@ function App() {
           <Route
             path="/admin"
             element={
-              <RequireRole roles="ADMIN">
+              <AdminGuard>
                 <AdminPage />
-              </RequireRole>
+              </AdminGuard>
             }
           />
+          <Route path="/403" element={<Forbidden />} />
           <Route path="/courses/:courseId/quiz/:quizId" element={<QuizPage />} />
           <Route
             path="/quizzes/new"

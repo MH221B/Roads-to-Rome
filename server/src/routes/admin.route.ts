@@ -61,4 +61,28 @@ adminRouter.patch(
   adminController.ToggleUserLocked
 );
 
+// Get courses by status (default: pending)
+adminRouter.get(
+  '/courses',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.GetCoursesByStatus
+);
+
+// Update course status (approve/reject/hide)
+adminRouter.patch(
+  '/courses/:id/status',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.UpdateCourseStatus
+);
+
+// System statistics
+adminRouter.get(
+  '/stats',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.GetSystemStats
+);
+
 export { adminRouter };

@@ -1,6 +1,22 @@
 import { api } from './axiosClient';
 import type { User, UserRole } from '@/types/user';
 
+export interface AdminCourse {
+  id: string;
+  title: string;
+  status: string;
+  category?: string;
+  instructor?: string | null;
+  createdAt: string;
+}
+
+export interface PaginatedCoursesResponse {
+  data: AdminCourse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface PaginatedUsersResponse {
   data: User[];
   total: number;
@@ -55,6 +71,29 @@ export async function toggleUserLocked(userId: string, locked: boolean): Promise
   return response.data;
 }
 
+export async function getCoursesByStatus(
+  status: string = 'pending',
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedCoursesResponse> {
+  const response = await api.get('/api/admin/courses', {
+    params: { status, page, limit },
+  });
+  return response.data;
+}
+
+export async function updateCourseStatus(
+  courseId: string,
+  status: string,
+  reviewNote?: string | null
+): Promise<AdminCourse> {
+  const response = await api.patch(`/api/admin/courses/${courseId}/status`, {
+    status,
+    reviewNote,
+  });
+  return response.data;
+}
+
 export default {
   getCurrentUser,
   getAllUsers,
@@ -62,4 +101,6 @@ export default {
   searchUsers,
   updateUserRole,
   toggleUserLocked,
+  getCoursesByStatus,
+  updateCourseStatus,
 };

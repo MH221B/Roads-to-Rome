@@ -91,6 +91,18 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               </Link>
             )}
 
+            {isAdmin && (
+              <Link
+                to="/course"
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                  isActive('/course') ? '' : 'text-muted-foreground'
+                }`}
+                aria-current={isActive('/course') ? 'page' : undefined}
+              >
+                Course Review
+              </Link>
+            )}
+
             <Link
               to="/courses"
               className={`text-sm font-medium transition-colors hover:text-white/80 ${

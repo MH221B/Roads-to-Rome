@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
+import { CourseStatus } from '../enums/course.enum';
 
 interface IListOptions {
   q?: string;
@@ -27,6 +28,21 @@ interface ICourseService {
   ): Promise<any>;
   deleteCourse?(id: string): Promise<void>;
   updateCourse?(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any>;
+}
+
+export function validateCourseStatusTransition(from: CourseStatus, to: CourseStatus): boolean {
+  // allow idempotent update
+  if (from === to) return true;
+
+  const allowed: Record<CourseStatus, CourseStatus[]> = {
+    [CourseStatus.DRAFT]: [CourseStatus.PENDING],
+    [CourseStatus.PENDING]: [CourseStatus.PUBLISHED, CourseStatus.REJECTED],
+    [CourseStatus.PUBLISHED]: [CourseStatus.HIDDEN],
+    [CourseStatus.REJECTED]: [],
+    [CourseStatus.HIDDEN]: [],
+  };
+
+  return allowed[from]?.includes(to) ?? false;
 }
 
 const courseService: ICourseService = {
@@ -314,7 +330,20 @@ const courseService: ICourseService = {
         String(data.is_premium) === '1';
     }
 
-    if (typeof data.status === 'string' && data.status.trim()) updates.status = data.status.trim();
+    if (typeof data.status === 'string' && data.status.trim()) {
+      const nextStatus = data.status.trim() as CourseStatus;
+
+      if (!Object.values(CourseStatus).includes(nextStatus)) {
+        throw new Error('Invalid course status');
+      }
+
+      const canTransition = validateCourseStatusTransition(existing.status, nextStatus);
+      if (!canTransition) {
+        throw new Error(`Invalid course status transition: ${existing.status} -> ${nextStatus}`);
+      }
+
+      updates.status = nextStatus;
+    }
 
     // Prefer storing instructor as ObjectId if provided (controller normally won't change instructor)
     if (data.instructor) {
