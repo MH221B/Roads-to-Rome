@@ -60,3 +60,29 @@
 |                                    | ESLint/Prettier/Husky configured and working                     | 2      | 2               |
 |                                    | README / docs for feature usage and API endpoints                | 1      | 1               |
 | **Total**                          |                                                                  | 100    | 100             |
+
+## Week 4 - Admin Module + AI Quiz Generator MVP
+
+| Category                                       | Criteria                                                       | Points | Self-Assessment |
+| ---------------------------------------------- | -------------------------------------------------------------- | ------ | --------------- |
+| **Admin User Management** (15 pts)             | View all users with pagination/filtering                       | 5      | 5               |
+|                                                | Assign/change user roles                                       | 5      | 5               |
+|                                                | Lock/unlock user accounts                                      | 5      | 5               |
+| **Admin Course Moderation** (20 pts)           | States: draft → pending → approved/published → rejected/hidden | 8      | 8               |
+|                                                | Review pending courses with feedback/rejection notes           | 7      | 7               |
+|                                                | Publish/reject/hide course functionality                       | 5      | 5               |
+| **Admin System Statistics** (15 pts)           | Display total users count                                      | 3      | 3               |
+|                                                | Display total courses count                                    | 3      | 3               |
+|                                                | Display total enrollments count                                | 3      | 3               |
+|                                                | Dashboard with visual representation (charts/cards)            | 6      | 6               |
+| **AI Quiz Generator - Generation** (20 pts)    | Accept lesson text/course summary input                        | 5      | 5               |
+|                                                | Generate 5–10 draft MCQ questions with AI                      | 10     | 10              |
+|                                                | Backend integration with AI service (API/LLM)                  | 5      | 5               |
+| **AI Quiz Generator - Review & Edit** (20 pts) | Preview AI-generated questions                                 | 5      | 5               |
+|                                                | Edit question text, answers, and correct answer                | 8      | 8               |
+|                                                | Remove/delete unwanted questions before approval               | 4      | 4               |
+|                                                | Save approved quiz to database                                 | 3      | 3               |
+| **Tooling & Quality** (10 pts)                 | Tests present & passing (unit/integration where applicable)    | 4      | 4               |
+|                                                | ESLint/Prettier/Husky configured and working                   | 3      | 3               |
+|                                                | README / docs for admin features and AI quiz API endpoints     | 3      | 3               |
+| **Total**                                      |                                                                | 100    | 100             |
