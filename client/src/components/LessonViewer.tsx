@@ -15,6 +15,7 @@ import {
   FaTimes,
   FaCode,
   FaEdit,
+  FaClipboardList,
 } from 'react-icons/fa';
 import HeaderComponent from './HeaderComponent';
 import { decodeJwtPayload } from '../lib/utils';
@@ -27,6 +28,7 @@ interface Lesson {
   content_type: 'video' | 'article' | 'quiz';
   content: string; // URL for video, text for article
   duration?: number; // in minutes
+  quizzes?: Array<{ id: string; title?: string; order?: number }>;
 }
 
 interface Course {
@@ -44,6 +46,7 @@ const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
     // server returns `content_type` and `duration` in seconds
     content_type: l.content_type || l.contentType,
     duration: l.duration ? Math.round(l.duration / 60) : undefined,
+    quizzes: l.quizzes || [],
   }));
   return { id: courseId, title: `Course ${courseId}`, lessons };
 };
@@ -55,6 +58,7 @@ const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<L
     ...data,
     content_type: data.content_type || data.contentType,
     duration: data.duration ? Math.round(data.duration / 60) : undefined,
+    quizzes: data.quizzes || [],
   };
 };
 
@@ -334,6 +338,20 @@ export default function LessonViewer() {
                     </CardContent>
                   )}
                 </Card>
+
+                {/* Quiz Button */}
+                {lesson.quizzes && lesson.quizzes.length > 0 && (
+                  <div className="mb-6">
+                    <Button
+                      onClick={() => navigate(`/courses/${courseId}/quiz/${lesson.quizzes![0].id}`)}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
+                      size="lg"
+                    >
+                      <FaClipboardList className="mr-2 h-5 w-5" />
+                      Go to Quiz: {lesson.quizzes[0].title || 'Quiz'}
+                    </Button>
+                  </div>
+                )}
 
                 {/* Navigation Buttons */}
                 <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-4">

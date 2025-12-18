@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { FaBook, FaFileAlt } from 'react-icons/fa';
 
 interface Props {
   lessons: any[];
@@ -16,25 +16,35 @@ export default function QuizLeft({ lessons, openLesson, setOpenLesson, activeQui
   const navigate = useNavigate();
 
   return (
-    <aside className="col-span-3 border-r p-4 overflow-y-auto">
-      <h2 className="text-xl font-semibold mb-4">Lessons</h2>
-
-      <Card className="shadow-sm">
-        <CardContent className="p-4 space-y-4">
-          {lessons.map((lesson) => (
-            <div key={lesson.id} className="border-b pb-2">
+    <div className="h-full w-80 overflow-y-auto p-4 ">
+      <h3 className="mb-4 text-sm font-semibold tracking-wider text-slate-500 uppercase">
+        Course Content
+      </h3>
+      <div className="space-y-2">
+        {lessons.map((lesson) => {
+          const isOpenLesson = openLesson === lesson.id;
+          return (
+            <div key={lesson.id} className='me-4'>
               <div
-                className="flex justify-between items-center cursor-pointer"
-                onClick={() => setOpenLesson(openLesson === lesson.id ? null : lesson.id)}
+                onClick={() => setOpenLesson(isOpenLesson ? null : lesson.id)}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors ${isOpenLesson ? 'bg-slate-100 border-slate-300 border' : 'border border-transparent hover:bg-slate-100'}`}
               >
-                <h3 className="font-semibold mb-2">{lesson.title}</h3>
-                <span>{openLesson === lesson.id ? '-' : '+'}</span>
+                <div className="mt-1 text-slate-400">
+                  <FaBook size={12} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-700">
+                    {lesson.title}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">{lesson.quizzes?.length || 0} quiz(zes)</p>
+                </div>
               </div>
 
-              {openLesson === lesson.id && (
-                <div className="space-y-1 ml-2 mt-2">
+              {isOpenLesson && (
+                <div className="mt-2 ml-3 space-y-1 border-l-2 border-slate-200 pl-3">
                   {(lesson.quizzes && lesson.quizzes.length ? lesson.quizzes : []).map((quiz: any) => {
                     const id = quiz.id;
+                    const isActive = activeQuiz === id;
                     return (
                       <div
                         key={id}
@@ -47,21 +57,25 @@ export default function QuizLeft({ lessons, openLesson, setOpenLesson, activeQui
                             setOpenLesson(lesson.id);
                           }
                         }}
-                        className={`text-sm cursor-pointer p-1 rounded-md transition-colors duration-150 ${activeQuiz === id
-                          ? 'bg-blue-100 text-blue-700 font-semibold'
-                          : 'hover:underline hover:bg-gray-50'
-                          }`}
+                        className={`flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm transition-colors ${
+                          isActive
+                            ? 'bg-primary/10 border-primary/20 border text-primary font-semibold'
+                            : 'border border-transparent hover:bg-slate-100 text-slate-700'
+                        }`}
                       >
-                        {quiz.title ? quiz.title : `Quiz ${lesson.id}.${quiz.id}`}
+                        <div className={`mt-1 ${isActive ? 'text-primary' : 'text-slate-400'}`}>
+                          <FaFileAlt size={10} />
+                        </div>
+                        <span>{quiz.title || `Quiz ${quiz.id}`}</span>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
-          ))}
-        </CardContent>
-      </Card>
-    </aside>
+          );
+        })}
+      </div>
+    </div>
   );
 }

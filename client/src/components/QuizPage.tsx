@@ -12,6 +12,8 @@ import QuizLeft from './QuizLeft';
 import QuizMain from './QuizMain';
 import QuizRight from './QuizRight';
 import HistorySelector from './HistorySelector';
+import { Button } from './ui/button';
+import { FaClipboardList, FaClock, FaExclamationTriangle, FaBars, FaChevronLeft, FaTimes } from 'react-icons/fa';
 
 function renderQuestion(q: Question, onAnswered: (answer: any) => void, disabled = false) {
   switch (q.type) {
@@ -40,6 +42,7 @@ export default function QuizPage() {
   // use route params to determine course and lesson
   const { courseId, quizId } = useParams<{ courseId: string; quizId: string }>();
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [openLesson, setOpenLesson] = useState<string | null>(null);
   const [activeQuiz, setActiveQuiz] = useState<string>(quizId || '');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -132,8 +135,10 @@ export default function QuizPage() {
         const quiz = await getQuizById(activeQuiz);
         if (!mounted) return;
         const q = Array.isArray(quiz.questions) ? quiz.questions : [];
+        const quizTimeLimit = typeof quiz.timelimit === 'number' ? Math.max(0, quiz.timelimit) : 1200;
         setQuestions(q as Question[]);
-        setTimeRemaining(typeof quiz.timelimit === 'number' ? Math.max(0, quiz.timelimit) : 1200);
+        setTimeLimit(quizTimeLimit);
+        setTimeRemaining(quizTimeLimit);
         setAnsweredQuestions(new Set());
         setAnswers({});
         questionRefs.current = [];
@@ -278,69 +283,118 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="bg-background min-h-screen pb-10">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900">
       <HeaderComponent />
-      <div className="grid h-screen w-full grid-cols-12 bg-gray-50">
-        <QuizLeft
-          lessons={lessons}
-          openLesson={openLesson}
-          setOpenLesson={setOpenLesson}
-          activeQuiz={activeQuiz}
-          setActiveQuiz={setActiveQuiz}
-          onSelectQuiz={handleSelectQuiz}
-          courseId={courseId}
-        />
 
-        <QuizMain
-          activeQuiz={activeQuiz}
-          questions={questions}
-          questionRefs={questionRefs}
-          renderQuestion={renderQuestion}
-          handleAnswered={handleAnswered}
-          locked={locked}
-          reviewMode={reviewMode}
-          selectedAttempt={selectedAttempt}
-          started={started}
-        />
-        <QuizRight
-          questions={questions}
-          questionRefs={questionRefs}
-          answeredQuestions={answeredQuestions}
-          reviewMode={reviewMode}
-          selectedAttempt={selectedAttempt}
-          timeRemaining={timeRemaining}
-          locked={locked}
-          handleSubmit={handleSubmit}
-          openHistory={openHistory}
-          onRetry={retryQuiz}
-          isSubmitting={isSubmitting}
-          isSubmitted={isSubmitted}
-          submissionResult={submissionResult}
-          started={started}
-          startQuiz={startQuiz}
-        />
+      {/* Top Navigation Bar */}
+      <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(`/courses/${courseId}/lessons/${openLesson}`)}
+            className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            title="Back to course details"
+          >
+            <FaChevronLeft className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          >
+            <FaBars className="h-5 w-5" />
+          </Button>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium tracking-wider text-slate-500 uppercase">
+              Quiz
+            </span>
+            <h1 className="max-w-[200px] truncate text-sm font-bold md:max-w-md md:text-base">
+              {activeQuiz}
+            </h1>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Layout */}
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Sidebar (Burger Menu) */}
+        <aside
+          className={`absolute z-10 h-full overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 ease-in-out md:relative ${isSidebarOpen ? 'w-80 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'}`}
+        >
+          <div className="h-full w-80 overflow-y-auto p-4">
+            <QuizLeft
+              lessons={lessons}
+              openLesson={openLesson}
+              setOpenLesson={setOpenLesson}
+              activeQuiz={activeQuiz}
+              setActiveQuiz={setActiveQuiz}
+              onSelectQuiz={handleSelectQuiz}
+              courseId={courseId}
+            />
+          </div>
+        </aside>
+
+        {/* Content Area - Quiz Main and Right */}
+        <div className="relative flex w-full flex-1 overflow-hidden">
+          <QuizMain
+            activeQuiz={activeQuiz}
+            questions={questions}
+            questionRefs={questionRefs}
+            renderQuestion={renderQuestion}
+            handleAnswered={handleAnswered}
+            locked={locked}
+            reviewMode={reviewMode}
+            selectedAttempt={selectedAttempt}
+            started={started}
+          />
+          <QuizRight
+            questions={questions}
+            questionRefs={questionRefs}
+            answeredQuestions={answeredQuestions}
+            reviewMode={reviewMode}
+            selectedAttempt={selectedAttempt}
+            timeRemaining={timeRemaining}
+            locked={locked}
+            handleSubmit={handleSubmit}
+            openHistory={openHistory}
+            onRetry={retryQuiz}
+            isSubmitting={isSubmitting}
+            isSubmitted={isSubmitted}
+            submissionResult={submissionResult}
+            started={started}
+            startQuiz={startQuiz}
+          />
+        </div>
       </div>
 
       {/* Confirm submit modal */}
       {showConfirmSubmit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-96 rounded-lg bg-white p-6">
-            <h3 className="mb-3 text-lg font-semibold">Confirm Submit</h3>
-            <p className="mb-4 text-sm text-gray-700">
-              Are you sure you want to submit the quiz? You won't be able to change answers after
-              submitting.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <FaClipboardList className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="mb-3 text-2xl font-bold text-slate-900">Confirm Submission</h3>
+            <p className="mb-6 text-slate-600 leading-relaxed">
+              Are you sure you want to submit the quiz? You won't be able to change your answers after submitting.
             </p>
-            <div className="flex justify-end gap-2">
-              <button className="px-4 py-2" onClick={() => setShowConfirmSubmit(false)}>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1 border-slate-300 hover:bg-slate-100" 
+                onClick={() => setShowConfirmSubmit(false)}
+              >
                 Cancel
-              </button>
-              <button
-                className="rounded bg-blue-600 px-4 py-2 text-white"
+              </Button>
+              <Button
+                className="flex-1 bg-primary hover:bg-primary/90"
                 onClick={() => doSubmit(false)}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Submitting...' : 'Confirm'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -348,53 +402,56 @@ export default function QuizPage() {
 
       {/* Auto-submit notification modal */}
       {showAutoSubmitted && (
-        <div className="bg-opacity-40 fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm">
-          <div className="w-96 rounded-lg bg-white p-6">
-            <h3 className="mb-3 text-lg font-semibold">Time's up</h3>
-            <p className="mb-4 text-sm text-gray-700">
-              Time is up and your quiz was auto-submitted. You can review your attempt now.
-            </p>
-            <div className="flex justify-end">
-              <button
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-                onClick={() => setShowAutoSubmitted(false)}
-              >
-                OK
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
+              <FaClock className="h-6 w-6 text-orange-600" />
             </div>
+            <h3 className="mb-3 text-2xl font-bold text-slate-900">Time's Up!</h3>
+            <p className="mb-6 text-slate-600 leading-relaxed">
+              Time is up and your quiz was automatically submitted. You can review your attempt now.
+            </p>
+            <Button
+              className="w-full bg-primary hover:bg-primary/90"
+              onClick={() => setShowAutoSubmitted(false)}
+              size="lg"
+            >
+              Review Answers
+            </Button>
           </div>
         </div>
       )}
 
       {/* Confirm switch quiz modal (when leaving a started, unsent attempt) */}
       {showConfirmSwitch && pendingSwitch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-96 rounded-lg bg-white p-6">
-            <h3 className="mb-3 text-lg font-semibold">Xác nhận rời bài</h3>
-            <p className="mb-4 text-sm text-gray-700">
-              Bạn đã bắt đầu làm bài; rời đi sẽ bỏ tiến trình hiện tại và không nộp. Bạn có muốn
-              tiếp tục và chuyển sang quiz khác không?
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <FaExclamationTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="mb-3 text-2xl font-bold text-slate-900">Xác nhận rời bài</h3>
+            <p className="mb-6 text-slate-600 leading-relaxed">
+              Bạn đã bắt đầu làm bài; rời đi sẽ bỏ tiến trình hiện tại và không nộp. Bạn có muốn tiếp tục và chuyển sang quiz khác không?
             </p>
-            <div className="flex justify-end gap-2">
-              <button
-                className="px-4 py-2"
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 border-slate-300 hover:bg-slate-100"
                 onClick={() => {
                   setShowConfirmSwitch(false);
                   setPendingSwitch(null);
                 }}
               >
                 Hủy
-              </button>
-              <button
-                className="rounded bg-red-600 px-4 py-2 text-white"
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700"
                 onClick={() => {
-                  // proceed with switch
                   navigate(`/courses/${courseId}/quiz/${pendingSwitch.id}`);
                   setActiveQuiz(pendingSwitch.id);
                   setOpenLesson(pendingSwitch.lessonId);
                   setShowConfirmSwitch(false);
                   setPendingSwitch(null);
-                  // reset interactive state for new quiz
                   setStarted(false);
                   setReviewMode(false);
                   setIsSubmitted(false);
@@ -402,7 +459,7 @@ export default function QuizPage() {
                 }}
               >
                 Tiếp tục
-              </button>
+              </Button>
             </div>
           </div>
         </div>

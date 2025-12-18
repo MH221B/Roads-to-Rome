@@ -139,7 +139,11 @@ const lessonService: ILessonService = {
     if (!lesson) {
       throw new Error('Lesson not found in the specified course');
     }
-    return lesson;
+    const quizzes = await quizModel.find({ lesson_id: lesson.id }).sort({ order: 1 }).exec();
+    return {
+      ...lesson.toObject(),
+      quizzes,
+    };
   },
 };
 
