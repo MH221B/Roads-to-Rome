@@ -81,7 +81,7 @@ const AdminCourseReview: React.FC = () => {
     setError(null);
     try {
       await updateCourseStatus(id, nextStatus, reviewNote || undefined);
-      navigate('/course');
+      navigate('/admin-dashboard?tab=courses');
     } catch (e) {
       setError('Failed to update course status');
     } finally {
@@ -121,8 +121,8 @@ const AdminCourseReview: React.FC = () => {
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">Course Review</h1>
-            <Button variant="ghost" onClick={() => navigate('/course')}>
-              Back to list
+            <Button variant="ghost" onClick={() => navigate('/admin-dashboard?tab=courses')}>
+              Back to Admin Dashboard
             </Button>
           </div>
 

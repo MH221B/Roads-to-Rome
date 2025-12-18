@@ -31,6 +31,7 @@ const mockTags: string[] = [
   'deployment',
 ];
 import HeaderComponent from '@/components/HeaderComponent';
+import AdminStats from '@/components/AdminStats';
 import { useNavigate } from 'react-router-dom';
 import CourseCard from '@/components/CourseCard';
 import CourseCardCompact from '@/components/CourseCardCompact';
@@ -102,6 +103,34 @@ const HomePage: React.FC = () => {
     <div className="flex min-h-screen flex-col">
       <HeaderComponent showAdmin={showAdmin} />
       <main className="flex-1">
+        {showAdmin && (
+          <div className="mx-auto w-full max-w-7xl px-4 py-10">
+            <section className="mt-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Admin Dashboard Overview</h2>
+              </div>
+              
+              {/* Stats Section */}
+              <div className="mb-8">
+                <AdminStats />
+              </div>
+
+              {/* Admin Dashboard Access Section */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-8 text-center">
+                <p className="mb-6 text-lg text-gray-700">
+                  Access the full admin dashboard to manage users, courses, and system settings.
+                </p>
+                <Button
+                  onClick={() => navigate('/admin-dashboard')}
+                  className="flex items-center gap-2"
+                >
+                  Go to Admin Dashboard
+                </Button>
+              </div>
+            </section>
+          </div>
+        )}
+
         {(showStudent || isGuest) && (
           <div className="mx-auto w-full max-w-7xl px-4 py-10">
             <section className="mt-3">

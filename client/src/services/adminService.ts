@@ -94,6 +94,18 @@ export async function updateCourseStatus(
   return response.data;
 }
 
+export interface SystemStats {
+  totalUsers: number;
+  totalCourses: number;
+  totalEnrollments: number;
+  usersByRole: Record<string, number>;
+}
+
+export async function getSystemStats(): Promise<SystemStats> {
+  const response = await api.get('/api/admin/stats');
+  return response.data;
+}
+
 export default {
   getCurrentUser,
   getAllUsers,
@@ -103,4 +115,5 @@ export default {
   toggleUserLocked,
   getCoursesByStatus,
   updateCourseStatus,
+  getSystemStats,
 };

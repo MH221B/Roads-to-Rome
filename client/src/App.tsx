@@ -52,10 +52,10 @@ function App() {
   return (
     <Router>
       <div className="flex grow flex-col">
-        <Routes>
-          <Route path="/" element={isAdmin ? <AdminPage /> : <HomePage />} />
+        <Routes>  
+          <Route path="/" element={<HomePage />} />
           <Route
-            path="/users"
+            path="/admin-dashboard"
             element={
               <AdminGuard>
                 <AdminPage />

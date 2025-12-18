@@ -1,15 +1,23 @@
 import * as React from 'react';
 import HeaderComponent from '@/components/HeaderComponent';
 import AdminUserList from '@/components/AdminUserList';
+import AdminStats from '@/components/AdminStats';
+import AdminCourseList from '@/components/AdminCourseList';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useSearchParams } from 'react-router-dom';
 import adminService from '@/services/adminService';
 import type { User } from '@/types/user';
 
 const AdminPage: React.FC = () => {
   const { accessToken } = useAuth();
+  const [searchParams] = useSearchParams();
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  // Get initial tab from URL query params, default to "users"
+  const initialTab = searchParams.get('tab') || 'users';
 
   React.useEffect(() => {
     if (!accessToken) return;
@@ -76,10 +84,57 @@ const AdminPage: React.FC = () => {
             </Card>
           </section>
 
-          <section>
-            <h2 className="mb-4 text-2xl font-semibold">User Management</h2>
-            <AdminUserList />
-          </section>
+          <div className="space-y-6">
+            <Tabs defaultValue={initialTab}>
+              <TabsList>
+                <TabsTrigger value="users">User Management</TabsTrigger>
+                <TabsTrigger value="courses">Course Review</TabsTrigger>
+                <TabsTrigger value="stats">System Statistics</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="users" className="space-y-4">
+                <AdminUserList />
+              </TabsContent>
+
+              <TabsContent value="courses" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Course Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="pending">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="pending">Pending</TabsTrigger>
+                        <TabsTrigger value="published">Published</TabsTrigger>
+                        <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                        <TabsTrigger value="hidden">Hidden</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="pending" className="mt-4">
+                        <AdminCourseList status="pending" />
+                      </TabsContent>
+
+                      <TabsContent value="published" className="mt-4">
+                        <AdminCourseList status="published" />
+                      </TabsContent>
+
+                      <TabsContent value="rejected" className="mt-4">
+                        <AdminCourseList status="rejected" />
+                      </TabsContent>
+
+                      <TabsContent value="hidden" className="mt-4">
+                        <AdminCourseList status="hidden" />
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="stats" className="space-y-4">
+                <AdminStats />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </main>
     </div>

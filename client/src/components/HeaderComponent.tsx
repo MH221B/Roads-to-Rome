@@ -71,13 +71,13 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
           <div className="hidden items-center gap-6 md:flex">
             {isAdmin ? (
               <Link
-                to="/users"
+                to="/admin-dashboard"
                 className={`text-sm font-medium transition-colors hover:text-white/80 ${
                   isActive('/') ? '' : 'text-muted-foreground'
                 }`}
                 aria-current={isActive('/') ? 'page' : undefined}
               >
-                Users
+                Admin
               </Link>
             ) : (
               <Link
@@ -88,18 +88,6 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
                 aria-current={isActive('/') ? 'page' : undefined}
               >
                 Home
-              </Link>
-            )}
-
-            {isAdmin && (
-              <Link
-                to="/course"
-                className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                  isActive('/course') ? '' : 'text-muted-foreground'
-                }`}
-                aria-current={isActive('/course') ? 'page' : undefined}
-              >
-                Course Review
               </Link>
             )}
 
