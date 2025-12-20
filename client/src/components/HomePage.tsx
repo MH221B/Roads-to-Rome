@@ -58,6 +58,9 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const isGuest = !accessToken || roles.length === 0;
 
+  // Only show published courses for guests and students
+  const shouldFilterByPublished = !showAdmin && !showInstructor;
+
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
 
@@ -78,7 +81,9 @@ const HomePage: React.FC = () => {
           if (!mounted) return;
           setCourses(instructorCourses);
         } else {
-          const latest = await getCourses(1, 6);
+          const latest = await getCourses(1, 6, {
+            status: shouldFilterByPublished ? 'published' : undefined,
+          });
           if (!mounted) return;
           setCourses(latest);
         }
@@ -95,7 +100,7 @@ const HomePage: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [accessToken, showInstructor, showStudent, isGuest, payload]);
+  }, [accessToken, showInstructor, showStudent, isGuest, payload, shouldFilterByPublished]);
 
   if (loading) {
     return <LoadingScreen />;

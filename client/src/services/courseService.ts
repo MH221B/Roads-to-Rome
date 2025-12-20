@@ -14,7 +14,13 @@ export type Course = {
 export async function getCourses(
   page = 1,
   limit = 6,
-  params?: { category?: string | null; tags?: string[]; search?: string; sort?: string }
+  params?: {
+    category?: string | null;
+    tags?: string[];
+    search?: string;
+    sort?: string;
+    status?: string;
+  }
 ): Promise<Course[]> {
   const query: Record<string, any> = { page, limit };
 
@@ -22,6 +28,7 @@ export async function getCourses(
   if (params?.tags && params.tags.length) query.tags = params.tags.join(',');
   if (params?.search) query.search = params.search;
   if (params?.sort) query.sort = params.sort;
+  if (params?.status) query.status = params.status;
 
   const resp = await api.get('/api/courses', { params: query });
   const payload = resp.data;

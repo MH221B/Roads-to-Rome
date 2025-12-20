@@ -9,6 +9,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { CiCircleRemove } from 'react-icons/ci';
 import { FaSearch } from 'react-icons/fa';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useAuth } from '@/contexts/AuthProvider';
+import { decodeJwtPayload } from '@/lib/utils';
 
 import {
   Select,
@@ -30,6 +32,23 @@ export default function CourseList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState<string>('newest');
   const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // Get user role from auth context
+  const { accessToken } = useAuth();
+  const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
+  const rawRoles = payload?.roles ?? payload?.role;
+  const userRoles: string[] = useMemo(
+    () =>
+      (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map((r) =>
+        String(r).toUpperCase()
+      ),
+    [rawRoles]
+  );
+
+  // Determine if user is guest or student (should only see published courses)
+  const isAdmin = userRoles.includes('ADMIN');
+  const isInstructor = userRoles.includes('INSTRUCTOR');
+  const shouldFilterByPublished = !accessToken || (!isAdmin && !isInstructor);
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -59,7 +78,9 @@ export default function CourseList() {
   useEffect(() => {
     const fetchAllCategories = async () => {
       try {
-        const allCourses = await getCourses(0, 1000);
+        const allCourses = await getCourses(0, 1000, {
+          status: shouldFilterByPublished ? 'published' : undefined,
+        });
         const categories = Array.from(
           new Set(
             allCourses
@@ -74,7 +95,7 @@ export default function CourseList() {
     };
 
     fetchAllCategories();
-  }, []);
+  }, [shouldFilterByPublished]);
 
   // Define the fetcher function that accepts page and returns Promise<Course[]>
   const fetchCourses = useCallback(
@@ -84,9 +105,10 @@ export default function CourseList() {
         tags: selectedTags,
         search: searchQuery,
         sort: selectedSort,
+        status: shouldFilterByPublished ? 'published' : undefined,
       });
     },
-    [selectedCategory, selectedTags, searchQuery, selectedSort]
+    [selectedCategory, selectedTags, searchQuery, selectedSort, shouldFilterByPublished]
   );
 
   // Use the infinite scroll hook
@@ -98,7 +120,13 @@ export default function CourseList() {
     bottomRef,
   } = useInfiniteScroll<Course>({
     fetchData: fetchCourses,
-    dependencies: [selectedCategory, selectedTags, searchQuery, selectedSort],
+    dependencies: [
+      selectedCategory,
+      selectedTags,
+      searchQuery,
+      selectedSort,
+      shouldFilterByPublished,
+    ],
     limit: 6,
   });
 

@@ -19,8 +19,17 @@ const courseController = {
             .filter(Boolean)
         : undefined;
       const sort = typeof req.query.sort === 'string' ? req.query.sort : undefined;
+      const status = typeof req.query.status === 'string' ? req.query.status : undefined;
 
-      const result = await courseService.listCourses({ q, page, limit, category, tags, sort });
+      const result = await courseService.listCourses({
+        q,
+        page,
+        limit,
+        category,
+        tags,
+        sort,
+        status,
+      });
       // return paginated payload { data, total, page, limit }
       res.status(200).json(result);
     } catch (error) {

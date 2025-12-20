@@ -12,6 +12,7 @@ interface IListOptions {
   tags?: string[];
   instructorId?: string | null;
   sort?: string;
+  status?: CourseStatus | string;
 }
 
 interface ICourseService {
@@ -76,6 +77,10 @@ const courseService: ICourseService = {
           // invalid field -> include impossible filter so no records are returned
           filter._id = { $exists: false } as any;
         }
+      }
+
+      if (options?.status) {
+        filter.status = options.status;
       }
 
       // Prepare pagination options
