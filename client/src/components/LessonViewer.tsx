@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/axiosClient';
 import { useAuth } from '../contexts/AuthProvider';
 import { Button } from './ui/button';
@@ -39,26 +39,37 @@ interface Course {
 
 // --- API Functions ---
 const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
-  console.log('Fetching course:', courseId);
   const response = await api.get(`/api/courses/${courseId}/lessons`);
-  const lessons: Lesson[] = response.data.map((l: any) => ({
+  const payload = Array.isArray(response.data)
+    ? response.data
+    : Array.isArray(response.data?.lessons)
+    ? response.data.lessons
+    : [];
+
+  const lessons: Lesson[] = payload.map((l: any) => ({
     ...l,
-    // server returns `content_type` and `duration` in seconds
     content_type: l.content_type || l.contentType,
     duration: l.duration ? Math.round(l.duration / 60) : undefined,
     quizzes: l.quizzes || [],
   }));
-  return { id: courseId, title: `Course ${courseId}`, lessons };
+
+  const title =
+    response.data?.course?.title ||
+    response.data?.title ||
+    response.data?.courseName ||
+    `Course ${courseId}`;
+
+  return { id: courseId, title, lessons };
 };
 
 const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<Lesson> => {
   const response = await api.get(`/api/courses/${courseId}/lessons/${lessonId}`);
-  const data = response.data;
+  const data = response.data?.lesson || response.data;
   return {
     ...data,
-    content_type: data.content_type || data.contentType,
-    duration: data.duration ? Math.round(data.duration / 60) : undefined,
-    quizzes: data.quizzes || [],
+    content_type: data?.content_type || data?.contentType,
+    duration: data?.duration ? Math.round(data.duration / 60) : undefined,
+    quizzes: data?.quizzes || [],
   };
 };
 
@@ -67,6 +78,7 @@ export default function LessonViewer() {
   const navigate = useNavigate();
   const { accessToken } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const queryClient = useQueryClient();
 
   // Decode JWT and extract roles
   const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
@@ -76,6 +88,39 @@ export default function LessonViewer() {
   );
 
   const isInstructor = roles.includes('INSTRUCTOR') || roles.includes('ADMIN');
+  const isStudent = roles.includes('STUDENT');
+
+  const enrollmentsQuery = useQuery({
+    queryKey: ['enrollments'],
+    queryFn: async () => {
+      const resp = await api.get('/api/enrollments');
+      return resp.data as any[];
+    },
+    enabled: isStudent,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  const enrollmentForCourse = useMemo(() => {
+    if (!courseId || !enrollmentsQuery.data) return null;
+    return (
+      enrollmentsQuery.data.find((e: any) => {
+        const cid = e?.course?.id || e?.course_id || e?.courseId;
+        return String(cid) === String(courseId);
+      }) || null
+    );
+  }, [courseId, enrollmentsQuery.data]);
+
+  const courseProgress = useMemo(() => {
+    return typeof enrollmentForCourse?.progress === 'number'
+      ? Math.max(0, Math.min(100, enrollmentForCourse.progress))
+      : 0;
+  }, [enrollmentForCourse]);
+
+  const completedLessons = useMemo(() => {
+    return enrollmentForCourse?.completed_lessons || [];
+  }, [enrollmentForCourse]);
+
+  const isEnrolled = Boolean(enrollmentForCourse);
 
   // Resizable Editor Logic
   const [editorWidth, setEditorWidth] = useState(320);
@@ -124,6 +169,16 @@ export default function LessonViewer() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const displayTitle = useMemo(() => {
+    return (
+      enrollmentForCourse?.course?.title ||
+      (enrollmentForCourse as any)?.course?.name ||
+      course?.title ||
+      courseId ||
+      'Course'
+    );
+  }, [course?.title, courseId, enrollmentForCourse]);
+
   // Fetch Current Lesson Details (Cached for 5 minutes)
   const {
     data: lesson,
@@ -150,12 +205,29 @@ export default function LessonViewer() {
   }, [course, lessonId]);
 
   const handleLessonChange = (newLessonId: string) => {
+    completeLesson.reset();
     navigate(`/courses/${courseId}/lessons/${newLessonId}`);
     // On mobile, close sidebar after selection
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   };
+
+  const completeLesson = useMutation({
+    mutationFn: async () => {
+      if (!courseId || !lessonId) throw new Error('Missing course or lesson');
+      await api.post(`/api/courses/${courseId}/lessons/${lessonId}/complete`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+    },
+  });
+
+  useEffect(() => {
+    // Clear success/error state when switching lessons
+    completeLesson.reset();
+  }, [lessonId]);
 
   // Initial Loading State (Only for Course Structure)
   if (isCourseLoading) {
@@ -179,9 +251,7 @@ export default function LessonViewer() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900">
-      <HeaderComponent />
-
+    <div className="flex h-screen flex-col bg-white">
       {/* Top Navigation Bar */}
       <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
         <div className="flex items-center gap-4">
@@ -208,9 +278,9 @@ export default function LessonViewer() {
             </span>
             <h1
               className="max-w-[200px] truncate text-sm font-bold md:max-w-md md:text-base"
-              title={course.title}
+              title={displayTitle}
             >
-              {course.title}
+              {displayTitle}
             </h1>
           </div>
         </div>
@@ -247,23 +317,43 @@ export default function LessonViewer() {
             <div className="space-y-2">
               {course.lessons.map((l, index) => {
                 const isActive = l.id === lessonId;
+                const isCompleted = completedLessons.includes(l.id);
+                const baseClass = isActive
+                  ? 'bg-primary/10 border-primary/20 border text-primary'
+                  : isCompleted
+                  ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+                  : 'border border-transparent hover:bg-slate-100';
+                const iconClass = isActive
+                  ? 'text-primary'
+                  : isCompleted
+                  ? 'text-emerald-600'
+                  : 'text-slate-400';
+                const titleClass = isActive
+                  ? 'text-primary'
+                  : isCompleted
+                  ? 'text-emerald-700'
+                  : 'text-slate-700';
+
                 return (
                   <div
                     key={l.id}
                     onClick={() => handleLessonChange(l.id)}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors ${isActive ? 'bg-primary/10 border-primary/20 border' : 'border border-transparent hover:bg-slate-100'} `}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors ${baseClass}`}
                   >
-                    <div className={`mt-1 ${isActive ? 'text-primary' : 'text-slate-400'}`}>
+                    <div className={`mt-1 ${iconClass}`}>
                       {l.content_type === 'video' ? <FaPlay size={12} /> : <FaFileAlt size={12} />}
                     </div>
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-slate-700'}`}
-                      >
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${titleClass}`}>
                         {index + 1}. {l.title}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">{l.content_type}</p>
                     </div>
+                    {isCompleted && !isActive && (
+                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                        Done
+                      </Badge>
+                    )}
                   </div>
                 );
               })}
@@ -353,26 +443,45 @@ export default function LessonViewer() {
                   </div>
                 )}
 
-                {/* Navigation Buttons */}
-                <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-4">
-                  <Button
-                    variant="ghost"
-                    disabled={!prevLesson}
-                    onClick={() => prevLesson && handleLessonChange(prevLesson.id)}
-                    className="cursor-pointer text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  >
-                    <FaChevronLeft className="mr-2 h-4 w-4" />
-                    Previous
-                  </Button>
+                {/* Completion + Navigation Buttons */}
+                <div className="mt-auto flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Button
+                      variant="outline"
+                      disabled={!isStudent || !isEnrolled || completeLesson.isPending}
+                      onClick={() => completeLesson.mutate()}
+                      className="border-slate-200 text-slate-700 hover:bg-slate-100"
+                    >
+                      {completeLesson.isPending ? 'Marking…' : 'Mark lesson complete'}
+                    </Button>
+                    {completeLesson.isError && (
+                      <span className="text-xs text-destructive">Failed to update progress</span>
+                    )}
+                    {completeLesson.isSuccess && (
+                      <span className="text-xs text-emerald-600">Progress updated</span>
+                    )}
+                  </div>
 
-                  <Button
-                    disabled={!nextLesson}
-                    onClick={() => nextLesson && handleLessonChange(nextLesson.id)}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
-                  >
-                    Next Lesson
-                    <FaChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-between gap-2 sm:justify-end">
+                    <Button
+                      variant="ghost"
+                      disabled={!prevLesson}
+                      onClick={() => prevLesson && handleLessonChange(prevLesson.id)}
+                      className="cursor-pointer text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      <FaChevronLeft className="mr-2 h-4 w-4" />
+                      Previous
+                    </Button>
+
+                    <Button
+                      disabled={!nextLesson}
+                      onClick={() => nextLesson && handleLessonChange(nextLesson.id)}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+                    >
+                      Next Lesson
+                      <FaChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

@@ -43,12 +43,11 @@ const enrollmentController = {
   async Update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { progress, last_lesson_id, completed, rating } = req.body;
+      const { progress, last_lesson_id, completed } = req.body;
       const updates: any = {};
       if (typeof progress !== 'undefined') updates.progress = Number(progress);
       if (typeof last_lesson_id !== 'undefined') updates.last_lesson_id = last_lesson_id;
       if (typeof completed !== 'undefined') updates.completed = Boolean(completed);
-      if (typeof rating !== 'undefined') updates.rating = Number(rating);
 
       const updated = await enrollmentService.updateEnrollment(id, updates);
       res.status(200).json(updated);

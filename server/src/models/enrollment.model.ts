@@ -7,7 +7,7 @@ export interface IEnrollment extends Document {
   progress?: number | null;
   lastLessonId?: string | null;
   completed?: boolean;
-  rating?: number | null;
+  completedLessons?: string[];
 }
 
 const EnrollmentSchema: Schema = new Schema(
@@ -20,7 +20,7 @@ const EnrollmentSchema: Schema = new Schema(
     progress: { type: Number, default: null },
     lastLessonId: { type: String, default: null },
     completed: { type: Boolean, default: false },
-    rating: { type: Number, default: null },
+    completedLessons: { type: [String], default: [] },
   },
   { timestamps: true }
 );

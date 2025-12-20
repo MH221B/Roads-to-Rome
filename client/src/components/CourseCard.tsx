@@ -145,6 +145,7 @@ const CourseCard: React.FC<Props> = ({
             WebkitLineClamp: 3 as any,
             WebkitBoxOrient: 'vertical' as any,
             overflow: 'hidden',
+            minHeight: '3.6rem', // keep card heights even when descriptions vary in length
           }}
           title={course.shortDescription}
         >
@@ -170,6 +171,7 @@ const CourseCard: React.FC<Props> = ({
                 <div className="text-xs font-medium">Rating</div>
                 <RatingStars value={rating ?? 0} onRate={onRate} />
               </div>
+              <span className="text-muted-foreground text-xs">{typeof rating === 'number' ? rating.toFixed(1) : 'Not rated'}</span>
             </div>
           )}
 

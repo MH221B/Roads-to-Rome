@@ -142,9 +142,17 @@ export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isEnrollLoading, setIsEnrollLoading] = useState(false);
-
   const { accessToken } = useAuth();
+  const enrollmentsQuery = useQuery({
+    queryKey: ['enrollments'],
+    queryFn: async () => {
+      const resp = await api.get('/api/enrollments');
+      return resp.data as any[];
+    },
+    enabled: !!accessToken,
+    staleTime: 1000 * 60,
+  });
+  const [isEnrollLoading, setIsEnrollLoading] = useState(false);
   const payload = useMemo(() => {
     return decodeJwtPayload(accessToken);
   }, [accessToken]);
@@ -207,6 +215,18 @@ export default function CourseDetail() {
       setIsEnrollLoading(false);
     }
   };
+
+  const isEnrolled = useMemo(() => {
+    if (!course?.id || !enrollmentsQuery.data) return false;
+    return enrollmentsQuery.data.some((e: any) => {
+      const cid = e?.course?.id || e?.course_id || e?.courseId;
+      return String(cid) === String(course.id);
+    });
+  }, [course?.id, enrollmentsQuery.data]);
+
+  const firstLessonId = useMemo(() => {
+    return course?.lessons && course.lessons.length > 0 ? course.lessons[0].id : null;
+  }, [course?.lessons]);
 
   if (isLoading) {
     return (
@@ -443,19 +463,30 @@ export default function CourseDetail() {
                   </div>
 
                   <div className="space-y-3">
-                    <Button
-                      className="h-12 w-full text-lg font-bold"
-                      onClick={handleEnroll}
-                      disabled={isEnrollLoading || isInstructorOwner}
-                    >
-                      {isInstructorOwner ? (
-                        'Owner — View Only'
-                      ) : isEnrollLoading ? (
-                        <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        'Enroll Now'
-                      )}
-                    </Button>
+                    {isEnrolled ? (
+                      <Button
+                        className="h-12 w-full text-lg font-bold"
+                        variant="default"
+                        onClick={() => firstLessonId && navigate(`/courses/${course.id}/lessons/${firstLessonId}`)}
+                        disabled={!firstLessonId}
+                      >
+                        Continue learning
+                      </Button>
+                    ) : (
+                      <Button
+                        className="h-12 w-full text-lg font-bold"
+                        onClick={handleEnroll}
+                        disabled={isEnrollLoading || isInstructorOwner}
+                      >
+                        {isInstructorOwner ? (
+                          'Owner — View Only'
+                        ) : isEnrollLoading ? (
+                          <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          'Enroll Now'
+                        )}
+                      </Button>
+                    )}
                   </div>
 
                   <div className="space-y-2 border-t pt-4">

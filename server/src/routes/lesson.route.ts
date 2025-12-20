@@ -29,6 +29,14 @@ lessonRouter.put(
   lessonController.UpdateLesson
 );
 
+// Route: POST /api/courses/:courseId/lessons/:lessonId/complete (student marks lesson as done)
+lessonRouter.post(
+  '/:lessonId/complete',
+  authenticateToken,
+  authorizeRoles([Role.STUDENT, Role.ADMIN]),
+  lessonController.CompleteLesson
+);
+
 // Route: DELETE /api/courses/:courseId/lessons/:lessonId (requires auth + instructor/admin)
 lessonRouter.delete(
   '/:lessonId',

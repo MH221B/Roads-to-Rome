@@ -73,16 +73,16 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               <Link
                 to="/admin-dashboard"
                 className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                  isActive('/') ? '' : 'text-muted-foreground'
+                  isActive('/admin-dashboard') ? '' : 'text-muted-foreground'
                 }`}
-                aria-current={isActive('/') ? 'page' : undefined}
+                aria-current={isActive('/admin-dashboard') ? 'page' : undefined}
               >
                 Admin
               </Link>
             ) : (
               <Link
                 to="/"
-                className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${  
                   isActive('/') ? '' : 'text-muted-foreground'
                 }`}
                 aria-current={isActive('/') ? 'page' : undefined}
@@ -143,7 +143,9 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to="/dashboard">Dashboard</Link>
+                  <Link to={isAdmin ? '/' : '/dashboard'}>
+                    Dashboard
+                  </Link>
                 </DropdownMenuItem>
                 {roles.includes('STUDENT') && (
                   <DropdownMenuItem asChild className="cursor-pointer">

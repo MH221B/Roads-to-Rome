@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import lessonService from '../services/lesson.service';
+import enrollmentService from '../services/enrollment.service';
 
 interface ILessonController {
   CreateLesson(req: Request, res: Response): Promise<void>;
@@ -7,6 +8,7 @@ interface ILessonController {
   DeleteLesson(req: Request, res: Response): Promise<void>;
   GetLessonById(req: Request, res: Response): Promise<void>;
   GetLessonsByCourseId(req: Request, res: Response): Promise<void>;
+  CompleteLesson(req: Request, res: Response): Promise<void>;
 }
 
 const lessonController: ILessonController = {
@@ -86,6 +88,28 @@ const lessonController: ILessonController = {
 
       const lesson = await lessonService.GetLessonById(courseId, lessonId);
       res.status(200).json(lesson);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+
+  CompleteLesson: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const studentId = (req as any).user?.id as string | undefined;
+      const { courseId, lessonId } = req.params;
+
+      if (!studentId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!courseId || !lessonId) {
+        res.status(400).json({ error: 'courseId and lessonId are required' });
+        return;
+      }
+
+      const updated = await enrollmentService.updateProgressByLesson(studentId, courseId, lessonId);
+      res.status(200).json(updated);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
