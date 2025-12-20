@@ -1,6 +1,7 @@
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
 import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +24,32 @@ import { getCourses } from '@/services/courseService';
 type Course = Omit<CourseType, 'difficulty'> & { difficulty?: string | null };
 
 export default function CourseList() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    const category = searchParams.get('category') || null;
+    const tags = searchParams.getAll('tags');
+    const search = searchParams.get('search') || '';
+
+    setSelectedCategory(category);
+    setSelectedTags(tags);
+    setSearchQuery(search);
+  }, []);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory) params.set('category', selectedCategory);
+    selectedTags.forEach((tag) => params.append('tags', tag));
+    if (searchQuery) params.set('search', searchQuery);
+
+    setSearchParams(params);
+  }, [selectedCategory, selectedTags, searchQuery, setSearchParams]);
 
   // Fetch all available categories on component mount
   useEffect(() => {
@@ -109,14 +132,14 @@ export default function CourseList() {
           <div className="mb-6 flex flex-col items-start justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
               <Select
-                value={selectedCategory ?? 'all'}
-                onValueChange={(v) => setSelectedCategory(v === 'all' ? null : v)}
+                value={selectedCategory ?? 'All Categories'}
+                onValueChange={(v) => setSelectedCategory(v === 'All Categories' ? null : v)}
               >
                 <SelectTrigger className="w-48 font-bold">
                   <SelectValue placeholder="Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="All Categories">All Categories</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
