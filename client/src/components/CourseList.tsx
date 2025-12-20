@@ -1,6 +1,6 @@
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,28 @@ export default function CourseList() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // Fetch all available categories on component mount
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        const allCourses = await getCourses(0, 1000);
+        const categories = Array.from(
+          new Set(
+            allCourses
+              .map((c) => c.category)
+              .filter((c): c is string => c !== null && c !== undefined)
+          )
+        );
+        setAllCategories(categories);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+
+    fetchAllCategories();
+  }, []);
 
   // Define the fetcher function that accepts page and returns Promise<Course[]>
   const fetchCourses = useCallback(
@@ -51,12 +73,6 @@ export default function CourseList() {
     dependencies: [selectedCategory, selectedTags, searchQuery],
     limit: 6,
   });
-
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    courses.forEach((c) => c.category && set.add(c.category));
-    return Array.from(set);
-  }, [courses]);
 
   const allTags = useMemo(() => {
     return Array.from(new Set(courses.flatMap((c) => c.tags)));
@@ -93,7 +109,7 @@ export default function CourseList() {
           <div className="mb-6 flex flex-col items-start justify-between space-y-4 md:flex-row md:space-y-0">
             <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
               <Select
-                value={selectedCategory ?? undefined}
+                value={selectedCategory ?? 'all'}
                 onValueChange={(v) => setSelectedCategory(v === 'all' ? null : v)}
               >
                 <SelectTrigger className="w-48 font-bold">
@@ -101,7 +117,7 @@ export default function CourseList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {categories.map((cat) => (
+                  {allCategories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
                     </SelectItem>
