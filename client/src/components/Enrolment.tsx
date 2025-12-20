@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { FaSpinner, FaTrash, FaBookOpen, FaChalkboardTeacher, FaSearch } from 'react-icons/fa';
+import { FaTrash, FaBookOpen, FaChalkboardTeacher, FaSearch, FaSpinner } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import HeaderComponent from './HeaderComponent';
+import LoadingScreen from './LoadingScreen';
 
 interface Course {
   id: string;
@@ -94,11 +95,7 @@ export default function Enrolment() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <FaSpinner className="text-primary h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error) {

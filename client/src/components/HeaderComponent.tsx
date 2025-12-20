@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthProvider';
 
 type Props = {
@@ -65,7 +65,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
             to="/"
             className="text-2xl font-bold tracking-tight transition-opacity hover:opacity-90"
           >
-            R2R
+            Learnix
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
@@ -123,7 +123,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               >
                 AI Quiz
               </Link>
-            )} 
+            )}
           </div>
         </div>
 
