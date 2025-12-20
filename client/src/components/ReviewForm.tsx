@@ -6,18 +6,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
 
 interface ReviewFormProps {
   onSubmit?: (data: { rating: number; content: string }) => void;
   submitting?: boolean;
   readOnly?: boolean;
+  accessToken?: string | null;
 }
 
 const ReviewForm: React.FC<ReviewFormProps> = ({
   onSubmit,
   submitting = false,
   readOnly = false,
+  accessToken,
 }) => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -31,7 +36,30 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const ratingValue = watch('rating');
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
+  const showAuthAlert = () => {
+    Swal.fire({
+      title: 'Authentication Required',
+      html: 'You need to <strong>login</strong> or <strong>register</strong> to post a review.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Login',
+      cancelButtonText: 'Register',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/login');
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        navigate('/register');
+      }
+    });
+  };
+
   const handleFormSubmit = (data: { rating: number; content: string }) => {
+    if (!accessToken) {
+      showAuthAlert();
+      return;
+    }
     if (!readOnly) onSubmit?.(data);
   };
 

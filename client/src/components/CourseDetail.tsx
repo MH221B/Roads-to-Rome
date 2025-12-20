@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import HeaderComponent from './HeaderComponent';
 import LessonListDraggable from './LessonListDraggable';
 import { decodeJwtPayload } from '@/lib/utils';
+import Swal from 'sweetalert2';
 
 // Types based on the provided database design
 interface User {
@@ -202,7 +203,32 @@ export default function CourseDetail() {
     commentMutation.mutate(data);
   };
 
+  const showAuthAlert = () => {
+    Swal.fire({
+      title: 'Authentication Required',
+      html: 'You need to <strong>login</strong> or <strong>register</strong> to access this feature.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Login',
+      cancelButtonText: 'Register',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/login');
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        navigate('/register');
+      }
+    });
+  };
+
   const handleEnroll = async () => {
+    // Check if user is authenticated
+    if (!accessToken) {
+      showAuthAlert();
+      return;
+    }
+
     if (!course) return;
     setIsEnrollLoading(true);
     try {
@@ -214,6 +240,14 @@ export default function CourseDetail() {
     } finally {
       setIsEnrollLoading(false);
     }
+  };
+
+  const handleLessonClick = (lessonId: string) => {
+    if (!accessToken) {
+      showAuthAlert();
+      return;
+    }
+    navigate(`/courses/${course?.id}/lessons/${lessonId}`);
   };
 
   const isEnrolled = useMemo(() => {
@@ -405,6 +439,7 @@ export default function CourseDetail() {
                   (commentMutation.status as string) === 'loading'
                 }
                 readOnly={isInstructorOwner}
+                accessToken={accessToken}
               />
 
               {/* Reviews List */}
@@ -467,7 +502,7 @@ export default function CourseDetail() {
                       <Button
                         className="h-12 w-full text-lg font-bold"
                         variant="default"
-                        onClick={() => firstLessonId && navigate(`/courses/${course.id}/lessons/${firstLessonId}`)}
+                        onClick={() => firstLessonId && handleLessonClick(firstLessonId)}
                         disabled={!firstLessonId}
                       >
                         Continue learning
