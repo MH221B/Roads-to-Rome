@@ -37,7 +37,14 @@ export function useInfiniteScroll<T>({
         if (isReset) {
           setData(newItems);
         } else {
-          setData((prev) => [...prev, ...newItems]);
+          // Deduplicate by ID if items have an id property
+          setData((prev) => {
+            const existingIds = new Set(
+              (prev as any[]).map((item: any) => item.id).filter(Boolean)
+            );
+            const uniqueNewItems = newItems.filter((item: any) => !existingIds.has(item.id));
+            return [...prev, ...uniqueNewItems];
+          });
         }
 
         // If we got fewer items than the limit, we've hit the end
