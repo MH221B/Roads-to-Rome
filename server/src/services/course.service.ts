@@ -11,6 +11,7 @@ interface IListOptions {
   category?: string | null;
   tags?: string[];
   instructorId?: string | null;
+  sort?: string;
 }
 
 interface ICourseService {
@@ -86,6 +87,27 @@ const courseService: ICourseService = {
         select: '-__v',
       };
 
+      // Determine sort options based on the sort parameter
+      let sortOptions: Record<string, 1 | -1 | { $meta: 'textScore' }> = { createdAt: -1 }; // default: newest first
+      if (options?.sort) {
+        switch (options.sort) {
+          case 'title-asc':
+            sortOptions = { title: 1 };
+            break;
+          case 'title-desc':
+            sortOptions = { title: -1 };
+            break;
+          case 'oldest':
+            sortOptions = { createdAt: 1 };
+            break;
+          case 'newest':
+            sortOptions = { createdAt: -1 };
+            break;
+          default:
+            sortOptions = { createdAt: -1 };
+        }
+      }
+
       // If text search is used, include custom sort for relevance
       if (filter.$text) {
         paginateOptions.customLabels = {
@@ -102,7 +124,7 @@ const courseService: ICourseService = {
           page: 'page',
           limit: 'limit',
         };
-        paginateOptions.sort = { createdAt: -1 };
+        paginateOptions.sort = sortOptions;
       }
 
       // Use paginate method

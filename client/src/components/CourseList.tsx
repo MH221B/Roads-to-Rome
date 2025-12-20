@@ -28,6 +28,7 @@ export default function CourseList() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSort, setSelectedSort] = useState<string>('newest');
   const [allCategories, setAllCategories] = useState<string[]>([]);
 
   // Initialize filters from URL on mount
@@ -35,10 +36,12 @@ export default function CourseList() {
     const category = searchParams.get('category') || null;
     const tags = searchParams.getAll('tags');
     const search = searchParams.get('search') || '';
+    const sort = searchParams.get('sort') || 'newest';
 
     setSelectedCategory(category);
     setSelectedTags(tags);
     setSearchQuery(search);
+    setSelectedSort(sort);
   }, []);
 
   // Update URL when filters change
@@ -47,9 +50,10 @@ export default function CourseList() {
     if (selectedCategory) params.set('category', selectedCategory);
     selectedTags.forEach((tag) => params.append('tags', tag));
     if (searchQuery) params.set('search', searchQuery);
+    if (selectedSort) params.set('sort', selectedSort);
 
     setSearchParams(params);
-  }, [selectedCategory, selectedTags, searchQuery, setSearchParams]);
+  }, [selectedCategory, selectedTags, searchQuery, selectedSort, setSearchParams]);
 
   // Fetch all available categories on component mount
   useEffect(() => {
@@ -79,9 +83,10 @@ export default function CourseList() {
         category: selectedCategory,
         tags: selectedTags,
         search: searchQuery,
+        sort: selectedSort,
       });
     },
-    [selectedCategory, selectedTags, searchQuery]
+    [selectedCategory, selectedTags, searchQuery, selectedSort]
   );
 
   // Use the infinite scroll hook
@@ -93,7 +98,7 @@ export default function CourseList() {
     bottomRef,
   } = useInfiniteScroll<Course>({
     fetchData: fetchCourses,
-    dependencies: [selectedCategory, selectedTags, searchQuery],
+    dependencies: [selectedCategory, selectedTags, searchQuery, selectedSort],
     limit: 6,
   });
 
@@ -145,6 +150,18 @@ export default function CourseList() {
                       {cat}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedSort} onValueChange={setSelectedSort}>
+                <SelectTrigger className="w-48 font-bold">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="title-asc">Title: A → Z</SelectItem>
+                  <SelectItem value="title-desc">Title: Z → A</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="newest">Newest</SelectItem>
                 </SelectContent>
               </Select>
 
