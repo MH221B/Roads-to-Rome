@@ -60,13 +60,11 @@ const HomePage: React.FC = () => {
 
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
     const load = async () => {
       setLoading(true);
-      setError(null);
       try {
         const userId =
           payload?.sub ??
@@ -86,7 +84,6 @@ const HomePage: React.FC = () => {
         }
       } catch (e) {
         if (!mounted) return;
-        setError('Failed to load courses');
       } finally {
         if (mounted) {
           setLoading(false);
