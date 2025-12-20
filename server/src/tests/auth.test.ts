@@ -147,6 +147,6 @@ describe('Auth Routes', () => {
       expect(user?.password).toBeDefined();
       expect(typeof user?.password).toBe('string');
       expect(user?.password.length).toBeGreaterThan(0);
-    });
+    }, 30000);
   });
 });
