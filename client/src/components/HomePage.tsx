@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { Course } from '@/services/courseService';
 import { getCourses, getInstructorCourses } from '@/services/courseService';
 import { decodeJwtPayload } from '@/lib/utils';
+import LoadingScreen from '@/components/LoadingScreen';
 
 const mockCategories: string[] = [
   'Web Development',
@@ -99,6 +100,10 @@ const HomePage: React.FC = () => {
     };
   }, [accessToken, showInstructor, showStudent, isGuest, payload]);
 
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <HeaderComponent showAdmin={showAdmin} />
@@ -109,7 +114,7 @@ const HomePage: React.FC = () => {
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">Admin Dashboard Overview</h2>
               </div>
-              
+
               {/* Stats Section */}
               <div className="mb-8">
                 <AdminStats />
@@ -139,10 +144,10 @@ const HomePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {loading && <div>Loading courses...</div>}
-                {!loading && courses.length === 0 && <div>No courses found.</div>}
-                {!loading &&
-                  courses.map((course) => <CourseCard key={course.id} course={course} />)}
+                {courses.length === 0 && <div>No courses found.</div>}
+                {courses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
               </div>
 
               <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -189,18 +194,16 @@ const HomePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {loading && <div>Loading your courses...</div>}
-                {!loading && courses.length === 0 && <div>No courses found for your account.</div>}
-                {!loading &&
-                  courses.map((course) => (
-                    <CourseCardCompact
-                      key={course.id}
-                      course={course}
-                      onEdit={() => navigate(`/courses/${course.id}/edit`)}
-                      onPreview={() => navigate(`/courses/${course.id}`)}
-                      onDelete={() => setCourses((prev) => prev.filter((c) => c.id !== course.id))}
-                    />
-                  ))}
+                {courses.length === 0 && <div>No courses found for your account.</div>}
+                {courses.map((course) => (
+                  <CourseCardCompact
+                    key={course.id}
+                    course={course}
+                    onEdit={() => navigate(`/courses/${course.id}/edit`)}
+                    onPreview={() => navigate(`/courses/${course.id}`)}
+                    onDelete={() => setCourses((prev) => prev.filter((c) => c.id !== course.id))}
+                  />
+                ))}
               </div>
             </section>
           </div>
