@@ -149,6 +149,14 @@ const LoginCard = () => {
             <Button type="button" variant="link" onClick={() => navigate('/forgot-password')}>
               Forgot password?
             </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-gray-500 hover:text-gray-700"
+              onClick={() => navigate('/')}
+            >
+              Cancel
+            </Button>
           </CardFooter>
         </form>
       </Card>

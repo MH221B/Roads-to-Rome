@@ -230,6 +230,14 @@ const RegisterCard = () => {
               <FaGithub className="mr-2 h-4 w-4" />
               Login with GitHub
             </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-gray-500 hover:text-gray-700"
+              onClick={() => navigate('/')}
+            >
+              Cancel
+            </Button>
           </CardFooter>
         </form>
       </Card>
