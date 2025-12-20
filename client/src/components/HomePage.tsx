@@ -3,34 +3,6 @@ import type { Course } from '@/services/courseService';
 import { getCourses, getInstructorCourses } from '@/services/courseService';
 import { decodeJwtPayload } from '@/lib/utils';
 import LoadingScreen from '@/components/LoadingScreen';
-
-const mockCategories: string[] = [
-  'Web Development',
-  'Programming',
-  'UI/UX',
-  'Backend',
-  'APIs',
-  'DevOps',
-  'Data',
-  'Cloud',
-];
-
-const mockTags: string[] = [
-  'react',
-  'typescript',
-  'design',
-  'components',
-  'nodejs',
-  'api',
-  'graphql',
-  'ci',
-  'pwa',
-  'performance',
-  'd3',
-  'cloud',
-  'ml',
-  'deployment',
-];
 import HeaderComponent from '@/components/HeaderComponent';
 import AdminStats from '@/components/AdminStats';
 import { useNavigate } from 'react-router-dom';
@@ -63,6 +35,23 @@ const HomePage: React.FC = () => {
 
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
+
+  // Derive categories and tags from loaded courses
+  const categories = React.useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    courses.forEach((course) => {
+      if (course.category) uniqueCategories.add(course.category);
+    });
+    return Array.from(uniqueCategories).sort();
+  }, [courses]);
+
+  const tags = React.useMemo(() => {
+    const uniqueTags = new Set<string>();
+    courses.forEach((course) => {
+      course.tags.forEach((tag) => uniqueTags.add(tag));
+    });
+    return Array.from(uniqueTags).sort();
+  }, [courses]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -156,22 +145,30 @@ const HomePage: React.FC = () => {
                 <div>
                   <h4 className="mb-3 text-lg font-semibold">Categories</h4>
                   <div className="flex flex-wrap gap-3">
-                    {mockCategories.map((c) => (
-                      <Badge key={c} variant="secondary">
-                        {c}
-                      </Badge>
-                    ))}
+                    {categories.length === 0 ? (
+                      <p className="text-gray-500">No categories available</p>
+                    ) : (
+                      categories.map((c) => (
+                        <Badge key={c} variant="secondary">
+                          {c}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="mb-3 text-lg font-semibold">Popular Tags</h4>
                   <div className="flex flex-wrap gap-3">
-                    {mockTags.map((t) => (
-                      <Badge key={t} variant="secondary">
-                        #{t}
-                      </Badge>
-                    ))}
+                    {tags.length === 0 ? (
+                      <p className="text-gray-500">No tags available</p>
+                    ) : (
+                      tags.map((t) => (
+                        <Badge key={t} variant="secondary">
+                          #{t}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
