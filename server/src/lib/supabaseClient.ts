@@ -45,11 +45,13 @@ export async function uploadImageToSupabase(
 function extractFilePathFromUrl(publicUrl: string): string | null {
   try {
     const url = new URL(publicUrl);
-    const pathParts = url.pathname.split('/');
-    // Find 'public' in the path and extract everything after it
+    const pathParts = url.pathname.split('/').filter(Boolean); // Remove empty parts
+    // Find 'public' in the path and extract everything after bucket name
+    // Structure: /storage/v1/object/public/{bucket}/{filePath}
     const publicIndex = pathParts.indexOf('public');
-    if (publicIndex >= 0) {
-      return pathParts.slice(publicIndex + 1).join('/');
+    if (publicIndex >= 0 && publicIndex + 2 < pathParts.length) {
+      // Skip 'public' and bucket name, return the rest (the actual file path)
+      return pathParts.slice(publicIndex + 2).join('/');
     }
     return null;
   } catch {
