@@ -7,6 +7,7 @@ export interface Course {
   level: string;
   is_premium: boolean;
   status: string;
+  price?: number;
   instructor:
     | string
     | {

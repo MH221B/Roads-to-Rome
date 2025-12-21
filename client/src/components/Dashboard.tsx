@@ -9,8 +9,8 @@ import {
   FiCompass,
   FiRefreshCw,
   FiTrendingUp,
-  FiDollarSign,
 } from 'react-icons/fi';
+import { FaMoneyBillWave } from 'react-icons/fa';
 
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
@@ -340,7 +340,7 @@ const Dashboard: React.FC = () => {
               title="Budget"
               value={`${budget.toLocaleString()}`}
               hint={profileQuery.isFetching ? 'Updating…' : 'Available balance'}
-              icon={<FiDollarSign className="h-5 w-5" />}
+              icon={<FaMoneyBillWave className="h-5 w-5 text-emerald-600" />}
             />
             <StatCard title="Enrolled" value={stats.total} hint="Total courses you're in" icon={<FiBookOpen className="h-5 w-5" />} />
             <StatCard title="In progress" value={stats.inProgress} hint="Currently learning" icon={<FiClock className="h-5 w-5" />} />

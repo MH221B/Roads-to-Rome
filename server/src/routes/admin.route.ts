@@ -93,14 +93,6 @@ adminRouter.patch(
   adminController.UpdateCoursePrice
 );
 
-// Update course premium flag only
-adminRouter.patch(
-  '/courses/:id/premium',
-  authenticateToken,
-  authorizeRoles([Role.ADMIN]),
-  adminController.UpdateCoursePremium
-);
-
 // System statistics
 adminRouter.get(
   '/stats',

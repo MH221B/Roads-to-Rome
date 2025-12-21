@@ -15,7 +15,6 @@ interface IAdminController {
   GetCoursesByStatus(req: Request, res: Response): Promise<void>;
   UpdateCourseStatus(req: Request, res: Response): Promise<void>;
   UpdateCoursePrice(req: Request, res: Response): Promise<void>;
-  UpdateCoursePremium(req: Request, res: Response): Promise<void>;
   GetSystemStats(req: Request, res: Response): Promise<void>;
 }
 
@@ -204,28 +203,6 @@ const adminController: IAdminController = {
 
       const course = await adminService.updateCoursePrice(id, parsedPrice);
 
-      res.status(200).json(course);
-    } catch (error) {
-      const message = (error as Error).message;
-      if (message === 'Course not found') {
-        res.status(404).json({ error: message });
-        return;
-      }
-      res.status(500).json({ error: message });
-    }
-  },
-
-  async UpdateCoursePremium(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { is_premium } = req.body as { is_premium?: any };
-
-      if (typeof is_premium !== 'boolean') {
-        res.status(400).json({ error: 'is_premium must be boolean' });
-        return;
-      }
-
-      const course = await adminService.updateCoursePremium(id, is_premium);
       res.status(200).json(course);
     } catch (error) {
       const message = (error as Error).message;

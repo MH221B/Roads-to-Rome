@@ -111,16 +111,6 @@ export async function updateCoursePrice(
   return response.data;
 }
 
-export async function updateCoursePremium(
-  courseId: string,
-  is_premium: boolean
-): Promise<AdminCourse> {
-  const response = await api.patch(`/api/admin/courses/${courseId}/premium`, {
-    is_premium,
-  });
-  return response.data;
-}
-
 export interface SystemStats {
   totalUsers: number;
   totalCourses: number;
@@ -144,6 +134,5 @@ export default {
   getCoursesByStatus,
   updateCourseStatus,
   updateCoursePrice,
-  updateCoursePremium,
   getSystemStats,
 };

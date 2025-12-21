@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { api } from '@/services/axiosClient';
+import { getProfile } from '@/services/authService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,7 +15,10 @@ import {
   FaPlayCircle,
   FaLock,
   FaUnlock,
+  FaWallet,
+  FaMoneyBillWave
 } from 'react-icons/fa';
+
 import ReviewForm from './ReviewForm';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -57,6 +61,7 @@ interface Course {
   level: string;
   is_premium: boolean;
   status: string;
+  price?: number;
   lessons: Lesson[]; // Joined data
   comments: Comment[]; // Joined data
   image?: string;
@@ -114,6 +119,11 @@ const fetchCourse = async (courseId: string) => {
       is_premium:
         (data as any).is_premium ?? (data as any).isPremium ?? (data as any).premium ?? false,
       status: (data as any).status ?? (data as any).state ?? 'published',
+      price: (() => {
+        const raw = (data as any).price;
+        const num = typeof raw === 'number' ? raw : Number(raw ?? 0);
+        return Number.isFinite(num) && num >= 0 ? num : 0;
+      })(),
       // Try a few common image field names coming from different backends
       image: (data as any).thumbnail || null,
       lessons,
@@ -149,6 +159,13 @@ export default function CourseDetail() {
       const resp = await api.get('/api/enrollments');
       return resp.data as any[];
     },
+    enabled: !!accessToken,
+    staleTime: 1000 * 60,
+  });
+
+  const profileQuery = useQuery({
+    queryKey: ['profile'],
+    queryFn: getProfile,
     enabled: !!accessToken,
     staleTime: 1000 * 60,
   });
@@ -229,13 +246,39 @@ export default function CourseDetail() {
     }
 
     if (!course) return;
+    const price = typeof course.price === 'number' ? course.price : 0;
+    const hasBudget = budget >= price;
+    if (price > 0 && profileQuery.isFetched && !hasBudget) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Insufficient budget',
+        text: `Course price is ${formatMoney(price)} but your budget is ${formatMoney(budget)}.`,
+      });
+      return;
+    }
     setIsEnrollLoading(true);
     try {
       await enrollCourse(course.id);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['enrollments'] }),
+        queryClient.invalidateQueries({ queryKey: ['profile'] }),
+      ]);
+      Swal.fire({
+        icon: 'success',
+        title: 'Enrollment successful',
+        text: price > 0 ? `Paid ${formatMoney(price)} from your budget` : 'You are now enrolled',
+        timer: 1500,
+        showConfirmButton: false,
+      });
       // Navigate to dashboard or show success
       navigate('/dashboard');
     } catch (err) {
-      console.error('Enrollment failed', err);
+      const message = err?.response?.data?.error || 'Enrollment failed';
+      Swal.fire({
+        icon: 'error',
+        title: 'Enrollment failed',
+        text: message,
+      });
     } finally {
       setIsEnrollLoading(false);
     }
@@ -260,6 +303,19 @@ export default function CourseDetail() {
   const firstLessonId = useMemo(() => {
     return course?.lessons && course.lessons.length > 0 ? course.lessons[0].id : null;
   }, [course?.lessons]);
+
+  const budget = useMemo(() => {
+    const raw = profileQuery.data?.budget;
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+  }, [profileQuery.data]);
+
+  const formatMoney = (value: number | undefined) => {
+    const num = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -488,13 +544,31 @@ export default function CourseDetail() {
                   )}
                 </AspectRatio>
                 <CardContent className="space-y-6 p-6">
-                  <div className="flex items-center gap-2">
-                    {course.is_premium ? (
-                      <span className="text-3xl font-bold">Premium</span>
+                  <div className="flex items-center gap-3">
+                    {course.is_premium || (course.price ?? 0) > 0 ? (
+                      <>
+                        <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-amber-100">
+                          <FaLock className="h-4 w-4" />
+                          <span className="text-sm font-semibold">Premium course</span>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">{formatMoney(course.price)} <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" /></div>
+                      </>
                     ) : (
-                      <span className="text-3xl font-bold text-green-600">Free</span>
+                      <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-green-800 ring-1 ring-green-100">
+                        <FaUnlock className="h-4 w-4" />
+                        <span className="text-sm font-semibold">Free access</span>
+                      </div>
                     )}
                   </div>
+                  {profileQuery.data && (course.is_premium || (course.price ?? 0) > 0) && (
+                    <div className="flex items-center gap-2 text-sm text-slate-700">
+                      <FaWallet className="h-4 w-4 text-emerald-600" />
+                      <span>
+                        Your budget:&nbsp;
+                        <span className="font-semibold text-slate-900">{formatMoney(budget)} <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" /></span>
+                      </span>
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     {isEnrolled ? (
