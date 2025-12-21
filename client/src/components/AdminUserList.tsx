@@ -346,6 +346,7 @@ const AdminUserList: React.FC = () => {
                               onChange={(e) => handleBudgetChange(user.id, e.target.value)}
                               className="max-w-[120px]"
                             />
+                            <span className="text-xs text-slate-500">coins</span>
                             <Button
                               size="sm"
                               variant="outline"
