@@ -21,6 +21,15 @@ interface IAuthService {
   ResetPassword(token: string, newPassword: string): Promise<{ message: string }>;
   GetGithubOAuthUrl(): string;
   GithubLogin(code: string): Promise<{ accessToken: string; refreshToken: string }>;
+  GetProfile(userId: string): Promise<{
+    id: string;
+    email: string;
+    username?: string;
+    fullName?: string;
+    role: Role;
+    budget: number;
+    createdAt: Date;
+  }>;
 }
 
 const authService: IAuthService = {
@@ -270,6 +279,23 @@ const authService: IAuthService = {
     );
 
     return { accessToken, refreshToken };
+  },
+
+  async GetProfile(userId: string) {
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      id: String(user._id),
+      email: user.email,
+      username: user.username,
+      fullName: (user as any).fullName,
+      role: user.role as Role,
+      budget: typeof (user as any).budget === 'number' ? (user as any).budget : 0,
+      createdAt: (user as any).createdAt
+    };
   },
 };
 
