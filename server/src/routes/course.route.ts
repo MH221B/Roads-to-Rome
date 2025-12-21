@@ -9,6 +9,9 @@ const courseRouter = Router();
 // GET /api/courses
 courseRouter.get('/', courseController.List);
 
+// GET /api/courses/suggestions (requires auth)
+courseRouter.get('/suggestions', authenticateToken, courseController.Suggested);
+
 // GET /api/courses/:id
 courseRouter.get('/:id', courseController.Get);
 

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/axiosClient';
+import { deleteEnrollment, getEnrollments, type Course, type Enrollment } from '@/services/enrollmentService';
 import RequireRole from './RequireRole';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -12,34 +12,11 @@ import Swal from 'sweetalert2';
 import HeaderComponent from './HeaderComponent';
 import LoadingScreen from './LoadingScreen';
 
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  level: string;
-  is_premium: boolean;
-  status: string;
-  instructor: string;
-}
-
-interface Enrollment {
-  id: string;
-  student_id: string;
-  course_id: string;
-  course: Course;
-  status: string;
-  created_at?: string;
-}
-
-// API Functions
-const fetchEnrollments = async () => {
-  const response = await api.get<Enrollment[]>('/api/enrollments');
-  return response.data;
-};
-
-const unenrollCourse = async (enrollmentId: string) => {
-  await api.delete(`/api/enrollments/${enrollmentId}`);
-  return enrollmentId;
+const resolveInstructor = (instructor: Course['instructor']) => {
+  if (!instructor) return 'Unknown Instructor';
+  if (typeof instructor === 'string') return instructor;
+  const { name, fullName, username, email, id } = instructor;
+  return name || fullName || username || email || (id ? String(id) : 'Unknown Instructor');
 };
 
 export default function Enrolment() {
@@ -54,11 +31,11 @@ export default function Enrolment() {
     error,
   } = useQuery({
     queryKey: ['enrollments'],
-    queryFn: fetchEnrollments,
+    queryFn: getEnrollments,
   });
 
   const unenrollMutation = useMutation({
-    mutationFn: unenrollCourse,
+    mutationFn: deleteEnrollment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       Swal.fire({
@@ -112,7 +89,9 @@ export default function Enrolment() {
     ? enrollments.filter(
         (enrollment) =>
           enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          enrollment.course?.instructor?.toLowerCase().includes(searchTerm.toLowerCase())
+          resolveInstructor(enrollment.course?.instructor)
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       )
     : [];
 
@@ -176,7 +155,7 @@ export default function Enrolment() {
                     </CardTitle>
                     <CardDescription className="mt-1 flex items-center gap-2">
                       <FaChalkboardTeacher className="h-4 w-4" />
-                      {enrollment.course.instructor || 'Unknown Instructor'}
+                      {resolveInstructor(enrollment.course.instructor)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grow">

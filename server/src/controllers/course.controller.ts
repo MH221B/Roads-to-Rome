@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import courseService from '../services/course.service';
 import { uploadImageToSupabase, deleteFileFromSupabase } from '../lib/supabaseClient';
-import { User } from '../models/user.model';
 
 const courseController = {
   async List(req: Request, res: Response) {
@@ -44,6 +43,28 @@ const courseController = {
       if (!course) return res.status(404).json({ error: 'Course not found' });
       res.status(200).json(course);
     } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+
+  async Suggested(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const limit = req.query.limit ? Number(req.query.limit) || undefined : undefined;
+      const interestsRaw = typeof req.query.interests === 'string' ? req.query.interests : undefined;
+      const interests = interestsRaw
+        ? interestsRaw
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : undefined;
+
+      const suggested = await courseService.suggestCourses({ userId, interests, limit });
+      res.status(200).json(suggested);
+    } catch (error) {
+      console.error('Error in courseController.Suggested:', error);
       res.status(500).json({ error: (error as Error).message });
     }
   },

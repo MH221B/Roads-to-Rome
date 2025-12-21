@@ -149,9 +149,11 @@ const Dashboard: React.FC = () => {
   const recommendedQuery = useQuery({
     queryKey: ['recommended-courses'],
     queryFn: async () => {
-      const resp = await api.get('/api/courses', { params: { limit: 9 } });
+      const resp = await api.get('/api/courses/suggestions', { params: { limit: 9 } });
       const payload = Array.isArray(resp.data?.data) ? resp.data.data : resp.data;
-      return (Array.isArray(payload) ? payload : []).map(normalizeCourse);
+      const courses = (Array.isArray(payload) ? payload : []).map(normalizeCourse);
+      const usedInterests = Array.isArray(resp.data?.usedInterests) ? resp.data.usedInterests : [];
+      return { courses, usedInterests };
     },
     enabled: isStudent && isAuthenticated,
     staleTime: 1000 * 60 * 5,
@@ -274,7 +276,8 @@ const Dashboard: React.FC = () => {
 
   const recommended = useMemo(() => {
     const enrolledIds = new Set(courses.map((c) => c.course.id));
-    return (recommendedQuery.data ?? []).filter((c) => !enrolledIds.has(c.id)).slice(0, 6);
+    const recs = recommendedQuery.data?.courses ?? [];
+    return recs.filter((c) => !enrolledIds.has(c.id)).slice(0, 6);
   }, [courses, recommendedQuery.data]);
 
   const handleMarkComplete = (enrollmentId: string | null) => {
@@ -538,6 +541,11 @@ const Dashboard: React.FC = () => {
               <CardTitle className="text-xl">Recommended for you</CardTitle>
               <CardDescription className="text-slate-600">
                 New courses picked to broaden your learning path.
+                {recommendedQuery.data?.usedInterests?.length ? (
+                  <span className="ml-1 text-emerald-600">
+                    Based on your interests/history: {recommendedQuery.data.usedInterests.join(', ')}
+                  </span>
+                ) : null}
               </CardDescription>
             </CardHeader>
             <CardContent>

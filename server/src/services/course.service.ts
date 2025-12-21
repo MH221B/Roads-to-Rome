@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
+import Enrollment from '../models/enrollment.model';
+import { User } from '../models/user.model';
 import { CourseStatus } from '../enums/course.enum';
 
 interface IListOptions {
@@ -21,6 +23,11 @@ interface ICourseService {
   ): Promise<{ data: any[]; total: number; page: number; limit: number }>;
   getCourseById(id: string): Promise<any | null>;
   createCourse(data: Partial<ICourse>): Promise<any>;
+  suggestCourses(options: ISuggestOptions): Promise<{
+    data: any[];
+    usedInterests: string[];
+    source: { fromHistory: number; fromProvided: number; fallbackUsed: boolean };
+  }>;
   createComment(
     courseId: string,
     rating: number,
@@ -30,6 +37,12 @@ interface ICourseService {
   ): Promise<any>;
   deleteCourse?(id: string): Promise<void>;
   updateCourse?(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any>;
+}
+
+interface ISuggestOptions {
+  userId: string;
+  interests?: string[];
+  limit?: number;
 }
 
 export function validateCourseStatusTransition(from: CourseStatus, to: CourseStatus): boolean {
@@ -272,6 +285,152 @@ const courseService: ICourseService = {
       id: String(c._id),
       ...c,
       instructor: returnedInstructor,
+    };
+  },
+
+  async suggestCourses(options: ISuggestOptions) {
+    if (!options?.userId) {
+      throw new Error('userId is required for suggestions');
+    }
+
+    const limit = options.limit && options.limit > 0 ? Math.min(Math.floor(options.limit), 50) : 6;
+
+    const normalizeInterests = (values: string[] | undefined) =>
+      Array.isArray(values)
+        ? values
+            .map((v) => (typeof v === 'string' ? v.trim().toLowerCase() : ''))
+            .filter(Boolean)
+        : [];
+
+    const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const providedInterests = normalizeInterests(options.interests);
+
+    const enrollments = await Enrollment.find({ studentId: options.userId }).select('courseId').lean().exec();
+    const enrolledCourseIds = Array.from(
+      new Set((enrollments || []).map((e: any) => String(e.courseId)).filter(Boolean))
+    );
+    const enrolledObjectIds = enrolledCourseIds
+      .filter((id) => mongoose.Types.ObjectId.isValid(String(id)))
+      .map((id) => new mongoose.Types.ObjectId(String(id)));
+
+    const historyCourses = enrolledCourseIds.length
+      ? await Course.find({
+          $or: [
+            { courseId: { $in: enrolledCourseIds } },
+            enrolledObjectIds.length ? { _id: { $in: enrolledObjectIds } } : undefined,
+          ].filter(Boolean) as any,
+        })
+          .select('tags category courseId _id')
+          .lean()
+          .exec()
+      : [];
+
+    const historyTokens = new Set<string>();
+    (historyCourses || []).forEach((c: any) => {
+      if (Array.isArray(c.tags)) {
+        c.tags.forEach((t: any) => historyTokens.add(String(t).toLowerCase()));
+      }
+      if (c.category) {
+        historyTokens.add(String(c.category).toLowerCase());
+      }
+    });
+
+    const userDoc = await User.findById(options.userId).select('interests').lean().exec();
+    const storedInterests = normalizeInterests((userDoc as any)?.interests);
+
+    const interestTokens = Array.from(new Set([...historyTokens, ...storedInterests, ...providedInterests]));
+
+    const baseFilter: Record<string, any> = { status: CourseStatus.PUBLISHED };
+    if (enrolledCourseIds.length) {
+      baseFilter.courseId = { $nin: enrolledCourseIds };
+    }
+    if (enrolledObjectIds.length) {
+      baseFilter._id = { $nin: enrolledObjectIds };
+    }
+
+    const candidateLimit = limit * 3;
+
+    const interestRegexes = interestTokens.map((token) => new RegExp(`^${escapeRegex(token)}$`, 'i'));
+    const interestFilter = interestTokens.length
+      ? {
+          $or: [
+            { tags: { $in: interestRegexes } },
+            { category: { $in: interestRegexes } },
+          ],
+        }
+      : {};
+
+    const candidatesPrimary = await Course.find({ ...baseFilter, ...interestFilter })
+      .limit(candidateLimit)
+      .populate({ path: 'instructor', select: 'fullName email' })
+      .lean()
+      .exec();
+
+    let candidates = candidatesPrimary as any[];
+    let fallbackUsed = false;
+
+    if (!candidates.length) {
+      fallbackUsed = true;
+      candidates = (await Course.find(baseFilter)
+        .sort({ createdAt: -1 })
+        .limit(candidateLimit)
+        .populate({ path: 'instructor', select: 'fullName email' })
+        .lean()
+        .exec()) as any[];
+    }
+
+    const scoringSet = interestTokens.length ? new Set(interestTokens) : historyTokens;
+
+    const scored = candidates.map((c: any) => {
+      const tagsLower = Array.isArray(c.tags) ? c.tags.map((t: any) => String(t).toLowerCase()) : [];
+      const categoryLower = typeof c.category === 'string' ? c.category.toLowerCase() : null;
+      let score = 0;
+      tagsLower.forEach((t: string) => {
+        if (scoringSet.has(t)) score += 1;
+      });
+      if (categoryLower && scoringSet.has(categoryLower)) score += 2;
+
+      return {
+        course: c,
+        score,
+      };
+    });
+
+    scored.sort((a: any, b: any) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const aTime = a.course?.createdAt ? new Date(a.course.createdAt).getTime() : 0;
+      const bTime = b.course?.createdAt ? new Date(b.course.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    const top = (scored.length ? scored : candidates.map((c: any) => ({ course: c, score: 0 }))).slice(0, limit);
+
+    const normalized = top.map(({ course }) => {
+      const { _id, instructor, ...rest } = course || {};
+      const instr = instructor
+        ? {
+            id: String((instructor as any)._id || instructor),
+            name: (instructor as any).fullName ?? 'Unknown Instructor',
+            email: (instructor as any).email ?? null,
+          }
+        : { id: null, name: 'Unknown Instructor', email: null };
+
+      return {
+        id: course?.courseId || String(_id),
+        ...rest,
+        instructor: instr,
+      };
+    });
+
+    return {
+      data: normalized,
+      usedInterests: Array.from(scoringSet),
+      source: {
+        fromHistory: historyTokens.size,
+        fromProvided: providedInterests.length + storedInterests.length,
+        fallbackUsed,
+      },
     };
   },
 
