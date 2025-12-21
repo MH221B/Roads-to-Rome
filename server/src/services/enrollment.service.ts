@@ -37,6 +37,11 @@ function mapEnrollment(e: any, courseObj?: any, ratingMap?: RatingMap) {
     const resolvedId = courseObj.courseId || (courseObj._id ? String(courseObj._id) : null);
     const courseKey = resolvedId || String(courseId);
     courseRating = courseKey && ratingMap ? ratingMap[courseKey]?.avg ?? null : null;
+    const price = (() => {
+      const raw = (courseObj as any)?.price;
+      const num = typeof raw === 'number' ? raw : Number(raw ?? 0);
+      return Number.isFinite(num) && num >= 0 ? num : 0;
+    })();
 
     // normalize instructor so clients can display name/email even when backend only stores id
     let instructor = courseObj.instructor;
@@ -62,6 +67,7 @@ function mapEnrollment(e: any, courseObj?: any, ratingMap?: RatingMap) {
       name: courseObj.name || courseObj.title,
       instructor,
       rating: courseRating,
+      price,
     };
   } else if (courseId) {
     course = { id: String(courseId) };
@@ -184,8 +190,12 @@ const enrollmentService: IEnrollmentService = {
         throw new Error('Insufficient budget');
       }
 
-      user.set({ budget: currentBudget - coursePrice });
-      await user.save({ session });
+      // Update budget without triggering validation on unrelated required fields (username/fullName)
+      await User.updateOne(
+        { _id: studentId },
+        { $set: { budget: currentBudget - coursePrice } },
+        { session, runValidators: false }
+      );
 
       const createdDocs = await Enrollment.create(
         [

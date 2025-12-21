@@ -68,8 +68,7 @@ interface IAdminService {
     reviewNote?: string | null,
     reviewerId?: string
   ): Promise<CourseListItem & { reviewNote?: string | null; reviewedBy?: string | null; reviewedAt?: Date | null }>;
-  updateCoursePrice(courseId: string, price: number): Promise<CourseListItem & { price: number }>;
-  updateCoursePremium(courseId: string, is_premium: boolean): Promise<CourseListItem & { is_premium: boolean }>;
+  updateCoursePrice(courseId: string, price: number): Promise<CourseListItem & { price: number; is_premium: boolean }>;
   getSystemStats(): Promise<{
     totalUsers: number;
     totalCourses: number;
@@ -403,31 +402,11 @@ const adminService: IAdminService = {
   async updateCoursePrice(
     courseId: string,
     price: number
-  ): Promise<CourseListItem & { price: number }> {
-    const updated = (await Course.findByIdAndUpdate(courseId, { $set: { price } }, { new: true })
-      .lean()
-      .exec()) as any;
-
-    if (!updated) throw new Error('Course not found');
-
-    return {
-      id: updated._id.toString(),
-      title: updated.title,
-      status: updated.status,
-      category: updated.category,
-      instructor: updated.instructor ? updated.instructor.toString() : null,
-      createdAt: updated.createdAt,
-      price: updated.price ?? 0,
-    };
-  },
-
-  async updateCoursePremium(
-    courseId: string,
-    is_premium: boolean
-  ): Promise<CourseListItem & { is_premium: boolean }> {
+  ): Promise<CourseListItem & { price: number; is_premium: boolean }> {
+    const isPremium = price > 0;
     const updated = (await Course.findByIdAndUpdate(
       courseId,
-      { $set: { is_premium } },
+      { $set: { price, is_premium: isPremium } },
       { new: true }
     )
       .lean()
@@ -442,6 +421,7 @@ const adminService: IAdminService = {
       category: updated.category,
       instructor: updated.instructor ? updated.instructor.toString() : null,
       createdAt: updated.createdAt,
+      price: updated.price ?? 0,
       is_premium: Boolean(updated.is_premium),
     };
   },

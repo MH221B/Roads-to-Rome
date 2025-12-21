@@ -10,6 +10,7 @@ interface IAuthController {
   ResetPassword(req: Request, res: Response): Promise<void>;
   InitiateGithubLogin(req: Request, res: Response): Promise<void>;
   GithubCallback(req: Request, res: Response): Promise<void>;
+  Profile(req: Request, res: Response): Promise<void>;
 }
 
 const authController: IAuthController = {
@@ -119,6 +120,21 @@ const authController: IAuthController = {
       res.redirect(process.env.CLIENT_URL || 'http://localhost:3000');
     } catch (error) {
       res.redirect(`${process.env.CLIENT_URL}?error=${(error as Error).message}`);
+    }
+  },
+
+  Profile: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'User ID not found in token' });
+        return;
+      }
+
+      const profile = await authService.GetProfile(userId);
+      res.status(200).json(profile);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
     }
   },
 };

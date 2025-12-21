@@ -10,11 +10,13 @@ import {
   FiRefreshCw,
   FiTrendingUp,
 } from 'react-icons/fi';
+import { FaMoneyBillWave } from 'react-icons/fa';
 
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
 import { useAuth } from '@/contexts/AuthProvider';
 import { api } from '@/services/axiosClient';
+import { getProfile } from '@/services/authService';
 import { decodeJwtPayload } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -145,6 +147,13 @@ const Dashboard: React.FC = () => {
     staleTime: 1000 * 60, // 1 minute
   });
 
+  const profileQuery = useQuery({
+    queryKey: ['profile'],
+    queryFn: getProfile,
+    enabled: isStudent && isAuthenticated,
+    staleTime: 1000 * 60,
+  });
+
   // Fetch a handful of courses for recommendations
   const recommendedQuery = useQuery({
     queryKey: ['recommended-courses'],
@@ -225,6 +234,12 @@ const Dashboard: React.FC = () => {
       avgRating: Number(avgRating.toFixed(1)),
     };
   }, [courses]);
+
+  const budget = useMemo(() => {
+    if (!profileQuery.data) return 0;
+    const raw = profileQuery.data.budget;
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+  }, [profileQuery.data]);
 
   const filteredCourses = useMemo(() => {
     let list = [...courses];
@@ -320,7 +335,13 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <StatCard
+              title="Budget"
+              value={`${budget.toLocaleString()}`}
+              hint={profileQuery.isFetching ? 'Updating…' : 'Available balance'}
+              icon={<FaMoneyBillWave className="h-5 w-5 text-emerald-600" />}
+            />
             <StatCard title="Enrolled" value={stats.total} hint="Total courses you're in" icon={<FiBookOpen className="h-5 w-5" />} />
             <StatCard title="In progress" value={stats.inProgress} hint="Currently learning" icon={<FiClock className="h-5 w-5" />} />
             <StatCard title="Completed" value={stats.completed} hint="Finished courses" icon={<FiCheckCircle className="h-5 w-5" />} />

@@ -3,13 +3,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Switch } from './ui/switch';
 import { FaCheck } from 'react-icons/fa';
 import {
   getCoursesByStatus,
   updateCourseStatus,
   updateCoursePrice,
-  updateCoursePremium,
   type AdminCourse,
 } from '@/services/adminService';
 
@@ -24,9 +22,7 @@ const AdminCourseList: React.FC<AdminCourseListProps> = ({ status, onRefresh }) 
   const [error, setError] = React.useState<string | null>(null);
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
   const [priceSavingId, setPriceSavingId] = React.useState<string | null>(null);
-  const [premiumSavingId, setPremiumSavingId] = React.useState<string | null>(null);
   const [priceEdits, setPriceEdits] = React.useState<Record<string, string>>({});
-  const [premiumEdits, setPremiumEdits] = React.useState<Record<string, boolean>>({});
   const [successCourseId, setSuccessCourseId] = React.useState<string | null>(null);
 
   const loadCourses = React.useCallback(async () => {
@@ -38,13 +34,10 @@ const AdminCourseList: React.FC<AdminCourseListProps> = ({ status, onRefresh }) 
       if (!active) return;
       setCourses(res.data || []);
       const nextPrices: Record<string, string> = {};
-      const nextPremium: Record<string, boolean> = {};
       (res.data || []).forEach((c) => {
         nextPrices[c.id] = String(c.price ?? 0);
-        nextPremium[c.id] = Boolean(c.is_premium);
       });
       setPriceEdits(nextPrices);
-      setPremiumEdits(nextPremium);
     } catch (e) {
       if (!active) return;
       setError(`Failed to load ${status} courses`);
@@ -82,31 +75,17 @@ const AdminCourseList: React.FC<AdminCourseListProps> = ({ status, onRefresh }) 
     try {
       const updatedPrice = await updateCoursePrice(course.id, parsed);
       setCourses((prev) =>
-        prev.map((c) => (c.id === course.id ? { ...c, ...updatedPrice } : c))
+        prev.map((c) =>
+          c.id === course.id
+            ? { ...c, ...updatedPrice, is_premium: (updatedPrice.price ?? 0) > 0 }
+            : c
+        )
       );
       setSuccessCourseId(course.id);
     } catch (e) {
       setError('Failed to update price');
     } finally {
       setPriceSavingId(null);
-      setTimeout(() => setSuccessCourseId((prev) => (prev === course.id ? null : prev)), 1500);
-    }
-  };
-
-  const handlePremiumToggle = async (course: AdminCourse, checked: boolean) => {
-    setPremiumSavingId(course.id);
-    setError(null);
-    try {
-      const updated = await updateCoursePremium(course.id, checked);
-      setPremiumEdits((prev) => ({ ...prev, [course.id]: checked }));
-      setCourses((prev) =>
-        prev.map((c) => (c.id === course.id ? { ...c, ...updated } : c))
-      );
-      setSuccessCourseId(course.id);
-    } catch (e) {
-      setError('Failed to update premium');
-    } finally {
-      setPremiumSavingId(null);
       setTimeout(() => setSuccessCourseId((prev) => (prev === course.id ? null : prev)), 1500);
     }
   };
@@ -201,16 +180,9 @@ const AdminCourseList: React.FC<AdminCourseListProps> = ({ status, onRefresh }) 
                 </div>
               </td>
               <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={premiumEdits[course.id] ?? Boolean(course.is_premium)}
-                    disabled={premiumSavingId === course.id}
-                    onCheckedChange={(checked) => handlePremiumToggle(course, checked)}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {premiumEdits[course.id] ?? course.is_premium ? 'Premium' : 'Free'}
-                  </span>
-                </div>
+                <span className="text-sm text-muted-foreground">
+                  {(course.price ?? 0) > 0 ? 'Premium (priced)' : 'Free'}
+                </span>
               </td>
               <td className="px-4 py-3 text-muted-foreground">{formatDate(course.createdAt)}</td>
               {(status === 'pending' || status === 'published') && (
