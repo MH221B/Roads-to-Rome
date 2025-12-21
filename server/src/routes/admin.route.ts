@@ -53,6 +53,14 @@ adminRouter.patch(
   adminController.UpdateUserRole
 );
 
+// Update user budget
+adminRouter.patch(
+  '/users/:userId/budget',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.UpdateUserBudget
+);
+
 // Toggle user locked status
 adminRouter.patch(
   '/users/:userId/lock',
@@ -75,6 +83,22 @@ adminRouter.patch(
   authenticateToken,
   authorizeRoles([Role.ADMIN]),
   adminController.UpdateCourseStatus
+);
+
+// Update course price and premium flag
+adminRouter.patch(
+  '/courses/:id/price',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.UpdateCoursePrice
+);
+
+// Update course premium flag only
+adminRouter.patch(
+  '/courses/:id/premium',
+  authenticateToken,
+  authorizeRoles([Role.ADMIN]),
+  adminController.UpdateCoursePremium
 );
 
 // System statistics

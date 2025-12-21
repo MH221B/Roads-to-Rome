@@ -37,7 +37,14 @@ const enrollmentController = {
       const created = await enrollmentService.createEnrollment(studentId, finalCourseId, status);
       res.status(201).json(created);
     } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
+      const message = (error as Error).message;
+      if (message === 'Course not found') {
+        return res.status(404).json({ error: message });
+      }
+      if (message === 'User not found' || message === 'Insufficient budget') {
+        return res.status(400).json({ error: message });
+      }
+      res.status(500).json({ error: message });
     }
   },
   async Update(req: Request, res: Response) {

@@ -13,5 +13,6 @@ export interface User {
   fullName: string;
   role: UserRole;
   locked: boolean;
+  budget?: number;
   createdAt: string;
 }

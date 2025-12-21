@@ -3,6 +3,7 @@ import Enrollment from '../models/enrollment.model';
 import Course from '../models/course.model';
 import Comment from '../models/comment.model';
 import Lesson from '../models/lesson.model';
+import { User } from '../models/user.model';
 
 interface IEnrollmentService {
   listEnrollmentsByUser(studentId: string): Promise<any[]>;
@@ -154,44 +155,86 @@ const enrollmentService: IEnrollmentService = {
     }
 
     const canonicalCourseId = foundCourse.courseId || String(foundCourse._id);
+    const coursePrice = (() => {
+      const raw = (foundCourse as any).price;
+      const num = typeof raw === 'number' ? raw : Number(raw ?? 0);
+      return Number.isFinite(num) && num >= 0 ? num : 0;
+    })();
 
     // store courseId as string; prevent duplicate enrollments
-    const existing = await Enrollment.findOne({ studentId, courseId: canonicalCourseId }).lean().exec();
-    if (existing) {
-      return mapEnrollment(existing, foundCourse);
-    }
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const existing = await Enrollment.findOne({ studentId, courseId: canonicalCourseId })
+        .session(session)
+        .lean()
+        .exec();
+      if (existing) {
+        await session.abortTransaction();
+        return mapEnrollment(existing, foundCourse);
+      }
 
-    const created = await Enrollment.create({
-      studentId,
-      courseId: canonicalCourseId,
-      status,
-      progress: 0,
-      lastLessonId: null,
-      completed: false,
-      completedLessons: [],
-    });
-    const populated = await Enrollment.findById(created._id).lean().exec();
-    // fetch latest rating for this course
-    const ratingAgg = await Comment.aggregate([
-      { $match: { courseId: canonicalCourseId } },
-      {
-        $group: {
-          _id: '$courseId',
-          avg: { $avg: '$rating' },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-    const ratingMap: RatingMap = ratingAgg.length
-      ? {
-          [canonicalCourseId]: {
-            avg: typeof ratingAgg[0].avg === 'number' ? Number(ratingAgg[0].avg) : null,
-            count: ratingAgg[0].count || 0,
+      const user = await User.findById(studentId).session(session);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const currentBudget = typeof (user as any).budget === 'number' ? (user as any).budget : 0;
+      if (currentBudget < coursePrice) {
+        throw new Error('Insufficient budget');
+      }
+
+      user.set({ budget: currentBudget - coursePrice });
+      await user.save({ session });
+
+      const createdDocs = await Enrollment.create(
+        [
+          {
+            studentId,
+            courseId: canonicalCourseId,
+            status,
+            progress: 0,
+            lastLessonId: null,
+            completed: false,
+            completedLessons: [],
           },
-        }
-      : {};
+        ],
+        { session }
+      );
 
-    return mapEnrollment(populated, foundCourse, ratingMap);
+      const created = createdDocs[0];
+      await session.commitTransaction();
+      const populated = await Enrollment.findById(created._id).lean().exec();
+
+      // fetch latest rating for this course
+      const ratingAgg = await Comment.aggregate([
+        { $match: { courseId: canonicalCourseId } },
+        {
+          $group: {
+            _id: '$courseId',
+            avg: { $avg: '$rating' },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      const ratingMap: RatingMap = ratingAgg.length
+        ? {
+            [canonicalCourseId]: {
+              avg: typeof ratingAgg[0].avg === 'number' ? Number(ratingAgg[0].avg) : null,
+              count: ratingAgg[0].count || 0,
+            },
+          }
+        : {};
+
+      return mapEnrollment(populated, foundCourse, ratingMap);
+    } catch (err) {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      throw err;
+    } finally {
+      session.endSession();
+    }
   },
 
   async updateEnrollment(enrollmentId: string, updates: Partial<any>): Promise<any> {
