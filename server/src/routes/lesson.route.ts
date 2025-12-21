@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import lessonController from '../controllers/lesson.controller';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth.middleware';
+import { upload } from '../middlewares/upload.middleware';
 import Role from '../enums/user.enum';
 
 const lessonRouter = Router({ mergeParams: true }); // Enable merging parent params
@@ -10,6 +11,10 @@ lessonRouter.post(
   '/',
   authenticateToken,
   authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'attachments', maxCount: 20 },
+  ]),
   lessonController.CreateLesson
 );
 
@@ -18,6 +23,10 @@ lessonRouter.patch(
   '/:lessonId',
   authenticateToken,
   authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'attachments', maxCount: 20 },
+  ]),
   lessonController.UpdateLesson
 );
 
@@ -26,6 +35,10 @@ lessonRouter.put(
   '/:lessonId',
   authenticateToken,
   authorizeRoles([Role.INSTRUCTOR, Role.ADMIN]),
+  upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'attachments', maxCount: 20 },
+  ]),
   lessonController.UpdateLesson
 );
 

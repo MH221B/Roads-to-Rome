@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,7 @@ export interface CourseFormValues {
 interface CourseFormProps {
   defaultValues?: Partial<CourseFormValues>;
   onSubmit: (data: CourseFormValues) => void;
+  onCancel?: () => void;
   isLoading?: boolean;
   isEditMode?: boolean;
   existingThumbnailUrl?: string | null;
@@ -45,10 +47,14 @@ interface CourseFormProps {
 const CourseForm: React.FC<CourseFormProps> = ({
   defaultValues,
   onSubmit,
+  onCancel,
   isLoading,
   isEditMode,
   existingThumbnailUrl,
 }) => {
+  const navigate = useNavigate();
+  const defaultHandleCancel = () => navigate('/');
+  const handleCancel = onCancel ?? defaultHandleCancel;
   const {
     register,
     handleSubmit,
@@ -338,6 +344,9 @@ const CourseForm: React.FC<CourseFormProps> = ({
                   : isEditMode
                     ? 'Save'
                     : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
               </Button>
             </div>
           </CardFooter>

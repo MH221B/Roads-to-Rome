@@ -72,7 +72,7 @@ const EditLesson: React.FC = () => {
         confirmButtonText: 'OK',
         confirmButtonColor: '#10b981',
       }).then(() => {
-        navigate(`/courses/${courseId}`);
+        navigate(`/courses/${courseId}/lessons/${lessonId}`);
       });
     },
     onError: (err: any) => {
@@ -114,6 +114,7 @@ const EditLesson: React.FC = () => {
       isEditMode
       isLoading={updateMutation.isPending}
       onSubmit={(data) => updateMutation.mutate(data)}
+      onCancel={() => navigate(`/courses/${courseId}/lessons/${lessonId}`)}
     />
   );
 };

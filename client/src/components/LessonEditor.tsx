@@ -21,8 +21,6 @@ import {
   Code,
   Undo,
   Redo,
-  Link as LinkIcon,
-  Image as ImageIcon,
   Minus,
 } from 'lucide-react';
 import React, { useCallback } from 'react';
@@ -56,34 +54,6 @@ const ToolbarButton = ({ onClick, isActive, disabled, children, title }: Toolbar
 );
 
 const MenuBar = ({ editor }: { editor: Editor | null }) => {
-  const addImage = useCallback(() => {
-    if (!editor) return;
-    const url = window.prompt('URL');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
-
-  const setLink = useCallback(() => {
-    if (!editor) return;
-    const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL', previousUrl);
-
-    // cancelled
-    if (url === null) {
-      return;
-    }
-
-    // empty
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
-    }
-
-    // update link
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  }, [editor]);
-
   if (!editor) return null;
 
   return (
@@ -163,12 +133,6 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       <div className="mx-1 h-6 w-px bg-gray-300" />
 
       {/* Inserts */}
-      <ToolbarButton onClick={setLink} isActive={editor.isActive('link')} title="Add Link">
-        <LinkIcon size={18} />
-      </ToolbarButton>
-      <ToolbarButton onClick={addImage} title="Add Image">
-        <ImageIcon size={18} />
-      </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         isActive={editor.isActive('codeBlock')}

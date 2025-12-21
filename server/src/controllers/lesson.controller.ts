@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import lessonService from '../services/lesson.service';
 import enrollmentService from '../services/enrollment.service';
+import { uploadImageToSupabase } from '../lib/supabaseClient';
 
 interface ILessonController {
   CreateLesson(req: Request, res: Response): Promise<void>;
@@ -27,6 +28,60 @@ const lessonController: ILessonController = {
         return;
       }
 
+      // Handle video file upload if present
+      const files = (req as any).files as
+        | { [fieldname: string]: Express.Multer.File[] }
+        | undefined;
+      if (files?.video && files.video.length > 0) {
+        const videoFile = files.video[0];
+        const timestamp = Date.now();
+        const safeName = `${courseId}/${timestamp}-${videoFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+        try {
+          const videoUrl = await uploadImageToSupabase(
+            'lesson-videos',
+            safeName,
+            videoFile.buffer,
+            videoFile.mimetype
+          );
+          payload.content = videoUrl; // Store video URL as content
+        } catch (err) {
+          res.status(500).json({
+            error: 'Failed to upload video',
+            details: (err as Error).message,
+          });
+          return;
+        }
+      }
+
+      // Handle attachment files upload if present
+      const attachmentUrls: string[] = [];
+      if (files?.attachments && files.attachments.length > 0) {
+        try {
+          for (const attachmentFile of files.attachments) {
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(7);
+            const safeName = `${courseId}/${timestamp}-${randomSuffix}-${attachmentFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+            const attachmentUrl = await uploadImageToSupabase(
+              'lesson-attachments',
+              safeName,
+              attachmentFile.buffer,
+              attachmentFile.mimetype
+            );
+            attachmentUrls.push(attachmentUrl);
+          }
+        } catch (err) {
+          res.status(500).json({
+            error: 'Failed to upload attachments',
+            details: (err as Error).message,
+          });
+          return;
+        }
+      }
+
+      if (attachmentUrls.length > 0) {
+        payload.attachments = attachmentUrls;
+      }
+
       const lesson = await lessonService.CreateLesson(courseId, payload);
       res.status(201).json(lesson);
     } catch (error) {
@@ -42,6 +97,60 @@ const lessonController: ILessonController = {
       if (!courseId || !lessonId) {
         res.status(400).json({ error: 'courseId and lessonId are required' });
         return;
+      }
+
+      // Handle video file upload if present
+      const files = (req as any).files as
+        | { [fieldname: string]: Express.Multer.File[] }
+        | undefined;
+      if (files?.video && files.video.length > 0) {
+        const videoFile = files.video[0];
+        const timestamp = Date.now();
+        const safeName = `${courseId}/${timestamp}-${videoFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+        try {
+          const videoUrl = await uploadImageToSupabase(
+            'lesson-videos',
+            safeName,
+            videoFile.buffer,
+            videoFile.mimetype
+          );
+          payload.content = videoUrl; // Store video URL as content
+        } catch (err) {
+          res.status(500).json({
+            error: 'Failed to upload video',
+            details: (err as Error).message,
+          });
+          return;
+        }
+      }
+
+      // Handle attachment files upload if present
+      const attachmentUrls: string[] = [];
+      if (files?.attachments && files.attachments.length > 0) {
+        try {
+          for (const attachmentFile of files.attachments) {
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(7);
+            const safeName = `${courseId}/${timestamp}-${randomSuffix}-${attachmentFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+            const attachmentUrl = await uploadImageToSupabase(
+              'lesson-attachments',
+              safeName,
+              attachmentFile.buffer,
+              attachmentFile.mimetype
+            );
+            attachmentUrls.push(attachmentUrl);
+          }
+        } catch (err) {
+          res.status(500).json({
+            error: 'Failed to upload attachments',
+            details: (err as Error).message,
+          });
+          return;
+        }
+      }
+
+      if (attachmentUrls.length > 0) {
+        payload.attachments = attachmentUrls;
       }
 
       const lesson = await lessonService.UpdateLesson(courseId, lessonId, payload);

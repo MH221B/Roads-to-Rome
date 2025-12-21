@@ -16,8 +16,8 @@ import {
   FaCode,
   FaEdit,
   FaClipboardList,
+  FaEye,
 } from 'react-icons/fa';
-import HeaderComponent from './HeaderComponent';
 import { decodeJwtPayload } from '../lib/utils';
 
 // --- Types ---
@@ -25,10 +25,11 @@ interface Lesson {
   id: string;
   course_id: string;
   title: string;
-  content_type: 'video' | 'article' | 'quiz';
-  content: string; // URL for video, text for article
+  content_type: 'video' | 'article' | 'quiz' | 'file';
+  content: string; // URL for video, text for article, path for file
   duration?: number; // in minutes
   quizzes?: Array<{ id: string; title?: string; order?: number }>;
+  attachments?: string[]; // array of attachment URLs
 }
 
 interface Course {
@@ -43,8 +44,8 @@ const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
   const payload = Array.isArray(response.data)
     ? response.data
     : Array.isArray(response.data?.lessons)
-    ? response.data.lessons
-    : [];
+      ? response.data.lessons
+      : [];
 
   const lessons: Lesson[] = payload.map((l: any) => ({
     ...l,
@@ -321,18 +322,18 @@ export default function LessonViewer() {
                 const baseClass = isActive
                   ? 'bg-primary/10 border-primary/20 border text-primary'
                   : isCompleted
-                  ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
-                  : 'border border-transparent hover:bg-slate-100';
+                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+                    : 'border border-transparent hover:bg-slate-100';
                 const iconClass = isActive
                   ? 'text-primary'
                   : isCompleted
-                  ? 'text-emerald-600'
-                  : 'text-slate-400';
+                    ? 'text-emerald-600'
+                    : 'text-slate-400';
                 const titleClass = isActive
                   ? 'text-primary'
                   : isCompleted
-                  ? 'text-emerald-700'
-                  : 'text-slate-700';
+                    ? 'text-emerald-700'
+                    : 'text-slate-700';
 
                 return (
                   <div
@@ -341,7 +342,13 @@ export default function LessonViewer() {
                     className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors ${baseClass}`}
                   >
                     <div className={`mt-1 ${iconClass}`}>
-                      {l.content_type === 'video' ? <FaPlay size={12} /> : <FaFileAlt size={12} />}
+                      {l.content_type === 'video' ? (
+                        <FaPlay size={12} />
+                      ) : l.content_type === 'file' ? (
+                        <FaFileAlt size={12} />
+                      ) : (
+                        <FaFileAlt size={12} />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className={`text-sm font-medium ${titleClass}`}>
@@ -407,15 +414,76 @@ export default function LessonViewer() {
                 <Card className="mb-8 overflow-hidden border-slate-200 bg-white shadow-sm">
                   {lesson.content_type === 'video' ? (
                     <div className="group relative flex aspect-video items-center justify-center bg-slate-900">
-                      {/* Placeholder for Video Player */}
-                      <div className="text-center">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 transition-transform group-hover:scale-110">
-                          <FaPlay className="ml-1 h-6 w-6 text-white" />
+                      {/* Video Player - Support YouTube, Vimeo, or direct video URLs */}
+                      {lesson.content.includes('youtube.com') ||
+                      lesson.content.includes('youtu.be') ? (
+                        <iframe
+                          className="h-full w-full"
+                          src={lesson.content
+                            .replace('watch?v=', 'embed/')
+                            .replace('youtu.be/', 'youtube.com/embed/')}
+                          title={lesson.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : lesson.content.includes('vimeo.com') ? (
+                        <iframe
+                          className="h-full w-full"
+                          src={lesson.content}
+                          title={lesson.title}
+                          frameBorder="0"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : lesson.content.match(/\.(mp4|webm|ogg)$/i) ? (
+                        <video
+                          className="h-full w-full bg-black"
+                          controls
+                          controlsList="nodownload"
+                        >
+                          <source src={lesson.content} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <div className="text-center">
+                          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 transition-transform group-hover:scale-110">
+                            <FaPlay className="ml-1 h-6 w-6 text-white" />
+                          </div>
+                          <p className="text-slate-300">Video Player</p>
+                          <p className="mt-2 text-xs text-slate-400">{lesson.content}</p>
                         </div>
-                        <p className="text-slate-300">Video Player Placeholder</p>
-                        <p className="mt-2 text-xs text-slate-400">{lesson.content}</p>
-                      </div>
+                      )}
                     </div>
+                  ) : lesson.content_type === 'file' ? (
+                    <CardContent className="flex flex-col gap-4 p-8">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                            <FaFileAlt className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-slate-900">
+                              {lesson.content.split('/').pop() || 'File'}
+                            </p>
+                            <p className="text-sm text-slate-500">{lesson.content}</p>
+                          </div>
+                          <Button
+                            onClick={() => window.open(lesson.content, '_blank')}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                            size="sm"
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-blue-50 p-4">
+                        <p className="text-sm text-blue-800">
+                          Click the download button to access the file. If it opens in a new tab,
+                          right-click to save it.
+                        </p>
+                      </div>
+                    </CardContent>
                   ) : (
                     <CardContent className="prose prose-sm md:prose-base max-w-none p-8 text-slate-700">
                       {/* HTML Content Renderer */}
@@ -428,6 +496,47 @@ export default function LessonViewer() {
                     </CardContent>
                   )}
                 </Card>
+
+                {/* Attachments Section */}
+                {lesson.attachments && lesson.attachments.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="mb-4 text-lg font-semibold text-slate-900">Attachments</h3>
+                    <Card className="border-slate-200 bg-white shadow-sm">
+                      <CardContent className="p-6">
+                        <div className="space-y-3">
+                          {lesson.attachments.map((attachmentUrl, index) => {
+                            const fileName =
+                              attachmentUrl.split('/').pop() || `Attachment ${index + 1}`;
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100"
+                              >
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                                  <FaFileAlt className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-slate-900">
+                                    {fileName}
+                                  </p>
+                                  <p className="truncate text-xs text-slate-500">{attachmentUrl}</p>
+                                </div>
+                                <Button
+                                  onClick={() => window.open(attachmentUrl, '_blank')}
+                                  size="sm"
+                                  className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                                >
+                                  <FaEye className="mr-2 h-4 w-4" />
+                                  View
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Quiz Button */}
                 {lesson.quizzes && lesson.quizzes.length > 0 && (
@@ -455,7 +564,7 @@ export default function LessonViewer() {
                       {completeLesson.isPending ? 'Marking…' : 'Mark lesson complete'}
                     </Button>
                     {completeLesson.isError && (
-                      <span className="text-xs text-destructive">Failed to update progress</span>
+                      <span className="text-destructive text-xs">Failed to update progress</span>
                     )}
                     {completeLesson.isSuccess && (
                       <span className="text-xs text-emerald-600">Progress updated</span>

@@ -35,6 +35,7 @@ export interface LessonFormValues {
 interface LessonFormProps {
   defaultValues?: Partial<LessonFormValues>;
   onSubmit: (data: LessonFormValues) => void;
+  onCancel?: () => void;
   isLoading?: boolean;
   isEditMode?: boolean;
   existingVideoUrl?: string | null;
@@ -44,6 +45,7 @@ interface LessonFormProps {
 const LessonForm: React.FC<LessonFormProps> = ({
   defaultValues,
   onSubmit,
+  onCancel,
   isLoading,
   isEditMode,
   existingVideoUrl,
@@ -326,7 +328,7 @@ const LessonForm: React.FC<LessonFormProps> = ({
             </div>
           </CardContent>
 
-          <CardFooter>
+          <CardFooter className="flex gap-2">
             <Button type="submit" disabled={Boolean(isLoading)}>
               {isLoading
                 ? isEditMode
@@ -336,6 +338,16 @@ const LessonForm: React.FC<LessonFormProps> = ({
                   ? 'Save'
                   : 'Create'}
             </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={Boolean(isLoading)}
+              >
+                Cancel
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </form>

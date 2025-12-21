@@ -80,6 +80,7 @@ export default function CreateLesson() {
     <LessonForm
       onSubmit={(data) => createMutation.mutate(data)}
       isLoading={createMutation.isPending}
+      onCancel={() => navigate(`/courses/${courseId}`)}
     />
   );
 }
