@@ -272,7 +272,7 @@ export default function CourseDetail() {
       });
       // Navigate to dashboard or show success
       navigate('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       const message = err?.response?.data?.error || 'Enrollment failed';
       Swal.fire({
         icon: 'error',
