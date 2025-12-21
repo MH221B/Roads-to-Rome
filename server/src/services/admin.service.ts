@@ -23,6 +23,7 @@ interface UserListItem {
   fullName?: string;
   role: Role;
   locked: boolean;
+  budget?: number;
   createdAt: Date;
 }
 
@@ -39,6 +40,8 @@ interface CourseListItem {
   status: CourseStatus;
   category?: string;
   instructor?: string | null;
+  price?: number;
+  is_premium?: boolean;
   createdAt: Date;
 }
 
@@ -56,6 +59,7 @@ interface IAdminService {
   getUsersByRole(role: Role, page?: number, limit?: number): Promise<PaginatedUsersResponse>;
   searchUsers(query: string, page?: number, limit?: number): Promise<PaginatedUsersResponse>;
   updateUserRole(userId: string, role: Role): Promise<UserListItem>;
+  updateUserBudget(userId: string, budget: number): Promise<UserListItem>;
   toggleUserLocked(userId: string, locked: boolean): Promise<UserListItem>;
   getCoursesByStatus(status: CourseStatus, page?: number, limit?: number): Promise<PaginatedCoursesResponse>;
   updateCourseStatus(
@@ -64,6 +68,8 @@ interface IAdminService {
     reviewNote?: string | null,
     reviewerId?: string
   ): Promise<CourseListItem & { reviewNote?: string | null; reviewedBy?: string | null; reviewedAt?: Date | null }>;
+  updateCoursePrice(courseId: string, price: number): Promise<CourseListItem & { price: number }>;
+  updateCoursePremium(courseId: string, is_premium: boolean): Promise<CourseListItem & { is_premium: boolean }>;
   getSystemStats(): Promise<{
     totalUsers: number;
     totalCourses: number;
@@ -87,6 +93,7 @@ const adminService: IAdminService = {
       fullName: user.fullName,
       role: user.role,
       locked: user.locked || false,
+      budget: (user as any).budget ?? 0,
       createdAt: user.createdAt,
     };
   },
@@ -115,6 +122,7 @@ const adminService: IAdminService = {
       fullName: user.fullName,
       role: user.role,
       locked: user.locked || false,
+      budget: user.budget ?? 0,
       createdAt: user.createdAt,
     }));
 
@@ -149,6 +157,7 @@ const adminService: IAdminService = {
       fullName: user.fullName,
       role: user.role,
       locked: user.locked || false,
+      budget: user.budget ?? 0,
       createdAt: user.createdAt,
     }));
 
@@ -200,6 +209,7 @@ const adminService: IAdminService = {
         fullName: user.fullName,
         role: user.role,
         locked: user.locked || false,
+        budget: user.budget ?? 0,
         createdAt: user.createdAt,
       }));
 
@@ -235,6 +245,7 @@ const adminService: IAdminService = {
         fullName: user.fullName,
         role: user.role,
         locked: user.locked || false,
+        budget: user.budget ?? 0,
         createdAt: user.createdAt,
       }));
 
@@ -254,6 +265,7 @@ const adminService: IAdminService = {
       fullName: user.fullName,
       role: user.role,
       locked: user.locked || false,
+      budget: (user as any).budget ?? 0,
       createdAt: user.createdAt,
     };
   },
@@ -274,6 +286,30 @@ const adminService: IAdminService = {
       fullName: user.fullName,
       role: user.role,
       locked: user.locked || false,
+      budget: (user as any).budget ?? 0,
+      createdAt: user.createdAt,
+    };
+  },
+
+  async updateUserBudget(userId: string, budget: number): Promise<UserListItem> {
+    const user = (await User.findByIdAndUpdate(
+      userId,
+      { budget },
+      { new: true, select: '-password' }
+    )
+      .lean()
+      .exec()) as LeanUser | null;
+
+    if (!user) throw new Error('User not found');
+
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+      locked: user.locked || false,
+      budget: (user as any).budget ?? 0,
       createdAt: user.createdAt,
     };
   },
@@ -304,6 +340,8 @@ const adminService: IAdminService = {
       status: course.status,
       category: course.category,
       instructor: course.instructor ? course.instructor.toString() : null,
+      price: course.price ?? 0,
+      is_premium: course.is_premium,
       createdAt: course.createdAt,
     }));
 
@@ -359,6 +397,52 @@ const adminService: IAdminService = {
       reviewNote: updated.reviewNote ?? null,
       reviewedBy: updated.reviewedBy ? updated.reviewedBy.toString() : null,
       reviewedAt: updated.reviewedAt ?? null,
+    };
+  },
+
+  async updateCoursePrice(
+    courseId: string,
+    price: number
+  ): Promise<CourseListItem & { price: number }> {
+    const updated = (await Course.findByIdAndUpdate(courseId, { $set: { price } }, { new: true })
+      .lean()
+      .exec()) as any;
+
+    if (!updated) throw new Error('Course not found');
+
+    return {
+      id: updated._id.toString(),
+      title: updated.title,
+      status: updated.status,
+      category: updated.category,
+      instructor: updated.instructor ? updated.instructor.toString() : null,
+      createdAt: updated.createdAt,
+      price: updated.price ?? 0,
+    };
+  },
+
+  async updateCoursePremium(
+    courseId: string,
+    is_premium: boolean
+  ): Promise<CourseListItem & { is_premium: boolean }> {
+    const updated = (await Course.findByIdAndUpdate(
+      courseId,
+      { $set: { is_premium } },
+      { new: true }
+    )
+      .lean()
+      .exec()) as any;
+
+    if (!updated) throw new Error('Course not found');
+
+    return {
+      id: updated._id.toString(),
+      title: updated.title,
+      status: updated.status,
+      category: updated.category,
+      instructor: updated.instructor ? updated.instructor.toString() : null,
+      createdAt: updated.createdAt,
+      is_premium: Boolean(updated.is_premium),
     };
   },
 

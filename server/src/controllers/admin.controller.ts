@@ -10,9 +10,12 @@ interface IAdminController {
   GetUsersByRole(req: Request, res: Response): Promise<void>;
   SearchUsers(req: Request, res: Response): Promise<void>;
   UpdateUserRole(req: Request, res: Response): Promise<void>;
+  UpdateUserBudget(req: Request, res: Response): Promise<void>;
   ToggleUserLocked(req: Request, res: Response): Promise<void>;
   GetCoursesByStatus(req: Request, res: Response): Promise<void>;
   UpdateCourseStatus(req: Request, res: Response): Promise<void>;
+  UpdateCoursePrice(req: Request, res: Response): Promise<void>;
+  UpdateCoursePremium(req: Request, res: Response): Promise<void>;
   GetSystemStats(req: Request, res: Response): Promise<void>;
 }
 
@@ -97,6 +100,29 @@ const adminController: IAdminController = {
     }
   },
 
+  async UpdateUserBudget(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+      const { budget } = req.body;
+      const parsedBudget = Number(budget);
+
+      if (Number.isNaN(parsedBudget) || parsedBudget < 0) {
+        res.status(400).json({ error: 'budget must be a non-negative number' });
+        return;
+      }
+
+      const user = await adminService.updateUserBudget(userId, parsedBudget);
+      res.status(200).json(user);
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message === 'User not found') {
+        res.status(404).json({ error: message });
+        return;
+      }
+      res.status(500).json({ error: message });
+    }
+  },
+
   async ToggleUserLocked(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
@@ -159,6 +185,52 @@ const adminController: IAdminController = {
       }
       if (message.startsWith('Invalid course status')) {
         res.status(400).json({ error: message });
+        return;
+      }
+      res.status(500).json({ error: message });
+    }
+  },
+
+  async UpdateCoursePrice(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { price } = req.body as { price?: any };
+
+      const parsedPrice = Number(price);
+      if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+        res.status(400).json({ error: 'price must be a non-negative number' });
+        return;
+      }
+
+      const course = await adminService.updateCoursePrice(id, parsedPrice);
+
+      res.status(200).json(course);
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message === 'Course not found') {
+        res.status(404).json({ error: message });
+        return;
+      }
+      res.status(500).json({ error: message });
+    }
+  },
+
+  async UpdateCoursePremium(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { is_premium } = req.body as { is_premium?: any };
+
+      if (typeof is_premium !== 'boolean') {
+        res.status(400).json({ error: 'is_premium must be boolean' });
+        return;
+      }
+
+      const course = await adminService.updateCoursePremium(id, is_premium);
+      res.status(200).json(course);
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message === 'Course not found') {
+        res.status(404).json({ error: message });
         return;
       }
       res.status(500).json({ error: message });

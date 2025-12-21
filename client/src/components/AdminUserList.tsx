@@ -20,6 +20,7 @@ import {
   searchUsers,
   updateUserRole,
   toggleUserLocked,
+  updateUserBudget,
 } from '@/services/adminService';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
@@ -28,6 +29,8 @@ const AdminUserList: React.FC = () => {
   const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = React.useState<string | null>(null);
   const [successUserId, setSuccessUserId] = React.useState<string | null>(null);
+  const [budgetSavingId, setBudgetSavingId] = React.useState<string | null>(null);
+  const [budgetEdits, setBudgetEdits] = React.useState<Record<string, string>>({});
   const successTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSearching, setIsSearching] = React.useState(false);
@@ -137,6 +140,32 @@ const AdminUserList: React.FC = () => {
       // Handle error - data will be reset on next fetch
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleBudgetChange = (userId: string, value: string) => {
+    setBudgetEdits((prev) => ({ ...prev, [userId]: value }));
+  };
+
+  const handleBudgetSave = async (userId: string) => {
+    const raw = budgetEdits[userId];
+    const parsed = Number(raw ?? '');
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return;
+    }
+    try {
+      setBudgetSavingId(userId);
+      const updated = await updateUserBudget(userId, parsed);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
+      setSuccessUserId(userId);
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessUserId(null);
+      }, 2000);
+    } finally {
+      setBudgetSavingId(null);
     }
   };
 
@@ -270,9 +299,11 @@ const AdminUserList: React.FC = () => {
                       <th className="px-4 py-3 text-left font-semibold">Email</th>
                       <th className="px-4 py-3 text-left font-semibold">Full Name</th>
                       <th className="px-4 py-3 text-left font-semibold">Role</th>
+                      <th className="px-4 py-3 text-left font-semibold">Budget</th>
                       <th className="px-4 py-3 text-left font-semibold">Created</th>
                       <th className="px-4 py-3 text-left font-semibold">Status</th>
                       <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                      <th className='h-4 w-4'></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -304,9 +335,25 @@ const AdminUserList: React.FC = () => {
                                 <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
                               </SelectContent>
                             </Select>
-                            {successUserId === user.id && (
-                              <FaCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={budgetEdits[user.id] ?? String(user.budget ?? 0)}
+                              onChange={(e) => handleBudgetChange(user.id, e.target.value)}
+                              className="max-w-[120px]"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={budgetSavingId === user.id}
+                              onClick={() => handleBudgetSave(user.id)}
+                            >
+                              {budgetSavingId === user.id ? <Spinner className="h-4 w-4" /> : 'Save'}
+                            </Button>
                           </div>
                         </td>
                         <td className="px-4 py-3">{formatDate(user.createdAt)}</td>
@@ -331,6 +378,11 @@ const AdminUserList: React.FC = () => {
                               <FaLockOpen className="h-4 w-4" />
                             )}
                           </Button>
+                        </td>
+                        <td>
+                          {successUserId === user.id && (
+                            <FaCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          )}
                         </td>
                       </tr>
                     ))}

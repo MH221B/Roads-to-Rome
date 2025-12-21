@@ -7,6 +7,8 @@ export interface AdminCourse {
   status: string;
   category?: string;
   instructor?: string | null;
+  price?: number;
+  is_premium?: boolean;
   createdAt: string;
 }
 
@@ -22,6 +24,11 @@ export interface PaginatedUsersResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export async function updateUserBudget(userId: string, budget: number): Promise<User> {
+  const response = await api.patch(`/api/admin/users/${userId}/budget`, { budget });
+  return response.data;
 }
 
 export async function getCurrentUser(): Promise<User> {
@@ -94,6 +101,26 @@ export async function updateCourseStatus(
   return response.data;
 }
 
+export async function updateCoursePrice(
+  courseId: string,
+  price: number
+): Promise<AdminCourse> {
+  const response = await api.patch(`/api/admin/courses/${courseId}/price`, {
+    price,
+  });
+  return response.data;
+}
+
+export async function updateCoursePremium(
+  courseId: string,
+  is_premium: boolean
+): Promise<AdminCourse> {
+  const response = await api.patch(`/api/admin/courses/${courseId}/premium`, {
+    is_premium,
+  });
+  return response.data;
+}
+
 export interface SystemStats {
   totalUsers: number;
   totalCourses: number;
@@ -112,8 +139,11 @@ export default {
   getUsersByRole,
   searchUsers,
   updateUserRole,
+  updateUserBudget,
   toggleUserLocked,
   getCoursesByStatus,
   updateCourseStatus,
+  updateCoursePrice,
+  updateCoursePremium,
   getSystemStats,
 };

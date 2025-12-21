@@ -255,6 +255,12 @@ const courseService: ICourseService = {
         ? true
         : false;
 
+    const hasPrice = typeof data.price !== 'undefined' && data.price !== null;
+    const priceToStore = hasPrice ? Number(data.price) : 0;
+    if (hasPrice && (Number.isNaN(priceToStore) || priceToStore < 0)) {
+      throw new Error('price must be a non-negative number');
+    }
+
     const statusToStore =
       typeof data.status === 'string' && data.status.trim() ? data.status.trim() : undefined;
 
@@ -267,6 +273,7 @@ const courseService: ICourseService = {
       shortDescription: data.shortDescription ?? undefined,
       difficulty: data.difficulty ?? null,
       is_premium: isPremiumToStore,
+      price: priceToStore,
       ...(statusToStore ? { status: statusToStore } : {}),
     });
 
@@ -514,6 +521,14 @@ const courseService: ICourseService = {
         data.is_premium === true ||
         String(data.is_premium).toLowerCase() === 'true' ||
         String(data.is_premium) === '1';
+    }
+
+    if (typeof data.price !== 'undefined') {
+      const parsedPrice = Number(data.price);
+      if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+        throw new Error('price must be a non-negative number');
+      }
+      updates.price = parsedPrice;
     }
 
     if (typeof data.status === 'string' && data.status.trim()) {

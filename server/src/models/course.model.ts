@@ -14,6 +14,7 @@ export interface ICourse extends Document {
   shortDescription?: string;
   difficulty?: string | null;
   is_premium?: boolean;
+  price?: number;
   status: CourseStatus;
   reviewNote?: string | null;  // admin ghi chú
   reviewedBy?: Types.ObjectId | null; // admin id
@@ -31,6 +32,7 @@ const CourseSchema: Schema = new Schema(
     shortDescription: { type: String },
     difficulty: { type: String, default: null },
     is_premium: { type: Boolean, default: false },
+    price: { type: Number, default: 0 },
     status: { type: String, enum: Object.values(CourseStatus), default: CourseStatus.DRAFT, required: true },
     reviewNote: { type: String, default: null },
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
