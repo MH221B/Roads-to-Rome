@@ -23,8 +23,8 @@ const lessonController: ILessonController = {
         return;
       }
 
-      if (!payload.title || !payload.content_type || payload.content === undefined) {
-        res.status(400).json({ error: 'title, content_type, and content are required' });
+      if (!payload.title || payload.content === undefined) {
+        res.status(400).json({ error: 'title and content are required' });
         return;
       }
 
@@ -43,7 +43,7 @@ const lessonController: ILessonController = {
             videoFile.buffer,
             videoFile.mimetype
           );
-          payload.content = videoUrl; // Store video URL as content
+          payload.video = videoUrl; // Store video URL
         } catch (err) {
           res.status(500).json({
             error: 'Failed to upload video',
@@ -114,7 +114,7 @@ const lessonController: ILessonController = {
             videoFile.buffer,
             videoFile.mimetype
           );
-          payload.content = videoUrl; // Store video URL as content
+          payload.video = videoUrl; // Store video URL
         } catch (err) {
           res.status(500).json({
             error: 'Failed to upload video',

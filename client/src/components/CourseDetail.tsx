@@ -35,7 +35,7 @@ interface Lesson {
   id: string;
   course_id: string;
   title: string;
-  content_type: string;
+  video?: string;
   content: string;
   order?: number;
 }
@@ -76,8 +76,7 @@ const fetchCourse = async (courseId: string) => {
       id: l.id || l._id || String(l.id || l._id),
       course_id: l.course_id || l.courseId || String((data as any).id || (data as any)._id),
       title: l.title,
-      content_type:
-        l.content_type || l.contentType || (l.content_type ? l.content_type : undefined),
+      video: l.video,
       content: l.content,
       order: l.order ?? 0,
     }));

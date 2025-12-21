@@ -15,8 +15,8 @@ export type Lesson = {
   title: string;
   lessonType?: 'theory' | 'practical' | 'lab';
   order?: number;
-  content_type?: string;
   content?: string;
+  video?: string;
   attachments?: Array<{ name: string; url: string }>;
   quizzes?: Array<{ id: string; title?: string; order?: number }>;
 };
@@ -25,8 +25,8 @@ export type CreateLessonPayload = {
   title: string;
   lessonType: 'theory' | 'practical' | 'lab';
   order: number;
-  content_type: string;
   content: string;
+  video?: string;
   attachments?: string[];
 };
 

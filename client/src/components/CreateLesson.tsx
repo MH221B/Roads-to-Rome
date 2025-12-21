@@ -27,15 +27,13 @@ export default function CreateLesson() {
         title: data.title,
         lessonType: data.lessonType,
         order: nextOrder,
-        content_type: 'html',
         content: data.htmlContent,
       };
 
-      // If a video is uploaded, set it as video content
+      // If a video is uploaded, set it as video field
       if (data.videoFile) {
         const uploadRes = await uploadFile(data.videoFile);
-        payload.content_type = 'video';
-        payload.content = uploadRes?.url ?? null;
+        payload.video = uploadRes?.url ?? null;
       }
 
       // Upload attachments and collect their URLs

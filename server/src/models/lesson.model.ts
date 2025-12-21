@@ -6,8 +6,8 @@ export interface ILesson extends Document {
   course_id: string; // foreign key to Course
   title: string;
   lessonType?: LessonType;
-  content_type: string; // 'html', 'video', 'article', 'quiz'
-  content: string; // URL or HTML content
+  content: string; // HTML content
+  video?: string; // URL to video file (optional)
   duration?: number; // in seconds, applicable for video
   order: number; // order of the lesson in the course
   attachments?: string[]; // array of attachment URLs
@@ -19,9 +19,9 @@ const LessonSchema: Schema = new Schema({
   id: { type: String, required: true, unique: true },
   course_id: { type: String, required: true },
   title: { type: String, required: true },
-  content_type: { type: String, required: true }, // 'html', 'video', 'article', 'quiz'
-  lessonType: { type: String, enum: Object.values(LessonType) },
   content: { type: String, required: true },
+  video: { type: String }, // URL to video file (optional)
+  lessonType: { type: String, enum: Object.values(LessonType) },
   duration: { type: Number },
   order: { type: Number, required: true },
   attachments: [{ type: String }], // array of attachment URLs

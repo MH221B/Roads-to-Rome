@@ -4,10 +4,4 @@ enum LessonType {
   LAB = 'lab',
 }
 
-enum ContentType{
-  VIDEO = 'video',
-  ARTICLE = 'article',
-  QUIZ = 'quiz',
-}
-
-export { LessonType, ContentType };
+export { LessonType };

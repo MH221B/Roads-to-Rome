@@ -30,6 +30,8 @@ export interface LessonFormValues {
   htmlContent: string;
   videoFile: File | null;
   attachmentFiles: File[];
+  deletedVideoUrl?: string | null;
+  deletedAttachmentUrls?: string[];
 }
 
 interface LessonFormProps {
@@ -64,12 +66,14 @@ const LessonForm: React.FC<LessonFormProps> = ({
   const [htmlContent, setHtmlContent] = React.useState<string>(defaultValues?.htmlContent ?? '');
   const [videoFile, setVideoFile] = React.useState<File | null>(defaultValues?.videoFile ?? null);
   const [videoPreview, setVideoPreview] = React.useState<string | null>(existingVideoUrl ?? null);
+  const [deletedVideoUrl, setDeletedVideoUrl] = React.useState<string | null>(null);
   const [attachmentFiles, setAttachmentFiles] = React.useState<File[]>(
     defaultValues?.attachmentFiles ?? []
   );
   const [existingAttachmentList, setExistingAttachmentList] = React.useState<
     Array<{ name: string; url: string }>
   >(existingAttachments ?? []);
+  const [deletedAttachmentUrls, setDeletedAttachmentUrls] = React.useState<string[]>([]);
 
   // Video dropzone - accepts only video files
   const {
@@ -117,12 +121,19 @@ const LessonForm: React.FC<LessonFormProps> = ({
     setVideoFile(null);
     if (videoPreview && videoPreview.startsWith('blob:')) {
       URL.revokeObjectURL(videoPreview);
+    } else if (videoPreview && existingVideoUrl) {
+      // Track existing video for deletion
+      setDeletedVideoUrl(existingVideoUrl);
     }
     setVideoPreview(null);
   };
 
   const handleRemoveAttachment = (idx: number, isExisting: boolean) => {
     if (isExisting) {
+      const attachment = existingAttachmentList[idx];
+      if (attachment) {
+        setDeletedAttachmentUrls((prev) => [...prev, attachment.url]);
+      }
       setExistingAttachmentList((prev) => prev.filter((_, i) => i !== idx));
     } else {
       setAttachmentFiles((prev) => prev.filter((_, i) => i !== idx));
@@ -130,6 +141,11 @@ const LessonForm: React.FC<LessonFormProps> = ({
   };
 
   const handleClearAllAttachments = () => {
+    // Track existing attachments for deletion
+    const existingUrls = existingAttachmentList.map((a) => a.url);
+    if (existingUrls.length > 0) {
+      setDeletedAttachmentUrls((prev) => [...prev, ...existingUrls]);
+    }
     setAttachmentFiles([]);
     setExistingAttachmentList([]);
   };
@@ -141,6 +157,8 @@ const LessonForm: React.FC<LessonFormProps> = ({
       htmlContent,
       videoFile,
       attachmentFiles,
+      deletedVideoUrl: deletedVideoUrl || undefined,
+      deletedAttachmentUrls: deletedAttachmentUrls.length > 0 ? deletedAttachmentUrls : undefined,
     };
 
     onSubmit(output);

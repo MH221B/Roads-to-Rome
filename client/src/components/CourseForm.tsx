@@ -33,6 +33,7 @@ export interface CourseFormValues {
   thumbnail?: File | string | null;
   is_premium?: boolean;
   status?: string;
+  deletedThumbnailUrl?: string | null;
 }
 
 interface CourseFormProps {
@@ -79,6 +80,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(
     typeof defaultValues?.thumbnail === 'string' ? (defaultValues?.thumbnail as string) : null
   );
+  const [deletedThumbnailUrl, setDeletedThumbnailUrl] = React.useState<string | null>(null);
 
   const selectedTags = watch('tags') ?? [];
 
@@ -99,6 +101,14 @@ const CourseForm: React.FC<CourseFormProps> = ({
     setValue('thumbnail', file);
 
     if (file) {
+      // Mark old thumbnail for deletion if it exists
+      if (
+        existingThumbnailUrl &&
+        thumbnailPreview === existingThumbnailUrl &&
+        !thumbnailPreview.startsWith('blob:')
+      ) {
+        setDeletedThumbnailUrl(existingThumbnailUrl);
+      }
       const url = URL.createObjectURL(file);
       setThumbnailPreview(url);
     } else {
@@ -142,6 +152,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
       ...data,
       tags: finalTags,
       thumbnail: data.thumbnail ?? defaultValues?.thumbnail ?? null,
+      deletedThumbnailUrl: deletedThumbnailUrl || undefined,
     };
 
     onSubmit(out);

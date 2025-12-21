@@ -1,11 +1,12 @@
 import lessonModel from '../models/lesson.model';
 import { v4 as uuidv4 } from 'uuid';
 import quizModel from '../models/quiz.model';
+import { deleteFileFromSupabase } from '../lib/supabaseClient';
 
 interface CreateLessonPayload {
   title: string;
-  content_type: string;
   content: string;
+  video?: string;
   lessonType?: string;
   duration?: number;
   order?: number;
@@ -14,12 +15,14 @@ interface CreateLessonPayload {
 
 interface UpdateLessonPayload {
   title?: string;
-  content_type?: string;
   content?: string;
+  video?: string;
   lessonType?: string;
   duration?: number;
   order?: number;
   attachments?: string[];
+  deletedVideoUrl?: string | null;
+  deletedAttachmentUrls?: string[];
 }
 
 interface ILessonService {
@@ -32,8 +35,8 @@ interface ILessonService {
 
 const lessonService: ILessonService = {
   CreateLesson: async (courseId: string, payload: CreateLessonPayload): Promise<unknown> => {
-    if (!payload.title || !payload.content_type || payload.content === undefined) {
-      throw new Error('title, content_type, and content are required');
+    if (!payload.title || payload.content === undefined) {
+      throw new Error('title and content are required');
     }
 
     // Use provided order or calculate next order
@@ -50,8 +53,8 @@ const lessonService: ILessonService = {
       id: uuidv4(),
       course_id: courseId,
       title: payload.title,
-      content_type: payload.content_type, // 'html', 'video', etc.
       content: payload.content,
+      video: payload.video,
       lessonType: payload.lessonType,
       duration: payload.duration,
       order: lessonOrder,
@@ -95,10 +98,22 @@ const lessonService: ILessonService = {
       throw new Error(`Lesson with id ${lessonId} not found`);
     }
 
+    // Delete removed video from Supabase
+    if (payload.deletedVideoUrl) {
+      await deleteFileFromSupabase('lesson-videos', payload.deletedVideoUrl);
+    }
+
+    // Delete removed attachments from Supabase
+    if (payload.deletedAttachmentUrls && payload.deletedAttachmentUrls.length > 0) {
+      for (const url of payload.deletedAttachmentUrls) {
+        await deleteFileFromSupabase('lesson-attachments', url);
+      }
+    }
+
     // Update only provided fields
     if (payload.title !== undefined) lesson.title = payload.title;
-    if (payload.content_type !== undefined) lesson.content_type = payload.content_type;
     if (payload.content !== undefined) lesson.content = payload.content;
+    if (payload.video !== undefined) lesson.video = payload.video;
     if (payload.lessonType !== undefined) {
       lesson.lessonType = payload.lessonType as any;
     }

@@ -25,7 +25,7 @@ interface Lesson {
   id: string;
   course_id: string;
   title: string;
-  content_type: string;
+  video?: string;
   content: string;
   order?: number;
 }
@@ -72,11 +72,6 @@ function SortableLessonItem({ lesson, isDragging, isInstructor, courseId }: Less
         )}
         <FaPlayCircle className="h-5 w-5 text-slate-400" />
         <span className="font-medium">{lesson.title}</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <span className="text-muted-foreground rounded border px-2 py-0.5 text-xs uppercase">
-          {lesson.content_type}
-        </span>
       </div>
     </div>
   );

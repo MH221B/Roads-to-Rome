@@ -42,6 +42,11 @@ const EditCourse: React.FC = () => {
         form.append('thumbnail', data.thumbnail as File);
       }
 
+      // Include deleted thumbnail for Supabase cleanup
+      if (data.deletedThumbnailUrl) {
+        form.append('deletedThumbnailUrl', data.deletedThumbnailUrl);
+      }
+
       const resp = await api.patch(`/api/courses/${id}`, form, {
         headers: { Accept: 'application/json' },
       });

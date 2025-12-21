@@ -12,8 +12,8 @@ const mockLessons = [
     course_id: 'course1',
     title: 'Introduction to HTML',
     lessonType: LessonType.THEORY,
-    content_type: 'video',
-    content: 'https://example.com/html-intro-video.mp4',
+    video: 'https://example.com/html-intro-video.mp4',
+    content: 'HTML Introduction content',
     duration: 600,
     order: 1,
     created_at: new Date('2025-12-01T00:00:00.000Z'),
@@ -24,8 +24,8 @@ const mockLessons = [
     course_id: 'course1',
     title: 'CSS Basics',
     lessonType: LessonType.THEORY,
-    content_type: 'video',
-    content: 'https://example.com/css-basics-video.mp4',
+    video: 'https://example.com/css-basics-video.mp4',
+    content: 'CSS Basics content',
     duration: 900,
     order: 2,
     created_at: new Date('2025-12-01T00:00:00.000Z'),
@@ -36,7 +36,6 @@ const mockLessons = [
     course_id: 'course2',
     title: 'JavaScript Fundamentals',
     lessonType: LessonType.THEORY,
-    content_type: 'html',
     content: '# JavaScript Fundamentals\n\nJavaScript is a versatile language...',
     duration: 1200,
     order: 1,
@@ -78,7 +77,6 @@ describe('Lesson Routes', () => {
       expect(lesson).toHaveProperty('id');
       expect(lesson).toHaveProperty('course_id', courseId);
       expect(lesson).toHaveProperty('title');
-      expect(lesson).toHaveProperty('content_type');
       expect(lesson).toHaveProperty('content');
       expect(lesson).toHaveProperty('order');
     });
@@ -111,9 +109,8 @@ describe('Lesson Routes', () => {
       expect(response.body).toHaveProperty('id', lessonId);
       expect(response.body).toHaveProperty('course_id', courseId);
       expect(response.body).toHaveProperty('title', 'Introduction to HTML');
-      expect(response.body).toHaveProperty('content_type', 'video');
+      expect(response.body).toHaveProperty('video', 'https://example.com/html-intro-video.mp4');
       expect(response.body).toHaveProperty('lessonType', LessonType.THEORY);
-      expect(response.body).toHaveProperty('content', 'https://example.com/html-intro-video.mp4');
       expect(response.body).toHaveProperty('duration', 600);
       expect(response.body).toHaveProperty('order', 1);
     });
@@ -147,7 +144,6 @@ describe('Lesson Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           title: 'New Lesson',
-          content_type: 'html',
           content: 'Test content',
         })
         .expect(201);
@@ -155,7 +151,6 @@ describe('Lesson Routes', () => {
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('course_id', courseId);
       expect(response.body).toHaveProperty('title', 'New Lesson');
-      expect(response.body).toHaveProperty('content_type', 'html');
       expect(response.body).toHaveProperty('content', 'Test content');
       expect(response.body).toHaveProperty('order', 3); // Next available order
     });

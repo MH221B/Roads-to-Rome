@@ -47,8 +47,18 @@ describe('Quiz Routes', () => {
     });
 
     // create course and lesson
-    const course = await Course.create({ courseId: 'course1', title: 'Test Course', instructor: instructor._id });
-    await lessonModel.create({ id: 'lesson1', course_id: 'course1', title: 'Lesson 1', content_type: 'quiz', content: 'quiz content', order: 1 });
+    const course = await Course.create({
+      courseId: 'course1',
+      title: 'Test Course',
+      instructor: instructor._id,
+    });
+    await lessonModel.create({
+      id: 'lesson1',
+      course_id: 'course1',
+      title: 'Lesson 1',
+      content: 'quiz content',
+      order: 1,
+    });
 
     // create a quiz for the lesson
     await quizModel.create({
@@ -57,9 +67,15 @@ describe('Quiz Routes', () => {
       course_id: 'course1',
       title: 'Sample Quiz',
       questions: [
-        { id: 'q1', type: 'single', text: 'What is 2+2?', options: ['2', '3', '4'], correctAnswers: ['4'] }
+        {
+          id: 'q1',
+          type: 'single',
+          text: 'What is 2+2?',
+          options: ['2', '3', '4'],
+          correctAnswers: ['4'],
+        },
       ],
-      order: 1
+      order: 1,
     });
 
     // enroll student to course
@@ -85,9 +101,9 @@ describe('Quiz Routes', () => {
       course_id: 'course1',
       title: 'New Quiz',
       questions: [
-        { id: 'q2', type: 'single', text: 'Pick one', options: ['a', 'b'], correctAnswers: ['a'] }
+        { id: 'q2', type: 'single', text: 'Pick one', options: ['a', 'b'], correctAnswers: ['a'] },
       ],
-      order: 2
+      order: 2,
     };
     const res = await request(app).post('/api/quiz').send(payload).expect(201);
     expect(res.body).toHaveProperty('id', 'quiz2');
@@ -95,27 +111,56 @@ describe('Quiz Routes', () => {
   });
 
   it('PUT /api/quizzes/:id updates a quiz', async () => {
-    const created = await quizModel.create({ id: 'quizUpdate', lesson_id: 'lesson1', course_id: 'course1', title: 'Old Title', questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }], order: 3 });
-    const res = await request(app).put(`/api/quiz/${created._id}`).send({ title: 'New Title' }).expect(200);
+    const created = await quizModel.create({
+      id: 'quizUpdate',
+      lesson_id: 'lesson1',
+      course_id: 'course1',
+      title: 'Old Title',
+      questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }],
+      order: 3,
+    });
+    const res = await request(app)
+      .put(`/api/quiz/${created._id}`)
+      .send({ title: 'New Title' })
+      .expect(200);
     expect(res.body).toHaveProperty('id', 'quizUpdate');
     expect(res.body).toHaveProperty('title', 'New Title');
   });
 
   it('PUT /api/quizzes/:id updates a quiz by `id` property value', async () => {
-    const created = await quizModel.create({ id: 'quizById', lesson_id: 'lesson1', course_id: 'course1', title: 'Old Title By Id', questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }], order: 5 });
-    const res = await request(app).put(`/api/quiz/${created.id}`).send({ title: 'New Title By Id' }).expect(200);
+    const created = await quizModel.create({
+      id: 'quizById',
+      lesson_id: 'lesson1',
+      course_id: 'course1',
+      title: 'Old Title By Id',
+      questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }],
+      order: 5,
+    });
+    const res = await request(app)
+      .put(`/api/quiz/${created.id}`)
+      .send({ title: 'New Title By Id' })
+      .expect(200);
     expect(res.body).toHaveProperty('id', 'quizById');
     expect(res.body).toHaveProperty('title', 'New Title By Id');
   });
 
   it('DELETE /api/quizzes/:id deletes a quiz', async () => {
-    const created = await quizModel.create({ id: 'quizDelete', lesson_id: 'lesson1', course_id: 'course1', title: 'To Delete', questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }], order: 4 });
+    const created = await quizModel.create({
+      id: 'quizDelete',
+      lesson_id: 'lesson1',
+      course_id: 'course1',
+      title: 'To Delete',
+      questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }],
+      order: 4,
+    });
     const res = await request(app).delete(`/api/quiz/${created._id}`).expect(200);
     expect(res.body).toHaveProperty('message', 'Quiz deleted successfully');
   });
 
   it('GET /api/quizzes/instructor/:instructorId returns quizzes for instructor', async () => {
-    const res = await request(app).get(`/api/quiz/instructor/${String(instructor._id)}`).expect(200);
+    const res = await request(app)
+      .get(`/api/quiz/instructor/${String(instructor._id)}`)
+      .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0]).toHaveProperty('lesson_id', 'lesson1');

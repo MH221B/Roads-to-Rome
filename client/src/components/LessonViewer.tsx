@@ -25,11 +25,13 @@ interface Lesson {
   id: string;
   course_id: string;
   title: string;
-  content_type: 'video' | 'article' | 'quiz' | 'file';
-  content: string; // URL for video, text for article, path for file
-  duration?: number; // in minutes
+  lessonType?: 'theory' | 'practical' | 'lab';
+  content: string; // HTML content
+  video?: string; // URL to video file
+  duration?: number; // in seconds
+  order?: number;
   quizzes?: Array<{ id: string; title?: string; order?: number }>;
-  attachments?: string[]; // array of attachment URLs
+  attachments?: Array<{ name: string; url: string } | string>; // array of attachment objects or URLs
 }
 
 interface Course {
@@ -49,9 +51,11 @@ const fetchCourseForViewer = async (courseId: string): Promise<Course> => {
 
   const lessons: Lesson[] = payload.map((l: any) => ({
     ...l,
-    content_type: l.content_type || l.contentType,
-    duration: l.duration ? Math.round(l.duration / 60) : undefined,
+    lessonType: l.lessonType,
+    video: l.video,
+    duration: l.duration,
     quizzes: l.quizzes || [],
+    attachments: l.attachments || [],
   }));
 
   const title =
@@ -68,9 +72,11 @@ const fetchLessonDetails = async (courseId: string, lessonId: string): Promise<L
   const data = response.data?.lesson || response.data;
   return {
     ...data,
-    content_type: data?.content_type || data?.contentType,
-    duration: data?.duration ? Math.round(data.duration / 60) : undefined,
+    lessonType: data?.lessonType,
+    video: data?.video,
+    duration: data?.duration,
     quizzes: data?.quizzes || [],
+    attachments: data?.attachments || [],
   };
 };
 
@@ -342,19 +348,13 @@ export default function LessonViewer() {
                     className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors ${baseClass}`}
                   >
                     <div className={`mt-1 ${iconClass}`}>
-                      {l.content_type === 'video' ? (
-                        <FaPlay size={12} />
-                      ) : l.content_type === 'file' ? (
-                        <FaFileAlt size={12} />
-                      ) : (
-                        <FaFileAlt size={12} />
-                      )}
+                      {l.video ? <FaPlay size={12} /> : <FaFileAlt size={12} />}
                     </div>
                     <div className="flex-1">
                       <p className={`text-sm font-medium ${titleClass}`}>
                         {index + 1}. {l.title}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">{l.content_type}</p>
+                      <p className="mt-1 text-xs text-slate-500">{l.lessonType || 'lesson'}</p>
                     </div>
                     {isCompleted && !isActive && (
                       <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
@@ -389,7 +389,7 @@ export default function LessonViewer() {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
                     <Badge variant="outline" className="border-slate-300 text-slate-500 capitalize">
-                      {lesson.content_type}
+                      {lesson.lessonType || 'lesson'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between gap-4">
@@ -412,90 +412,67 @@ export default function LessonViewer() {
 
                 {/* Content Viewer */}
                 <Card className="mb-8 overflow-hidden border-slate-200 bg-white shadow-sm">
-                  {lesson.content_type === 'video' ? (
-                    <div className="group relative flex aspect-video items-center justify-center bg-slate-900">
-                      {/* Video Player - Support YouTube, Vimeo, or direct video URLs */}
-                      {lesson.content.includes('youtube.com') ||
-                      lesson.content.includes('youtu.be') ? (
-                        <iframe
-                          className="h-full w-full"
-                          src={lesson.content
-                            .replace('watch?v=', 'embed/')
-                            .replace('youtu.be/', 'youtube.com/embed/')}
-                          title={lesson.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : lesson.content.includes('vimeo.com') ? (
-                        <iframe
-                          className="h-full w-full"
-                          src={lesson.content}
-                          title={lesson.title}
-                          frameBorder="0"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : lesson.content.match(/\.(mp4|webm|ogg)$/i) ? (
-                        <video
-                          className="h-full w-full bg-black"
-                          controls
-                          controlsList="nodownload"
-                        >
-                          <source src={lesson.content} type="video/mp4" />
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        <div className="text-center">
-                          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 transition-transform group-hover:scale-110">
-                            <FaPlay className="ml-1 h-6 w-6 text-white" />
-                          </div>
-                          <p className="text-slate-300">Video Player</p>
-                          <p className="mt-2 text-xs text-slate-400">{lesson.content}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : lesson.content_type === 'file' ? (
-                    <CardContent className="flex flex-col gap-4 p-8">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                            <FaFileAlt className="h-6 w-6 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-slate-900">
-                              {lesson.content.split('/').pop() || 'File'}
-                            </p>
-                            <p className="text-sm text-slate-500">{lesson.content}</p>
-                          </div>
-                          <Button
-                            onClick={() => window.open(lesson.content, '_blank')}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
-                            size="sm"
-                          >
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-blue-50 p-4">
-                        <p className="text-sm text-blue-800">
-                          Click the download button to access the file. If it opens in a new tab,
-                          right-click to save it.
-                        </p>
-                      </div>
-                    </CardContent>
-                  ) : (
-                    <CardContent className="prose prose-sm md:prose-base max-w-none p-8 text-slate-700">
-                      {/* HTML Content Renderer */}
-                      <div
-                        className="prose-a:text-primary prose-a:underline prose-h1:text-slate-900 prose-h2:text-slate-900 prose-h3:text-slate-800 prose-strong:text-slate-900 prose-code:bg-slate-100 prose-code:text-slate-900 prose-code:px-2 prose-code:py-1 prose-code:rounded"
-                        dangerouslySetInnerHTML={{
-                          __html: lesson.content || '<p>No content available for this lesson.</p>',
-                        }}
-                      />
-                    </CardContent>
-                  )}
+                  <CardContent className="prose prose-sm md:prose-base max-w-none p-8 text-slate-700">
+                    {/* HTML Content Renderer */}
+                    <div
+                      className="prose-a:text-primary prose-a:underline prose-h1:text-slate-900 prose-h2:text-slate-900 prose-h3:text-slate-800 prose-strong:text-slate-900 prose-code:bg-slate-100 prose-code:text-slate-900 prose-code:px-2 prose-code:py-1 prose-code:rounded"
+                      dangerouslySetInnerHTML={{
+                        __html: lesson.content || '<p>No content available for this lesson.</p>',
+                      }}
+                    />
+                  </CardContent>
                 </Card>
+
+                {/* Video Section */}
+                {lesson.video && (
+                  <div className="mb-6">
+                    <h3 className="mb-4 text-lg font-semibold text-slate-900">Lesson Video</h3>
+                    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+                      <div className="group relative flex aspect-video items-center justify-center bg-slate-900">
+                        {/* Video Player - Support YouTube, Vimeo, or direct video URLs */}
+                        {lesson.video.includes('youtube.com') ||
+                        lesson.video.includes('youtu.be') ? (
+                          <iframe
+                            className="h-full w-full"
+                            src={lesson.video
+                              .replace('watch?v=', 'embed/')
+                              .replace('youtu.be/', 'youtube.com/embed/')}
+                            title={lesson.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : lesson.video.includes('vimeo.com') ? (
+                          <iframe
+                            className="h-full w-full"
+                            src={lesson.video}
+                            title={lesson.title}
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : lesson.video.match(/\.(mp4|webm|ogg)$/i) ? (
+                          <video
+                            className="h-full w-full bg-black"
+                            controls
+                            controlsList="nodownload"
+                          >
+                            <source src={lesson.video} type="video/mp4" />
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : (
+                          <div className="text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 transition-transform group-hover:scale-110">
+                              <FaPlay className="ml-1 h-6 w-6 text-white" />
+                            </div>
+                            <p className="text-slate-300">Video Player</p>
+                            <p className="mt-2 text-xs text-slate-400">{lesson.video}</p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Attachments Section */}
                 {lesson.attachments && lesson.attachments.length > 0 && (
@@ -504,9 +481,19 @@ export default function LessonViewer() {
                     <Card className="border-slate-200 bg-white shadow-sm">
                       <CardContent className="p-6">
                         <div className="space-y-3">
-                          {lesson.attachments.map((attachmentUrl, index) => {
+                          {lesson.attachments.map((attachment, index) => {
+                            // Handle both string (URL) and object formats
+                            const attachmentUrl =
+                              typeof attachment === 'string' ? attachment : attachment?.url;
+                            const attachmentName =
+                              typeof attachment === 'string' ? null : attachment?.name;
                             const fileName =
-                              attachmentUrl.split('/').pop() || `Attachment ${index + 1}`;
+                              attachmentName ||
+                              attachmentUrl?.split('/').pop() ||
+                              `Attachment ${index + 1}`;
+
+                            if (!attachmentUrl) return null;
+
                             return (
                               <div
                                 key={index}

@@ -28,21 +28,18 @@ const EditLesson: React.FC = () => {
         lessonType: data.lessonType,
       };
 
-      // Determine content type and content
+      // Determine content - separate from video
       if (data.videoFile) {
         // User uploaded a new video
         const uploadRes = await uploadFile(data.videoFile);
-        payload.content_type = 'video';
-        payload.content = uploadRes?.url ?? null;
-      } else if (lesson?.content && lesson?.content_type === 'video') {
+        payload.video = uploadRes?.url ?? null;
+      } else if (lesson?.video) {
         // Keep existing video
-        payload.content_type = 'video';
-        payload.content = lesson.content;
-      } else {
-        // Use HTML content (either existing or updated)
-        payload.content_type = 'html';
-        payload.content = data.htmlContent;
+        payload.video = lesson.video;
       }
+
+      // HTML content
+      payload.content = data.htmlContent;
 
       // Upload new attachments and collect their URLs
       let newAttachmentUrls: string[] = [];
@@ -58,6 +55,14 @@ const EditLesson: React.FC = () => {
 
       if (newAttachmentUrls.length > 0 || existingAttachmentUrls.length > 0) {
         payload.attachments = [...existingAttachmentUrls, ...newAttachmentUrls];
+      }
+
+      // Include deleted files for Supabase cleanup
+      if (data.deletedVideoUrl) {
+        payload.deletedVideoUrl = data.deletedVideoUrl;
+      }
+      if (data.deletedAttachmentUrls && data.deletedAttachmentUrls.length > 0) {
+        payload.deletedAttachmentUrls = data.deletedAttachmentUrls;
       }
 
       return await updateLesson(courseId, lessonId, payload);
@@ -94,12 +99,12 @@ const EditLesson: React.FC = () => {
   const defaultValues: Partial<LessonFormValues> = {
     title: lesson.title,
     lessonType: lesson.lessonType ?? 'theory',
-    htmlContent: lesson.content_type === 'html' ? (lesson.content ?? '') : '',
+    htmlContent: lesson.video ? '' : (lesson.content ?? ''),
     videoFile: null,
     attachmentFiles: [],
   };
 
-  const existingVideoUrl = lesson.content_type === 'video' ? lesson.content : null;
+  const existingVideoUrl = lesson.video ?? null;
   const existingAttachments =
     lesson.attachments?.map((a) => ({
       name: typeof a === 'string' ? a : a.name,

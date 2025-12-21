@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import courseService from '../services/course.service';
-import { uploadImageToSupabase } from '../lib/supabaseClient';
+import { uploadImageToSupabase, deleteFileFromSupabase } from '../lib/supabaseClient';
 import { User } from '../models/user.model';
 
 const courseController = {
@@ -185,6 +185,12 @@ const courseController = {
             .map((s: string) => s.trim())
             .filter(Boolean);
         }
+      }
+
+      // Delete old thumbnail from Supabase if a new one was uploaded
+      if (payload.deletedThumbnailUrl) {
+        await deleteFileFromSupabase('course-thumbnails', payload.deletedThumbnailUrl);
+        delete payload.deletedThumbnailUrl; // Remove from payload before saving to DB
       }
 
       // If a new file was uploaded, upload to Supabase and set thumbnail url

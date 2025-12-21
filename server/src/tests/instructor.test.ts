@@ -49,24 +49,61 @@ describe('Instructor Routes', () => {
       role: Role.STUDENT,
     });
 
-    instructorToken = jwt.sign({ userId: String(instructor._id), role: Role.INSTRUCTOR }, process.env.ACCESS_TOKEN_SECRET || 'test-secret');
+    instructorToken = jwt.sign(
+      { userId: String(instructor._id), role: Role.INSTRUCTOR },
+      process.env.ACCESS_TOKEN_SECRET || 'test-secret'
+    );
 
     // create course
-    await Course.create({ courseId: 'course1', title: 'Instructor Course', instructor: instructor._id });
+    await Course.create({
+      courseId: 'course1',
+      title: 'Instructor Course',
+      instructor: instructor._id,
+    });
     // create lesson
-    await lessonModel.create({ id: 'lesson1', course_id: 'course1', title: 'Lesson 1', content_type: 'quiz', content: 'x', order: 1 });
+    await lessonModel.create({
+      id: 'lesson1',
+      course_id: 'course1',
+      title: 'Lesson 1',
+      content: 'Lesson 1 content',
+      order: 1,
+    });
     // create quiz
-    await quizModel.create({ id: 'quiz1', lesson_id: 'lesson1', course_id: 'course1', title: 'Quiz 1', questions: [{ id: 'q1', type: 'single', text: '1+1?', options: ['1','2'], correctAnswers: ['2'] }], order: 1 });
+    await quizModel.create({
+      id: 'quiz1',
+      lesson_id: 'lesson1',
+      course_id: 'course1',
+      title: 'Quiz 1',
+      questions: [
+        { id: 'q1', type: 'single', text: '1+1?', options: ['1', '2'], correctAnswers: ['2'] },
+      ],
+      order: 1,
+    });
     // enrollments and submissions
     await Enrollment.create({ studentId: student1._id, courseId: 'course1' });
     await Enrollment.create({ studentId: student2._id, courseId: 'course1' });
     // submissions - scores 8 and 6 (out of 10)
-    await submitQuizModel.create({ quizId: 'quiz1', userId: String(student1._id), answers: [{ questionId: 'q1', answer: '2' }], score: 8, duration: 10 });
-    await submitQuizModel.create({ quizId: 'quiz1', userId: String(student2._id), answers: [{ questionId: 'q1', answer: '1' }], score: 6, duration: 15 });
+    await submitQuizModel.create({
+      quizId: 'quiz1',
+      userId: String(student1._id),
+      answers: [{ questionId: 'q1', answer: '2' }],
+      score: 8,
+      duration: 10,
+    });
+    await submitQuizModel.create({
+      quizId: 'quiz1',
+      userId: String(student2._id),
+      answers: [{ questionId: 'q1', answer: '1' }],
+      score: 6,
+      duration: 15,
+    });
   });
 
   it('GET /api/instructor/insights returns expected overview and insights', async () => {
-    const res = await request(app).get('/api/instructor/insights').set('Authorization', `Bearer ${instructorToken}`).expect(200);
+    const res = await request(app)
+      .get('/api/instructor/insights')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .expect(200);
     expect(res.body).toHaveProperty('overview');
     expect(res.body.overview).toHaveProperty('totalCourses', 1);
     expect(res.body.overview).toHaveProperty('totalQuizzes', 1);
