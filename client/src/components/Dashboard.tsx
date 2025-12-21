@@ -3,21 +3,23 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  FiBookOpen,
-  FiCheckCircle,
-  FiClock,
-  FiCompass,
-  FiRefreshCw,
-  FiTrendingUp,
-} from 'react-icons/fi';
-import { FaMoneyBillWave } from 'react-icons/fa';
+  FaBookOpen,
+  FaCheckCircle,
+  FaClock,
+  FaCompass,
+  FaSyncAlt,
+  FaChartLine,
+  FaMoneyBillWave,
+} from 'react-icons/fa';
 
 import HeaderComponent from './HeaderComponent';
 import CourseCard from './CourseCard';
 import { useAuth } from '@/contexts/AuthProvider';
 import { api } from '@/services/axiosClient';
 import { getProfile } from '@/services/authService';
+import { confirmMockPayment } from '@/services/paymentService';
 import { decodeJwtPayload } from '@/lib/utils';
+import TopUpModal from './TopUpModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +99,13 @@ const Dashboard: React.FC = () => {
     progress: 'all',
     sort: 'recent',
   });
+  const [topUpAmount, setTopUpAmount] = useState<string>('100000');
+  const [topUpNote, setTopUpNote] = useState<string>('');
+  const [topUpMessage, setTopUpMessage] = useState<string | null>(null);
+  const [topUpError, setTopUpError] = useState<boolean>(false);
+  const [showTopUp, setShowTopUp] = useState<boolean>(false);
+
+  const COIN_RATE = 1000; // 1 FaMoneyBillWave coin per 1,000 VND
 
   const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
   const rawRoles = payload?.roles ?? payload?.role;
@@ -177,6 +186,33 @@ const Dashboard: React.FC = () => {
     },
   });
 
+  const topUp = useMutation({
+    mutationFn: async () => {
+      const amountNum = Number(topUpAmount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        throw new Error('Amount must be greater than zero');
+      }
+      const coins = Math.floor(amountNum / COIN_RATE);
+      if (coins <= 0) {
+        throw new Error(`Minimum top-up is ${COIN_RATE.toLocaleString()} VND (1 coin)`);
+      }
+      return confirmMockPayment({ amount: coins, reference: topUpNote.trim() || undefined });
+    },
+    onSuccess: (resp) => {
+      setTopUpError(false);
+      const coins = Math.max(topUpCoins, 0);
+      setTopUpMessage(resp.message || `Budget updated (+${coins} coin${coins === 1 ? '' : 's'})`);
+      setTopUpNote('');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      setShowTopUp(false);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || err?.message || 'Top-up failed';
+      setTopUpError(true);
+      setTopUpMessage(msg);
+    },
+  });
+
   const courses: EnrichedCourse[] = useMemo(() => {
     if (!isStudent || !isAuthenticated) return [];
 
@@ -240,6 +276,22 @@ const Dashboard: React.FC = () => {
     const raw = profileQuery.data.budget;
     return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
   }, [profileQuery.data]);
+
+  const budgetCoins = useMemo(() => Math.max(0, Math.floor(budget)), [budget]);
+
+  const topUpCoins = useMemo(() => {
+    const amt = Number(topUpAmount);
+    if (!Number.isFinite(amt) || amt < 0) return 0;
+    return Math.floor(amt / COIN_RATE);
+  }, [topUpAmount]);
+
+  const formatMoney = useCallback((value: number | undefined) => {
+    const num = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }, []);
 
   const filteredCourses = useMemo(() => {
     let list = [...courses];
@@ -318,19 +370,30 @@ const Dashboard: React.FC = () => {
                 Track your learning progress, resume courses, and discover new content tailored for you.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 variant="outline"
                 className="border-slate-200 bg-white text-slate-900 hover:bg-slate-100"
                 onClick={() => enrollmentsQuery.refetch()}
               >
-                <FiRefreshCw className="mr-2 h-4 w-4" /> Refresh
+                <FaSyncAlt className="mr-2 h-4 w-4" /> Refresh
               </Button>
               <Button
                 className="bg-emerald-500 text-white hover:bg-emerald-600"
                 onClick={() => navigate('/courses')}
               >
-                <FiCompass className="mr-2 h-4 w-4" /> Browse courses
+                <FaCompass className="mr-2 h-4 w-4" /> Browse courses
+              </Button>
+              <Button
+                variant="secondary"
+                className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                onClick={() => {
+                  setTopUpMessage(null);
+                  setTopUpError(false);
+                  setShowTopUp(true);
+                }}
+              >
+                Top up budget
               </Button>
             </div>
           </div>
@@ -338,14 +401,14 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <StatCard
               title="Budget"
-              value={`${budget.toLocaleString()}`}
-              hint={profileQuery.isFetching ? 'Updating…' : 'Available balance'}
+              value={`${budgetCoins.toLocaleString()} coin${budgetCoins === 1 ? '' : 's'}`}
+              hint={profileQuery.isFetching ? 'Updating…' : `≈ ${formatMoney(budgetCoins * COIN_RATE)} VND`}
               icon={<FaMoneyBillWave className="h-5 w-5 text-emerald-600" />}
             />
-            <StatCard title="Enrolled" value={stats.total} hint="Total courses you're in" icon={<FiBookOpen className="h-5 w-5" />} />
-            <StatCard title="In progress" value={stats.inProgress} hint="Currently learning" icon={<FiClock className="h-5 w-5" />} />
-            <StatCard title="Completed" value={stats.completed} hint="Finished courses" icon={<FiCheckCircle className="h-5 w-5" />} />
-            <StatCard title="Avg progress" value={`${stats.avgProgress}%`} hint={`Avg rating ${stats.avgRating || 0}/5`} icon={<FiTrendingUp className="h-5 w-5" />} />
+            <StatCard title="Enrolled" value={stats.total} hint="Total courses you're in" icon={<FaBookOpen className="h-5 w-5" />} />
+            <StatCard title="In progress" value={stats.inProgress} hint="Currently learning" icon={<FaClock className="h-5 w-5" />} />
+            <StatCard title="Completed" value={stats.completed} hint="Finished courses" icon={<FaCheckCircle className="h-5 w-5" />} />
+            <StatCard title="Avg progress" value={`${stats.avgProgress}%`} hint={`Avg rating ${stats.avgRating || 0}/5`} icon={<FaChartLine className="h-5 w-5" />} />
           </div>
 
           <Card className="border-slate-200 bg-white text-slate-900 shadow-md">
@@ -583,6 +646,29 @@ const Dashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          <TopUpModal
+            open={showTopUp}
+            amount={topUpAmount}
+            note={topUpNote}
+            loading={topUp.isPending}
+            message={topUpMessage}
+            isError={topUpError}
+            coinPreview={topUpCoins}
+            rateText={`1,000 VND = 1 coin`}
+            onAmountChange={(v) => setTopUpAmount(v)}
+            onNoteChange={(v) => setTopUpNote(v)}
+            onSubmit={() => {
+              setTopUpMessage(null);
+              setTopUpError(false);
+              topUp.mutate();
+            }}
+            onClose={() => {
+              setShowTopUp(false);
+              setTopUpMessage(null);
+              setTopUpError(false);
+            }}
+          />
         </div>
       </main>
     </div>

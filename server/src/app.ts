@@ -9,6 +9,7 @@ import { courseRouter } from './routes/course.route';
 import { enrollmentRouter } from './routes/enrollment.route';
 import { lessonRouter } from './routes/lesson.route';
 import { quizRouter } from './routes/quiz.route';
+import { paymentRouter } from './routes/payment.route';
 import { upload } from './middlewares/upload.middleware';
 import { uploadImageToSupabase } from './lib/supabaseClient';
 
@@ -53,6 +54,7 @@ app.use('/api/courses', courseRouter);
 app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/lessons', lessonRouter);
 app.use('/api/quiz', quizRouter);
+app.use('/api/payments', paymentRouter);
 
 // Nested lesson routes under courses
 app.use('/api/courses/:courseId/lessons', lessonRouter);
