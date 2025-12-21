@@ -33,6 +33,9 @@ const EditLesson: React.FC = () => {
         // User uploaded a new video
         const uploadRes = await uploadFile(data.videoFile);
         payload.video = uploadRes?.url ?? null;
+      } else if (data.deletedVideoUrl) {
+        // User explicitly deleted the video
+        payload.video = null;
       } else if (lesson?.video) {
         // Keep existing video
         payload.video = lesson.video;
@@ -99,7 +102,7 @@ const EditLesson: React.FC = () => {
   const defaultValues: Partial<LessonFormValues> = {
     title: lesson.title,
     lessonType: lesson.lessonType ?? 'theory',
-    htmlContent: lesson.video ? '' : (lesson.content ?? ''),
+    htmlContent: lesson.content ?? '',
     videoFile: null,
     attachmentFiles: [],
   };

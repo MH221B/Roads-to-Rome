@@ -224,7 +224,7 @@ const LessonForm: React.FC<LessonFormProps> = ({
                   {videoFile || videoPreview ? (
                     <div>
                       <p className="font-medium text-gray-900">
-                        {videoFile?.name ?? 'Existing video'}
+                        {videoFile?.name ?? existingVideoUrl}
                       </p>
                       {videoFile && (
                         <p className="text-sm text-gray-500">
