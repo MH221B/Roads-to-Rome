@@ -19,6 +19,7 @@ import {
   FaEye,
 } from 'react-icons/fa';
 import { decodeJwtPayload } from '../lib/utils';
+import LessonCodeEditor from './LessonCodeEditor';
 
 // --- Types ---
 interface Lesson {
@@ -197,6 +198,22 @@ export default function LessonViewer() {
     enabled: !!courseId && !!lessonId,
     staleTime: 1000 * 60 * 5,
   });
+
+  const editorStarterCode = useMemo(() => {
+    const lessonName = lesson?.title || 'Lesson';
+    return {
+      python: `# ${lessonName}\n\ndef solve(input: str):\n    return input\n\nprint(solve("sample input"))\n`,
+      cpp: `// ${lessonName}\n#include <bits/stdc++.h>\nusing namespace std;\n\nstring solve(const string &input) {\n  return input;\n}\n\nint main() {\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  cout << solve("sample input") << "\\n";\n  return 0;\n}\n`,
+    } as const;
+  }, [lesson?.title]);
+
+  const runLessonCode = useCallback(
+    async ({ code, language }: { code: string; language: 'python' | 'cpp' }) => {
+      const normalized = language.toUpperCase();
+      return `Submitted ${normalized} solution for ${lesson?.title || 'this lesson'}. Connect the run endpoint to execute.`;
+    },
+    [lesson?.title]
+  );
 
   // Memoize navigation logic to avoid recalculation on every render
   const { prevLesson, nextLesson } = useMemo(() => {
@@ -589,36 +606,29 @@ export default function LessonViewer() {
             onMouseDown={startResizing}
           />
 
-          {/* Right: Live Editor / Quizzes (Placeholder) */}
+          {/* Right: Live Editor / Code Runner */}
           <div
-            className="hidden shrink-0 flex-col border-l border-slate-200 bg-white lg:flex"
+            className="hidden h-full shrink-0 flex-col border-l border-slate-200 bg-white lg:flex"
             style={{ width: editorWidth }}
           >
-            <div className="flex items-center gap-2 border-b border-slate-200 p-4">
-              <FaCode className="text-primary" />
-              <h3 className="font-semibold text-slate-700">Interactive Area</h3>
-            </div>
-            <div className="flex flex-1 items-center justify-center p-6 text-center">
-              <div className="space-y-4">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50">
-                  <FaCode className="h-8 w-8 text-slate-400" />
-                </div>
-                <div>
-                  <h4 className="mb-1 font-medium text-slate-700">Live Editor / Quiz</h4>
-                  <p className="text-sm text-slate-500">
-                    This space is reserved for interactive coding exercises or quizzes related to
-                    the lesson.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full border-slate-200 text-slate-500"
-                  disabled
-                >
-                  Coming Soon
-                </Button>
+            {isLessonLoading ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="border-primary h-10 w-10 animate-spin rounded-full border-t-2 border-b-2"></div>
               </div>
-            </div>
+            ) : lessonError || !lesson ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                <FaCode className="h-6 w-6 text-slate-400" />
+                <p className="text-sm text-slate-600">Interactive area unavailable.</p>
+              </div>
+            ) : (
+              <LessonCodeEditor
+                key={lessonId}
+                title={`Practice: ${lesson.title}`}
+                starterCode={editorStarterCode}
+                initialLanguage="python"
+                onRun={runLessonCode}
+              />
+            )}
           </div>
         </main>
       </div>
