@@ -225,7 +225,7 @@ const RegisterCard = () => {
               variant="outline"
               className="w-full"
               type="button"
-              onClick={() => (window.location.href = `${import.meta.env.VITE_API_URL}/github`)}
+              onClick={() => (window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/github`)}
             >
               <FaGithub className="mr-2 h-4 w-4" />
               Login with GitHub

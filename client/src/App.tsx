@@ -104,13 +104,13 @@ function App() {
             />
           )}
           <Route path="/courses" element={<CourseList />} />
-          <Route path="/courses/create" element={<CreateCourse />} />
-          <Route path="/courses/:id/edit" element={<EditCourse />} />
-          <Route path="/enrolment" element={<Enrolment />} />
+          <Route path="/courses/create" element={<RequireRole roles="INSTRUCTOR"><CreateCourse /></RequireRole>} />
+          <Route path="/courses/:id/edit" element={<RequireRole roles="INSTRUCTOR"><EditCourse /></RequireRole>} />
+          <Route path="/enrolment" element={<RequireAuth><Enrolment /></RequireAuth>} />
           <Route path="/courses/:id" element={<CourseDetail />} />
-          <Route path="/courses/:courseId/lessons/create" element={<CreateLesson />} />
-          <Route path="/courses/:courseId/lessons/:lessonId/edit" element={<EditLesson />} />
-          <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonViewer />} />
+          <Route path="/courses/:courseId/lessons/create" element={<RequireRole roles="INSTRUCTOR"><CreateLesson /></RequireRole>} />
+          <Route path="/courses/:courseId/lessons/:lessonId/edit" element={<RequireRole roles="INSTRUCTOR"><EditLesson /></RequireRole>} />
+          <Route path="/courses/:courseId/lessons/:lessonId" element={<RequireAuth><LessonViewer /></RequireAuth>} />
           <Route
             path="/admin"
             element={
@@ -120,7 +120,12 @@ function App() {
             }
           />
           <Route path="/403" element={<Forbidden />} />
-          <Route path="/courses/:courseId/quiz/:quizId" element={<QuizPage />} />
+          <Route path="/courses/:courseId/quiz/:quizId" element={
+            <RequireAuth >
+              <QuizPage /> 
+            </RequireAuth>
+            // need authentication to access quiz
+            } />
           <Route
             path="/quizzes/new"
             element={
