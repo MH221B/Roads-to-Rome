@@ -30,11 +30,7 @@ const instructorController: IInstructorController = {
       const instructorId = req.params.id;
       if (!instructorId) return res.status(400).json({ message: 'Instructor id required' });
 
-      const page = req.query.page ? Number(req.query.page) || 1 : 1;
-      const limit = req.query.limit ? Number(req.query.limit) || 100 : 100;
-
-      const result = await courseService.listCourses({ page, limit, instructorId: instructorId });
-
+      const result = await courseService.getCoursesByInstructor(instructorId);
       return res.status(200).json(result);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : JSON.stringify(error);

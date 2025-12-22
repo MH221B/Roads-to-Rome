@@ -37,6 +37,7 @@ interface ICourseService {
   ): Promise<any>;
   deleteCourse?(id: string): Promise<void>;
   updateCourse?(id: string, data: Partial<ICourse> & Record<string, any>): Promise<any>;
+  getCoursesByInstructor(instructorId: string): Promise<any[]>;
 }
 
 interface ISuggestOptions {
@@ -585,6 +586,33 @@ const courseService: ICourseService = {
   async deleteCourse(id: string): Promise<void> {
     await Course.findByIdAndDelete(id).exec();
   },
+
+  async getCoursesByInstructor(instructorId: string): Promise<any[]> {
+    if (!instructorId) return [];
+    const filter: Record<string, any> = {};
+    if (mongoose.Types.ObjectId.isValid(String(instructorId))) {
+      filter.instructor = new mongoose.Types.ObjectId(String(instructorId));
+    } else {
+      return [];
+    }
+
+    const courses = await Course.find(filter)
+      .populate({ path: 'instructor', select: 'fullName email' })
+      .lean()
+      .exec();
+
+    return (courses || []).map((c: any) => {
+      const { _id, instructor, ...rest } = c || {};
+      const instr = instructor
+        ? {
+            id: String(instructor._id || instructor),
+            name: instructor.fullName ?? 'Unknown Instructor',
+            email: instructor.email ?? null,
+          }
+        : { id: null, name: rest.instructor || 'Unknown Instructor', email: null };
+      return { id: String(_id), ...rest, instructor: instr };
+    });
+  }
 };
 
 export default courseService;
