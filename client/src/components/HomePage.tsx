@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { Course } from '@/services/courseService';
 import { getCourses, getInstructorCourses } from '@/services/courseService';
-import { decodeJwtPayload } from '@/lib/utils';
+import { decodeJwtPayload, extractTagsFromCourses } from '@/lib/utils';
 import LoadingScreen from '@/components/LoadingScreen';
 import HeaderComponent from '@/components/HeaderComponent';
 import AdminStats from '@/components/AdminStats';
@@ -46,11 +46,7 @@ const HomePage: React.FC = () => {
   }, [courses]);
 
   const tags = React.useMemo(() => {
-    const uniqueTags = new Set<string>();
-    courses.forEach((course) => {
-      course.tags.forEach((tag) => uniqueTags.add(tag));
-    });
-    return Array.from(uniqueTags).sort();
+    return extractTagsFromCourses(courses);
   }, [courses]);
 
   React.useEffect(() => {

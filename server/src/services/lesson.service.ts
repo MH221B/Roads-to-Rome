@@ -128,9 +128,28 @@ const lessonService: ILessonService = {
   },
 
   DeleteLesson: async (courseId: string, lessonId: string): Promise<unknown> => {
+    // Fetch the lesson before deletion to get video and attachments
+    const lesson = await lessonModel.findOne({ course_id: courseId, id: lessonId }).exec();
+    if (!lesson) {
+      throw new Error('Lesson not found');
+    }
+
+    // Delete video from Supabase if it exists
+    if (lesson.video) {
+      await deleteFileFromSupabase('lesson-videos', lesson.video);
+    }
+
+    // Delete attachments from Supabase if they exist
+    if (lesson.attachments && lesson.attachments.length > 0) {
+      for (const attachmentUrl of lesson.attachments) {
+        await deleteFileFromSupabase('lesson-attachments', attachmentUrl);
+      }
+    }
+
+    // Delete the lesson record from database
     const result = await lessonModel.deleteOne({ course_id: courseId, id: lessonId }).exec();
     if (result.deletedCount === 0) {
-      throw new Error('Lesson not found');
+      throw new Error('Failed to delete lesson');
     }
     return { success: true };
   },

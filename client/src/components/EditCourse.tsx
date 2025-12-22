@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
 import api from '@/services/axiosClient';
 import CourseForm from '@/components/CourseForm';
+import LoadingScreen from '@/components/LoadingScreen';
 import type { CourseFormValues } from '@/components/CourseForm';
 
 const EditCourse: React.FC = () => {
@@ -79,7 +80,7 @@ const EditCourse: React.FC = () => {
     },
   });
 
-  if (isLoading) return <div className="p-6">Loading course...</div>;
+  if (isLoading) return <LoadingScreen />;
   if (!course) return <div className="p-6">Course not found.</div>;
 
   const defaultValues: Partial<CourseFormValues> = {

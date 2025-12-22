@@ -23,6 +23,8 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { CiCircleRemove } from 'react-icons/ci';
+import { getCourses } from '@/services/courseService';
+import { extractTagsFromCourses } from '@/lib/utils';
 
 export interface CourseFormValues {
   title: string;
@@ -81,13 +83,31 @@ const CourseForm: React.FC<CourseFormProps> = ({
     typeof defaultValues?.thumbnail === 'string' ? (defaultValues?.thumbnail as string) : null
   );
   const [deletedThumbnailUrl, setDeletedThumbnailUrl] = React.useState<string | null>(null);
+  const [allTagsFromDb, setAllTagsFromDb] = React.useState<string[]>([]);
 
   const selectedTags = watch('tags') ?? [];
 
-  const allTags = React.useMemo(
-    () => ['web development', 'javascript', 'react', 'node', 'typescript', 'css', 'html'],
-    []
-  );
+  // Fetch all tags from database on component mount
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchTags = async () => {
+      try {
+        const courses = await getCourses(1, 1000);
+        if (!mounted) return;
+        setAllTagsFromDb(extractTagsFromCourses(courses));
+      } catch (e) {
+        // Fallback to empty array if fetch fails
+        if (mounted) {
+          setAllTagsFromDb([]);
+        }
+      }
+    };
+
+    fetchTags();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -124,7 +144,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
     const val = (q ?? tagQuery).trim();
     if (!val) return;
 
-    const match = allTags.find((t) => t.toLowerCase() === val.toLowerCase());
+    const match = allTagsFromDb.find((t) => t.toLowerCase() === val.toLowerCase());
     const tagToAdd = match ?? val;
 
     if (!selectedTags.includes(tagToAdd)) {
@@ -227,7 +247,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
                     {tagQuery && (
                       <div className="absolute top-full mt-1 w-full rounded-md border bg-white p-2 shadow-lg dark:bg-gray-950">
                         <div className="flex flex-wrap gap-2">
-                          {allTags
+                          {allTagsFromDb
                             .filter((t) => t.toLowerCase().includes(tagQuery.trim().toLowerCase()))
                             .slice(0, 8)
                             .map((suggestion) => (
@@ -243,7 +263,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
                                 {suggestion}
                               </button>
                             ))}
-                          {allTags.filter((t) =>
+                          {allTagsFromDb.filter((t) =>
                             t.toLowerCase().includes(tagQuery.trim().toLowerCase())
                           ).length === 0 && (
                             <span className="text-muted-foreground p-1 text-xs">
