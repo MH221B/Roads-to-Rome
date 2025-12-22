@@ -53,14 +53,6 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route
-            path="/admin-dashboard"
-            element={
-              <RequireRole roles="ADMIN">
-                <AdminPage />
-              </RequireRole>
-            }
-          />
-          <Route
             path="/course"
             element={
               <RequireRole roles="ADMIN">

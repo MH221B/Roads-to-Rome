@@ -68,63 +68,53 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
             Learnix
           </Link>
 
-          <div className="hidden items-center gap-6 md:flex">
-            {isAdmin ? (
-              <Link
-                to="/admin-dashboard"
-                className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                  isActive('/admin-dashboard') ? '' : 'text-muted-foreground'
-                }`}
-                aria-current={isActive('/admin-dashboard') ? 'page' : undefined}
-              >
-                Admin
-              </Link>
-            ) : (
+          {!isAdmin && (
+            <div className="hidden items-center gap-6 md:flex">
               <Link
                 to="/"
-                className={`text-sm font-medium transition-colors hover:text-white/80 ${  
+                className={`text-sm font-medium transition-colors hover:text-white/80 ${
                   isActive('/') ? '' : 'text-muted-foreground'
                 }`}
                 aria-current={isActive('/') ? 'page' : undefined}
               >
                 Home
               </Link>
-            )}
 
-            <Link
-              to="/courses"
-              className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                isActive('/courses') ? '' : 'text-muted-foreground'
-              }`}
-              aria-current={isActive('/courses') ? 'page' : undefined}
-            >
-              Courses
-            </Link>
-
-            {isAuthenticated && roles.includes('STUDENT') && (
               <Link
-                to="/enrolment"
+                to="/courses"
                 className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                  isActive('/enrolment') ? '' : 'text-muted-foreground'
+                  isActive('/courses') ? '' : 'text-muted-foreground'
                 }`}
-                aria-current={isActive('/enrolment') ? 'page' : undefined}
+                aria-current={isActive('/courses') ? 'page' : undefined}
               >
-                My Enrollments
+                Courses
               </Link>
-            )}
 
-            {isInstructor && (
-              <Link
-                to="/ai-quiz"
-                className={`text-sm font-medium transition-colors hover:text-white/80 ${
-                  isActive('/ai-quiz') ? '' : 'text-muted-foreground'
-                }`}
-                aria-current={isActive('/ai-quiz') ? 'page' : undefined}
-              >
-                AI Quiz
-              </Link>
-            )}
-          </div>
+              {isAuthenticated && roles.includes('STUDENT') && (
+                <Link
+                  to="/enrolment"
+                  className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                    isActive('/enrolment') ? '' : 'text-muted-foreground'
+                  }`}
+                  aria-current={isActive('/enrolment') ? 'page' : undefined}
+                >
+                  My Enrollments
+                </Link>
+              )}
+
+              {isInstructor && (
+                <Link
+                  to="/ai-quiz"
+                  className={`text-sm font-medium transition-colors hover:text-white/80 ${
+                    isActive('/ai-quiz') ? '' : 'text-muted-foreground'
+                  }`}
+                  aria-current={isActive('/ai-quiz') ? 'page' : undefined}
+                >
+                  AI Quiz
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Side: Actions & Profile */}
@@ -143,9 +133,7 @@ const HeaderComponent: React.FC<Props> = ({ showAdmin }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to={isAdmin ? '/' : '/dashboard'}>
-                    Dashboard
-                  </Link>
+                  <Link to={'/dashboard'}>Dashboard</Link>
                 </DropdownMenuItem>
                 {roles.includes('STUDENT') && (
                   <DropdownMenuItem asChild className="cursor-pointer">

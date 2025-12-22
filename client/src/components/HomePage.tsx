@@ -112,14 +112,11 @@ const HomePage: React.FC = () => {
               </div>
 
               {/* Admin Dashboard Access Section */}
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-8 text-center">
+              <div className="flex flex-col items-center rounded-lg border border-blue-200 bg-blue-50 p-8 text-center">
                 <p className="mb-6 text-lg text-gray-700">
                   Access the full admin dashboard to manage users, courses, and system settings.
                 </p>
-                <Button
-                  onClick={() => navigate('/admin-dashboard')}
-                  className="flex items-center gap-2"
-                >
+                <Button onClick={() => navigate('/dashboard')} className="flex items-center gap-2">
                   Go to Admin Dashboard
                 </Button>
               </div>
