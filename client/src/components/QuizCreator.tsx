@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
@@ -18,7 +18,9 @@ import { Spinner } from '@/components/ui/spinner';
 import api from '@/services/axiosClient';
 import HeaderComponent from '@/components/HeaderComponent';
 import { useLocation } from 'react-router-dom';
-import { getCourses, type Course } from '@/services/courseService';
+import { getCoursesByInstructor, type Course } from '@/services/courseService';
+import { useAuth } from '@/contexts/AuthProvider';
+import { decodeJwtPayload } from '@/lib/utils';
 
 type QuizTarget = 'course' | 'lesson';
 
@@ -106,6 +108,12 @@ async function createQuiz(payload: QuizFormValues) {
 }
 
 export default function QuizCreator() {
+  const { accessToken } = useAuth();
+  const instructorId = useMemo(() => {
+    const payload = decodeJwtPayload(accessToken);
+    const id = payload?.userId ?? payload?.sub ?? payload?.id ?? '';
+    return id ? String(id) : '';
+  }, [accessToken]);
   const queryClient = useQueryClient();
 
   const {
@@ -145,8 +153,9 @@ export default function QuizCreator() {
   const { fields, append, remove } = useFieldArray({ control, name: 'questions' });
 
   const coursesQuery = useQuery({
-    queryKey: ['quiz-courses'],
-    queryFn: () => getCourses(1, 50),
+    queryKey: ['quiz-courses', instructorId],
+    queryFn: () => getCoursesByInstructor(instructorId),
+    enabled: !!instructorId,
   });
 
   // Prefill from location state (used by AI Quiz Creator redirect)

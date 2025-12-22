@@ -29,6 +29,7 @@ describe('Quiz Routes', () => {
   let instructor: any;
   let student: any;
   let authTokenStudent: string;
+  let authTokenInstructor: string;
 
   beforeEach(async () => {
     await quizModel.deleteMany({});
@@ -43,6 +44,11 @@ describe('Quiz Routes', () => {
     // jwt token for student
     const secret = process.env.ACCESS_TOKEN_SECRET || 'test-secret';
     authTokenStudent = jwt.sign({ userId: String(student._id), role: Role.STUDENT }, secret, {
+      expiresIn: '1h',
+    });
+
+    // jwt token for instructor
+    authTokenInstructor = jwt.sign({ userId: String(instructor._id), role: Role.INSTRUCTOR }, secret, {
       expiresIn: '1h',
     });
 
@@ -83,13 +89,19 @@ describe('Quiz Routes', () => {
   });
 
   it('GET /api/quizzes returns all quizzes', async () => {
-    const res = await request(app).get('/api/quiz').expect(200);
+    const res = await request(app)
+      .get('/api/quiz')
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
+      .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
   });
 
   it('GET /api/quizzes/:quizId returns a quiz', async () => {
-    const res = await request(app).get('/api/quiz/quiz1').expect(200);
+    const res = await request(app)
+      .get('/api/quiz/quiz1')
+      .set('Authorization', `Bearer ${authTokenStudent}`)
+      .expect(200);
     expect(res.body).toHaveProperty('id', 'quiz1');
     expect(res.body).toHaveProperty('title', 'Sample Quiz');
   });
@@ -105,7 +117,11 @@ describe('Quiz Routes', () => {
       ],
       order: 2,
     };
-    const res = await request(app).post('/api/quiz').send(payload).expect(201);
+    const res = await request(app)
+      .post('/api/quiz')
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
+      .send(payload)
+      .expect(201);
     expect(res.body).toHaveProperty('id', 'quiz2');
     expect(res.body).toHaveProperty('title', 'New Quiz');
   });
@@ -121,6 +137,7 @@ describe('Quiz Routes', () => {
     });
     const res = await request(app)
       .put(`/api/quiz/${created._id}`)
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
       .send({ title: 'New Title' })
       .expect(200);
     expect(res.body).toHaveProperty('id', 'quizUpdate');
@@ -138,6 +155,7 @@ describe('Quiz Routes', () => {
     });
     const res = await request(app)
       .put(`/api/quiz/${created.id}`)
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
       .send({ title: 'New Title By Id' })
       .expect(200);
     expect(res.body).toHaveProperty('id', 'quizById');
@@ -153,13 +171,17 @@ describe('Quiz Routes', () => {
       questions: [{ id: 'q1', type: 'single', text: 't', correctAnswers: ['a'] }],
       order: 4,
     });
-    const res = await request(app).delete(`/api/quiz/${created._id}`).expect(200);
+    const res = await request(app)
+      .delete(`/api/quiz/${created._id}`)
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
+      .expect(200);
     expect(res.body).toHaveProperty('message', 'Quiz deleted successfully');
   });
 
   it('GET /api/quizzes/instructor/:instructorId returns quizzes for instructor', async () => {
     const res = await request(app)
       .get(`/api/quiz/instructor/${String(instructor._id)}`)
+      .set('Authorization', `Bearer ${authTokenInstructor}`)
       .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
