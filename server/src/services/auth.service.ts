@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import Role from '../enums/user.enum';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
@@ -134,8 +136,21 @@ const authService: IAuthService = {
     // Send email with reset link
     // Use path param so it matches client route `/reset-password/:token`
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-    const emailText = `You requested a password reset. Click the link to reset your password: ${resetLink}`;
-    await sendEmail(email, 'Password Reset Request', emailText);
+    const emailText =
+      'You requested a password reset.\n\n' +
+      `Use the link below to choose a new password: ${resetLink}\n` +
+      'If you did not request this, you can safely ignore this email. The link is valid for 1 hour.';
+
+    let emailHtml: string | undefined;
+    try {
+      const templatePath = path.resolve(__dirname, '..', '..', 'templates', 'password-reset.html');
+      const template = await fs.readFile(templatePath, 'utf8');
+      emailHtml = template.replace(/{{RESET_LINK}}/g, resetLink);
+    } catch (err) {
+      console.error('Failed to load password reset email template', err);
+    }
+
+    await sendEmail(email, 'Password Reset Request', emailText, emailHtml);
     return { message: 'Password reset link has been sent to your email' };
   },
 
