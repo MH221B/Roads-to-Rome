@@ -3,7 +3,6 @@ import RegisterCard from '@/components/RegisterCard';
 import HomePage from '@/components/HomePage';
 import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
-import AdminGuard from '@/components/AdminGuard';
 import Forbidden from '@/components/Forbidden';
 import AdminCoursesPage from '@/components/AdminCoursesPage';
 import AdminCourseReview from '@/components/AdminCourseReview';
@@ -23,7 +22,6 @@ import EditCourse from './components/EditCourse';
 import QuizPage from './components/QuizPage';
 import QuizCreator from './components/QuizCreator';
 import QuizEditor from './components/QuizEditor';
-import InstructorDashboard from './components/InstructorDashboard';
 import AIQuizCreator from './components/AIQuizCreator';
 import { decodeJwtPayload } from './lib/utils';
 import { useAuth } from './contexts/AuthProvider';
@@ -57,25 +55,25 @@ function App() {
           <Route
             path="/admin-dashboard"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminPage />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route
             path="/course"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminCoursesPage />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route
             path="/course/:id"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminCourseReview />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route path="/admin/courses" element={<Navigate to="/course" replace />} />
@@ -145,9 +143,9 @@ function App() {
           <Route
             path="/admin"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminPage />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route path="/403" element={<Forbidden />} />
