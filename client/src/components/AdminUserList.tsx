@@ -23,8 +23,14 @@ import {
   updateUserBudget,
 } from '@/services/adminService';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useAuth } from '@/contexts/AuthProvider';
+import { decodeJwtPayload } from '@/lib/utils';
 
 const AdminUserList: React.FC = () => {
+  const { accessToken } = useAuth();
+  const payload = React.useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
+  const currentUserId = payload?.sub ?? payload?.id ?? payload?.userId ?? null;
+
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = React.useState<string | null>(null);
@@ -303,7 +309,7 @@ const AdminUserList: React.FC = () => {
                       <th className="px-4 py-3 text-left font-semibold">Created</th>
                       <th className="px-4 py-3 text-left font-semibold">Status</th>
                       <th className="px-4 py-3 text-left font-semibold">Actions</th>
-                      <th className='h-4 w-4'></th>
+                      <th className="h-4 w-4"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -324,7 +330,7 @@ const AdminUserList: React.FC = () => {
                               onValueChange={(newRole) =>
                                 handleRoleChange(user.id, newRole as UserRole)
                               }
-                              disabled={updatingUserId === user.id}
+                              disabled={updatingUserId === user.id || user.id === currentUserId}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />
@@ -335,6 +341,9 @@ const AdminUserList: React.FC = () => {
                                 <SelectItem value={UserRoles.STUDENT}>Student</SelectItem>
                               </SelectContent>
                             </Select>
+                            {user.id === currentUserId && (
+                              <span className="text-xs text-slate-500">(You)</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -345,15 +354,20 @@ const AdminUserList: React.FC = () => {
                               value={budgetEdits[user.id] ?? String(user.budget ?? 0)}
                               onChange={(e) => handleBudgetChange(user.id, e.target.value)}
                               className="max-w-[120px]"
+                              disabled={user.id === currentUserId}
                             />
                             <span className="text-xs text-slate-500">coins</span>
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={budgetSavingId === user.id}
+                              disabled={budgetSavingId === user.id || user.id === currentUserId}
                               onClick={() => handleBudgetSave(user.id)}
                             >
-                              {budgetSavingId === user.id ? <Spinner className="h-4 w-4" /> : 'Save'}
+                              {budgetSavingId === user.id ? (
+                                <Spinner className="h-4 w-4" />
+                              ) : (
+                                'Save'
+                              )}
                             </Button>
                           </div>
                         </td>
@@ -368,7 +382,7 @@ const AdminUserList: React.FC = () => {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => handleToggleLock(user.id, user.locked)}
-                            disabled={updatingUserId === user.id}
+                            disabled={updatingUserId === user.id || user.id === currentUserId}
                             title={user.locked ? 'Unlock account' : 'Lock account'}
                           >
                             {updatingUserId === user.id ? (
