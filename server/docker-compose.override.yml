@@ -1,13 +1,60 @@
 services:
+  # --- PISTON SERVICE ---
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: piston
+    restart: unless-stopped
+    privileged: true # REQUIRED for cgroup v2 and isolation
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston-packages:/piston/packages # Persist installed languages here
+    networks:
+      - piston-network
+
+  # --- PISTON INIT SERVICE ---
+  # This container runs once to install languages, then exits.
+  piston-init:
+    image: curlimages/curl
+    container_name: piston-init
+    restart: "no"
+    depends_on:
+      - piston
+    networks:
+      - piston-network
+    command: >
+      /bin/sh -c "
+      echo 'Waiting for Piston API to be ready...';
+      while ! curl -s http://piston:2000/api/v2/runtimes > /dev/null; do
+        sleep 2;
+      done;
+      echo 'Piston is UP! Installing Python 3.10.0...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"python\", \"version\": \"3.10.0\"}';
+      echo 'Installing GCC 10.2.0 (C++)...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"gcc\", \"version\": \"10.2.0\"}';
+      echo 'All packages installed successfully.';
+      "
+  # --- DEVELOPMENT OVERRIDES ---
   server:
     container_name: roads-to-rome-server-dev
     command: npm run dev
+    depends_on:
+      - piston
     env_file:
       - .env
     environment:
       NODE_ENV: development
+      PISTON_URL: http://piston:2000
     ports:
       - "3000:3000"
     volumes:
       - ./:/app:delegated
       - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - piston-network
+volumes:
+  piston-packages: # Persist installed languages for piston
+networks:
+  piston-network:
+    driver: bridge

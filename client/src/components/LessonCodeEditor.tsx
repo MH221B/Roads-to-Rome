@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { api } from '../services/axiosClient';
 
 const languageOptions = [
   { value: 'python', label: 'Python 3' },
@@ -55,11 +56,11 @@ export default function LessonCodeEditor({
   const handleRun = async () => {
     setIsRunning(true);
     try {
-      const result = await onRun?.({ code, language });
-      const message = typeof result === 'string' && result.length > 0 ? result : 'Execution submitted.';
+      const response = await api.post('/api/code/runCodeSandbox', { code, language });
+      const message = response.data?.output || response.data?.message || 'Submission successful.';
       setOutput(message);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to execute code.';
+      const message = err instanceof Error ? err.message : 'Failed to submit code.';
       setOutput(message);
     } finally {
       setIsRunning(false);
@@ -91,7 +92,7 @@ export default function LessonCodeEditor({
             disabled={isRunning}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            {isRunning ? 'Running…' : 'Run'}
+            {isRunning ? 'Submitting…' : 'Submit'}
           </Button>
         </div>
       </div>
