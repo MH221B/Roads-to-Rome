@@ -199,6 +199,17 @@ export default function LessonViewer() {
     staleTime: 1000 * 60 * 5,
   });
 
+  type LessonEditorLanguage =
+    | 'python'
+    | 'cpp'
+    | 'javascript'
+    | 'typescript'
+    | 'java'
+    | 'csharp'
+    | 'go'
+    | 'rust'
+    | 'sqlite3';
+
   const editorStarterCode = useMemo(() => {
     const lessonName = lesson?.title || 'Lesson';
     return {
@@ -208,7 +219,7 @@ export default function LessonViewer() {
   }, [lesson?.title]);
 
   const runLessonCode = useCallback(
-    async ({ code, language }: { code: string; language: 'python' | 'cpp' }) => {
+    async ({ code, language }: { code: string; language: LessonEditorLanguage }) => {
       const normalized = language.toUpperCase();
       return `Submitted ${normalized} solution for ${lesson?.title || 'this lesson'}. Connect the run endpoint to execute.`;
     },
@@ -251,7 +262,7 @@ export default function LessonViewer() {
   useEffect(() => {
     // Clear success/error state when switching lessons
     completeLesson.reset();
-  }, [lessonId]);
+  }, [completeLesson, lessonId]);
 
   // Initial Loading State (Only for Course Structure)
   if (isCourseLoading) {
