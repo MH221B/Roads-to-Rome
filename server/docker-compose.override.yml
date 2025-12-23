@@ -1,13 +1,83 @@
 services:
+  # --- PISTON SERVICE ---
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: piston
+    restart: unless-stopped
+    privileged: true # REQUIRED for cgroup v2 and isolation
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston-packages:/piston/packages # Persist installed languages here
+    networks:
+      - piston-network
+
+  # --- PISTON INIT SERVICE ---
+  # This container runs once to install languages, then exits.
+  piston-init:
+    image: curlimages/curl
+    container_name: piston-init
+    restart: "no"
+    depends_on:
+      - piston
+    networks:
+      - piston-network
+    command: >
+      /bin/sh -c "
+      echo 'Waiting for Piston API to be ready...';
+      while ! curl -s http://piston:2000/api/v2/runtimes > /dev/null; do
+        sleep 2;
+      done;
+      echo 'Piston API is ready. Installing languages...';
+      echo 'Installing Python 3.10.0 (Latest Available)...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"python\", \"version\": \"3.10.0\"}';
+      
+      echo 'Installing GCC 10.2.0 (C++)...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"gcc\", \"version\": \"10.2.0\"}';
+      
+      echo 'Installing Node.js 18.15.0...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"node\", \"version\": \"18.15.0\"}';
+      
+      echo 'Installing TypeScript 5.0.3...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"typescript\", \"version\": \"5.0.3\"}';
+      
+      echo 'Installing Java 15.0.2...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"java\", \"version\": \"15.0.2\"}';
+      
+      echo 'Installing C# (Mono 6.12.0)...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"mono\", \"version\": \"6.12.0\"}';
+      
+      echo 'Installing Go 1.16.2...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"go\", \"version\": \"1.16.2\"}';
+      
+      echo 'Installing Rust 1.50.0...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"rust\", \"version\": \"1.50.0\"}';
+      
+      echo 'Installing SQLite 3.36.0...';
+      curl -s -X POST http://piston:2000/api/v2/packages -H 'Content-Type: application/json' -d '{\"language\": \"sqlite3\", \"version\": \"3.36.0\"}'; 
+      echo 'All packages installed successfully.';
+      "
+  # --- DEVELOPMENT OVERRIDES ---
   server:
     container_name: roads-to-rome-server-dev
     command: npm run dev
+    depends_on:
+      - piston
     env_file:
       - .env
     environment:
       NODE_ENV: development
+      PISTON_URL: http://piston:2000
     ports:
       - "3000:3000"
     volumes:
       - ./:/app:delegated
       - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - piston-network
+volumes:
+  piston-packages: # Persist installed languages for piston
+networks:
+  piston-network:
+    driver: bridge
