@@ -23,6 +23,8 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { CiCircleRemove } from 'react-icons/ci';
+import { getCourses } from '@/services/courseService';
+import { extractTagsFromCourses } from '@/lib/utils';
 
 export interface CourseFormValues {
   title: string;
@@ -43,6 +45,8 @@ interface CourseFormProps {
   isLoading?: boolean;
   isEditMode?: boolean;
   existingThumbnailUrl?: string | null;
+  onSubmitForReview?: (data: CourseFormValues) => void;
+  isSubmittingForReview?: boolean;
 }
 
 const CourseForm: React.FC<CourseFormProps> = ({
@@ -52,6 +56,8 @@ const CourseForm: React.FC<CourseFormProps> = ({
   isLoading,
   isEditMode,
   existingThumbnailUrl,
+  onSubmitForReview,
+  isSubmittingForReview,
 }) => {
   const navigate = useNavigate();
   const defaultHandleCancel = () => navigate('/');
@@ -81,13 +87,31 @@ const CourseForm: React.FC<CourseFormProps> = ({
     typeof defaultValues?.thumbnail === 'string' ? (defaultValues?.thumbnail as string) : null
   );
   const [deletedThumbnailUrl, setDeletedThumbnailUrl] = React.useState<string | null>(null);
+  const [allTagsFromDb, setAllTagsFromDb] = React.useState<string[]>([]);
 
   const selectedTags = watch('tags') ?? [];
 
-  const allTags = React.useMemo(
-    () => ['web development', 'javascript', 'react', 'node', 'typescript', 'css', 'html'],
-    []
-  );
+  // Fetch all tags from database on component mount
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchTags = async () => {
+      try {
+        const courses = await getCourses(1, 1000);
+        if (!mounted) return;
+        setAllTagsFromDb(extractTagsFromCourses(courses));
+      } catch (e) {
+        // Fallback to empty array if fetch fails
+        if (mounted) {
+          setAllTagsFromDb([]);
+        }
+      }
+    };
+
+    fetchTags();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -124,7 +148,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
     const val = (q ?? tagQuery).trim();
     if (!val) return;
 
-    const match = allTags.find((t) => t.toLowerCase() === val.toLowerCase());
+    const match = allTagsFromDb.find((t) => t.toLowerCase() === val.toLowerCase());
     const tagToAdd = match ?? val;
 
     if (!selectedTags.includes(tagToAdd)) {
@@ -227,7 +251,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
                     {tagQuery && (
                       <div className="absolute top-full mt-1 w-full rounded-md border bg-white p-2 shadow-lg dark:bg-gray-950">
                         <div className="flex flex-wrap gap-2">
-                          {allTags
+                          {allTagsFromDb
                             .filter((t) => t.toLowerCase().includes(tagQuery.trim().toLowerCase()))
                             .slice(0, 8)
                             .map((suggestion) => (
@@ -243,7 +267,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
                                 {suggestion}
                               </button>
                             ))}
-                          {allTags.filter((t) =>
+                          {allTagsFromDb.filter((t) =>
                             t.toLowerCase().includes(tagQuery.trim().toLowerCase())
                           ).length === 0 && (
                             <span className="text-muted-foreground p-1 text-xs">
@@ -321,25 +345,6 @@ const CourseForm: React.FC<CourseFormProps> = ({
                       )}
                     />
                   </div>
-
-                  <div>
-                    <Label className="mb-1 block text-sm font-medium">Status</Label>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value as string}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -356,6 +361,16 @@ const CourseForm: React.FC<CourseFormProps> = ({
                     ? 'Save'
                     : 'Create'}
               </Button>
+              {isEditMode && onSubmitForReview && defaultValues?.status === 'draft' && (
+                <Button
+                  type="button"
+                  onClick={() => onSubmitForReview(watch() as CourseFormValues)}
+                  disabled={Boolean(isSubmittingForReview)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isSubmittingForReview ? 'Submitting...' : 'Submit for Review'}
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>

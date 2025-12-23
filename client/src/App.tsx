@@ -3,7 +3,6 @@ import RegisterCard from '@/components/RegisterCard';
 import HomePage from '@/components/HomePage';
 import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
-import AdminGuard from '@/components/AdminGuard';
 import Forbidden from '@/components/Forbidden';
 import AdminCoursesPage from '@/components/AdminCoursesPage';
 import AdminCourseReview from '@/components/AdminCourseReview';
@@ -23,11 +22,7 @@ import EditCourse from './components/EditCourse';
 import QuizPage from './components/QuizPage';
 import QuizCreator from './components/QuizCreator';
 import QuizEditor from './components/QuizEditor';
-import InstructorDashboard from './components/InstructorDashboard';
 import AIQuizCreator from './components/AIQuizCreator';
-import { decodeJwtPayload } from './lib/utils';
-import { useAuth } from './contexts/AuthProvider';
-import { useState, useMemo, useEffect } from 'react';
 
 const AdminCourseLegacyRedirect = () => {
   const { id } = useParams();
@@ -35,47 +30,25 @@ const AdminCourseLegacyRedirect = () => {
 };
 
 function App() {
-  const { accessToken } = useAuth();
-  const [roles, setRoles] = useState<string[] | null>(null);
-  const [isInstructor, setIsInstructor] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
-  useEffect(() => {
-    const rawRoles = payload?.roles ?? payload?.role;
-    const userRoles: string[] = (
-      Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []
-    ).map((r) => String(r).toUpperCase());
-    setIsInstructor(userRoles.includes('INSTRUCTOR'));
-    setIsAdmin(userRoles.includes('ADMIN'));
-    setRoles(userRoles);
-  }, [payload, setIsInstructor, setIsAdmin, setRoles]);
   return (
     <Router>
       <div className="flex grow flex-col">
-        <Routes>  
+        <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route
-            path="/admin-dashboard"
-            element={
-              <AdminGuard>
-                <AdminPage />
-              </AdminGuard>
-            }
-          />
           <Route
             path="/course"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminCoursesPage />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route
             path="/course/:id"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminCourseReview />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route path="/admin/courses" element={<Navigate to="/course" replace />} />
@@ -84,48 +57,82 @@ function App() {
           <Route path="/signup" element={<RegisterCard />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          {isInstructor ? (
-            <Route
-              path="/dashboard"
-              element={
-                <RequireRole roles="INSTRUCTOR">
-                  <InstructorDashboard />
-                </RequireRole>
-              }
-            />
-          ) : (
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <Dashboard />
-                </RequireAuth>
-              }
-            />
-          )}
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
           <Route path="/courses" element={<CourseList />} />
-          <Route path="/courses/create" element={<RequireRole roles="INSTRUCTOR"><CreateCourse /></RequireRole>} />
-          <Route path="/courses/:id/edit" element={<RequireRole roles="INSTRUCTOR"><EditCourse /></RequireRole>} />
-          <Route path="/enrolment" element={<RequireAuth><Enrolment /></RequireAuth>} />
+          <Route
+            path="/courses/create"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <CreateCourse />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/courses/:id/edit"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <EditCourse />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/enrolment"
+            element={
+              <RequireAuth>
+                <Enrolment />
+              </RequireAuth>
+            }
+          />
           <Route path="/courses/:id" element={<CourseDetail />} />
-          <Route path="/courses/:courseId/lessons/create" element={<RequireRole roles="INSTRUCTOR"><CreateLesson /></RequireRole>} />
-          <Route path="/courses/:courseId/lessons/:lessonId/edit" element={<RequireRole roles="INSTRUCTOR"><EditLesson /></RequireRole>} />
-          <Route path="/courses/:courseId/lessons/:lessonId" element={<RequireAuth><LessonViewer /></RequireAuth>} />
+          <Route
+            path="/courses/:courseId/lessons/create"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <CreateLesson />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/courses/:courseId/lessons/:lessonId/edit"
+            element={
+              <RequireRole roles="INSTRUCTOR">
+                <EditLesson />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/courses/:courseId/lessons/:lessonId"
+            element={
+              <RequireAuth>
+                <LessonViewer />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/admin"
             element={
-              <AdminGuard>
+              <RequireRole roles="ADMIN">
                 <AdminPage />
-              </AdminGuard>
+              </RequireRole>
             }
           />
           <Route path="/403" element={<Forbidden />} />
-          <Route path="/courses/:courseId/quiz/:quizId" element={
-            <RequireAuth >
-              <QuizPage /> 
-            </RequireAuth>
-            // need authentication to access quiz
-            } />
+          <Route
+            path="/courses/:courseId/quiz/:quizId"
+            element={
+              <RequireAuth>
+                <QuizPage />
+              </RequireAuth>
+              // need authentication to access quiz
+            }
+          />
           <Route
             path="/quizzes/new"
             element={

@@ -24,7 +24,8 @@ const CreateCoursePage: React.FC = () => {
       if (typeof data.is_premium !== 'undefined') {
         form.append('is_premium', String(Boolean(data.is_premium)));
       }
-      if (data.status) form.append('status', data.status);
+      // Auto-set status to 'draft' for new courses
+      form.append('status', 'draft');
 
       // Only append file if it's a File object
       if (data.thumbnail && typeof data.thumbnail !== 'string') {
@@ -66,7 +67,13 @@ const CreateCoursePage: React.FC = () => {
 
   const isLoading = (createMutation as any).isLoading as boolean;
 
-  return <CourseForm onSubmit={(data) => createMutation.mutate(data)} isLoading={isLoading} />;
+  return (
+    <CourseForm
+      onSubmit={(data) => createMutation.mutate(data)}
+      isLoading={isLoading}
+      isEditMode={false}
+    />
+  );
 };
 
 export default CreateCoursePage;

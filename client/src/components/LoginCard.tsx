@@ -55,7 +55,7 @@ const LoginCard = () => {
     onError: (err: any) => {
       const message = err?.response?.data?.message ?? err?.message ?? 'Login failed';
       Swal.fire({
-        title: 'Login Error',
+        title: err?.message?.includes('locked') ? 'Account Locked' : 'Login Error',
         text: message,
         icon: 'error',
         confirmButtonText: 'OK',
