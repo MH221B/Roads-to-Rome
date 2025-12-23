@@ -14,7 +14,7 @@ const languageOptions = [
   { value: 'go', label: 'Go' },
   { value: 'rust', label: 'Rust' },
   { value: 'sqlite3', label: 'SQLite' },
-] as const;
+];
 
 type SupportedLanguage = (typeof languageOptions)[number]['value'];
 type StarterCode = string | Partial<Record<SupportedLanguage, string>>;
