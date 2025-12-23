@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { CiCircleRemove } from 'react-icons/ci';
+import { FaDollarSign } from 'react-icons/fa';
 import { getCourses } from '@/services/courseService';
 import { extractTagsFromCourses } from '@/lib/utils';
 
@@ -34,6 +36,7 @@ export interface CourseFormValues {
   tags: string[];
   thumbnail?: File | string | null;
   is_premium?: boolean;
+  price?: number;
   status?: string;
   deletedThumbnailUrl?: string | null;
 }
@@ -78,6 +81,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
       tags: defaultValues?.tags ?? [],
       thumbnail: defaultValues?.thumbnail ?? null,
       is_premium: defaultValues?.is_premium ?? false,
+      price: defaultValues?.price ?? 0,
       status: defaultValues?.status ?? 'published',
     },
   });
@@ -165,6 +169,17 @@ const CourseForm: React.FC<CourseFormProps> = ({
   };
 
   const submit = (data: CourseFormValues) => {
+    // Check if premium course has valid price
+    if (data.is_premium && (!data.price || data.price <= 0)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Price',
+        text: 'Premium courses must have a price greater than 0',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+
     // if user typed a tag but didn't hit enter, add it
     let finalTags = data.tags ?? [];
     if (tagQuery.trim()) {
@@ -329,23 +344,43 @@ const CourseForm: React.FC<CourseFormProps> = ({
 
               <div>
                 <Label className="mb-1 block text-sm font-medium">Access</Label>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Controller
-                      name="is_premium"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={Boolean(field.value)}
-                            onCheckedChange={(val: any) => field.onChange(Boolean(val))}
-                          />
-                          <span className="text-sm">Premium (paid)</span>
+                <div className="flex items-center gap-4">
+                  <Controller
+                    name="is_premium"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={Boolean(field.value)}
+                          onCheckedChange={(val: any) => field.onChange(Boolean(val))}
+                        />
+                        <span className="text-sm">Premium (paid)</span>
+                      </div>
+                    )}
+                  />
+                  {watch('is_premium') && (
+                    <div className="flex flex-1 items-center gap-2">
+                      <div className="relative flex-1">
+                        <div className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-500">
+                          <FaDollarSign size={16} />
                         </div>
-                      )}
-                    />
-                  </div>
+                        <Input
+                          {...register('price', {
+                            min: { value: 0, message: 'Price must be 0 or greater' },
+                            valueAsNumber: true,
+                          })}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {errors.price && watch('is_premium') && (
+                  <span className="mt-1 block text-xs text-red-500">{errors.price.message}</span>
+                )}
               </div>
             </div>
           </CardContent>
