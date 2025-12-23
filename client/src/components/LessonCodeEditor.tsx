@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -62,11 +62,35 @@ export default function LessonCodeEditor({
   const [code, setCode] = useState<string>(() => getTemplateForLanguage(initialLanguage, starterCode));
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('Run code to see output.');
+  const [outputHeight, setOutputHeight] = useState(200);
+  const [isResizing, setIsResizing] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [startHeight, setStartHeight] = useState(200);
 
   useEffect(() => {
     setCode(getTemplateForLanguage(language, starterCode));
     setOutput('Run code to see output.');
   }, [language, starterCode]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const delta = startY - event.clientY;
+      const nextHeight = Math.min(Math.max(startHeight + delta, 120), 640);
+      setOutputHeight(nextHeight);
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, startHeight, startY]);
 
   const languageLabel = useMemo(
     () => languageOptions.find((opt) => opt.value === language)?.label || language,
@@ -93,8 +117,15 @@ export default function LessonCodeEditor({
     onReset?.();
   };
 
+  const handleResizeStart = (event: ReactMouseEvent<HTMLDivElement>) => {
+    setIsResizing(true);
+    setStartY(event.clientY);
+    setStartHeight(outputHeight);
+    event.preventDefault();
+  };
+
   return (
-    <Card className="h-full border-l border-slate-200 bg-white p-0 shadow-none">
+    <Card className="flex h-full flex-col border-l border-slate-200 bg-white p-0 shadow-none">
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <div className="flex min-w-0 flex-col">
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Interactive</span>
@@ -135,32 +166,45 @@ export default function LessonCodeEditor({
         <div className="ml-auto text-[11px] uppercase tracking-[0.08em] text-slate-500">Monaco Editor</div>
       </div>
 
-      <div className="flex-1 overflow-hidden bg-slate-950">
-        <Editor
-          height="100%"
-          language={language}
-          value={code}
-          theme="vs-dark"
-          onChange={(value) => setCode(value ?? '')}
-          options={{
-            fontSize: 14,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            smoothScrolling: true,
-            tabSize: 2,
-          }}
-        />
-      </div>
-
-      <div className="border-t border-slate-200 bg-slate-900 px-4 py-3 text-slate-50">
-        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-slate-400">
-          <span>Output</span>
-          <span className="text-slate-300">{languageLabel}</span>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 min-h-0 overflow-hidden bg-slate-950">
+          <Editor
+            height="100%"
+            language={language}
+            value={code}
+            theme="vs-dark"
+            onChange={(value) => setCode(value ?? '')}
+            options={{
+              fontSize: 14,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              smoothScrolling: true,
+              tabSize: 2,
+            }}
+          />
         </div>
-        <pre className="mt-2 max-h-40 overflow-auto rounded-md bg-black/50 px-3 py-2 text-xs text-slate-100">
-          {output}
-        </pre>
+
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize output pane"
+          className="h-1 w-full cursor-row-resize bg-slate-200 hover:bg-slate-300"
+          onMouseDown={handleResizeStart}
+        />
+
+        <div
+          className="border-t border-slate-200 bg-slate-900 px-4 py-3 text-slate-50"
+          style={{ flex: `0 0 ${outputHeight}px`, minHeight: 120, maxHeight: 640 }}
+        >
+          <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-slate-400">
+            <span>Output</span>
+            <span className="text-slate-300">{languageLabel}</span>
+          </div>
+          <pre className="mt-2 h-[calc(100%-18px)] overflow-auto rounded-md bg-black/50 px-3 py-2 text-xs text-slate-100">
+            {output}
+          </pre>
+        </div>
       </div>
     </Card>
   );

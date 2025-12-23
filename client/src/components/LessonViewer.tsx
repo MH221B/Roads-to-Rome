@@ -219,7 +219,7 @@ export default function LessonViewer() {
   }, [lesson?.title]);
 
   const runLessonCode = useCallback(
-    async ({ code, language }: { code: string; language: LessonEditorLanguage }) => {
+    async ({ code, language }: { code: string; language: string }) => {
       const normalized = language.toUpperCase();
       return `Submitted ${normalized} solution for ${lesson?.title || 'this lesson'}. Connect the run endpoint to execute.`;
     },
