@@ -7,6 +7,13 @@ import { api } from '../services/axiosClient';
 const languageOptions = [
   { value: 'python', label: 'Python 3' },
   { value: 'cpp', label: 'C++17' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'java', label: 'Java 17' },
+  { value: 'csharp', label: 'C# (Mono)' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'sqlite3', label: 'SQLite' },
 ] as const;
 
 type SupportedLanguage = (typeof languageOptions)[number]['value'];
@@ -23,6 +30,19 @@ interface LessonCodeEditorProps {
 const defaultTemplates: Record<SupportedLanguage, string> = {
   python: '# Write your solution here\n\ndef solve(input: str):\n    return input\n\nprint(solve("sample input"))\n',
   cpp: `// Write your solution here\n#include <bits/stdc++.h>\nusing namespace std;\n\nstring solve(const string &input) {\n  return input;\n}\n\nint main() {\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  cout << solve("sample input") << "\\n";\n  return 0;\n}\n`,
+  javascript:
+    '// Write your solution here\nfunction solve(input) {\n  return input;\n}\n\nconsole.log(solve("sample input"));\n',
+  typescript:
+    '// Write your solution here\nfunction solve(input: string): string {\n  return input;\n}\n\nconsole.log(solve("sample input"));\n',
+  java: `// Write your solution here\nimport java.io.*;\nimport java.util.*;\n\npublic class Main {\n  private static String solve(String input) {\n    return input;\n  }\n\n  public static void main(String[] args) throws Exception {\n    System.out.println(solve("sample input"));\n  }\n}\n`,
+  csharp:
+    '// Write your solution here\nusing System;\n\nclass Program {\n  static string Solve(string input) {\n    return input;\n  }\n\n  static void Main() {\n    Console.WriteLine(Solve("sample input"));\n  }\n}\n',
+  go:
+    '// Write your solution here\npackage main\n\nimport "fmt"\n\nfunc solve(input string) string {\n  return input\n}\n\nfunc main() {\n  fmt.Println(solve("sample input"))\n}\n',
+  rust:
+    '// Write your solution here\nfn solve(input: &str) -> String {\n  input.to_string()\n}\n\nfn main() {\n  println!("{}", solve("sample input"));\n}\n',
+  sqlite3:
+    "-- Write your SQL here\nSELECT 'sample output' AS result;\n",
 };
 
 const getTemplateForLanguage = (language: SupportedLanguage, starterCode?: StarterCode) => {

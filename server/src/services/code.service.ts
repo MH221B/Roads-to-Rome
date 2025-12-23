@@ -1,35 +1,43 @@
-import { time } from "console";
-
 interface ICodeService {
   runCode(code: string, language: string, stdin?: string): Promise<{ message: string; output?: string }>;
 }
 
-interface PistonStage {
-  stdout: string;
-  stderr: string;
-  output: string;
-  code: number;
-  signal: string | null;
-  status?: string; // 'TO' (Timeout), 'SG' (Signal), 'RE' (Runtime Error), etc.
-}
+type RuntimeSpec = { language: string; version: string };
 
-interface PistonResult {
-  language: string;
-  version: string;
-  run: PistonStage;
-  compile?: PistonStage;
-}
+const RUNTIMES: Record<string, RuntimeSpec> = {
+  javascript: { language: 'javascript', version: '18.15.0' }, // Uses Node.js
+  typescript: { language: 'typescript', version: '5.0.3' }, // Uses ts-node
+  python: { language: 'python', version: '3.10.0' }, // Uses CPython
+  cpp: { language: 'cpp', version: '10.2.0' }, // Uses gcc
+  java: { language: 'java', version: '15.0.2' }, // Uses OpenJDK
+  csharp: { language: 'csharp', version: '6.12.0' }, // Uses Mono
+  go: { language: 'go', version: '1.16.2' },
+  rust: { language: 'rust', version: '1.50.0' },
+  sqlite3: { language: 'sqlite3', version: '3.36.0' },
+};
 
-const RUNTIMES: Record<string, { language: string; version: string }> = {
-    javascript: { language: 'javascript', version: '18.15.0' }, // Uses Node.js for later implementation
-    python: { language: 'python', version: '3.10.0' },
-    cpp: { language: 'cpp', version: '10.2.0' }, // Uses gcc
-    java: { language: 'java', version: '15.0.2' }, // Uses OpenJDK // for later implementation
-}
+const fetchLatestRuntimeVersion = async (pistonUrl: string, language: string): Promise<string | null> => {
+  try {
+    const resp = await fetch(`${pistonUrl}/api/v2/runtimes`);
+    if (!resp.ok) return null;
+    const runtimes: RuntimeSpec[] = await resp.json();
+    const matches = runtimes.filter((rt) => rt.language.toLowerCase() === language.toLowerCase());
+    if (!matches.length) return null;
+    // Piston returns runtimes newest-first today, but keep the last as a simple fallback.
+    return matches[0]?.version || null;
+  } catch (_) {
+    return null;
+  }
+};
 
 const codeService: ICodeService = {
-  async runCode(code: string, language: string, stdin: string = '', timeLimit: number = 3,
-    memoryLimit: number = 128000) {
+  async runCode(
+    code: string,
+    language: string,
+    stdin: string = '',
+    timeLimit: number = 3,
+    memoryLimit: number = 128000
+  ) {
     // we will interact with PISTON API here to run the code
     // PISTON API is either self-hosted or a third-party service(cloud of Judge0)
     // we are currently self-hosting it using Docker
@@ -46,35 +54,53 @@ const codeService: ICodeService = {
     if(memoryLimit <= 0 || memoryLimit > 128000) {
       memoryLimit = 128000; // enforce max memory limit of 128 MB
     }
-    // Prepare the payload for Piston
-    const payload = {
-      language: runtime.language,
-      version: runtime.version,
-      files: [{ content: code }],
-      stdin,
-      args: [],
-      compile_timeout: 10000,
-      run_timeout: timeLimit * 1000, // in ms
-      run_memory_limit: memoryLimit * 1024, // convert KB to bytes
+    const executeOnce = async (runtimeSpec: RuntimeSpec) => {
+      const payload = {
+        language: runtimeSpec.language,
+        version: runtimeSpec.version,
+        files: [{ content: code }],
+        stdin,
+        args: [],
+        compile_timeout: 10000,
+        run_timeout: timeLimit * 1000, // in ms
+        run_memory_limit: memoryLimit * 1024, // convert KB to bytes
+      };
+
+      let response;
+      try {
+        response = await fetch(`${PISTON_URL}/api/v2/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to reach Piston at ${PISTON_URL}: ${reason}`);
+      }
+      const errorDetail = !response.ok ? await response.json().catch(() => undefined) : undefined;
+      if (!response.ok) {
+        const message = errorDetail?.message || response.statusText || response.status;
+        throw new Error(message);
+      }
+      return response.json();
     };
-    // Submit the code to Piston
-    let response;
+
+    let result;
     try {
-      response = await fetch(`${PISTON_URL}/api/v2/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      result = await executeOnce(runtime);
     } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      throw new Error(`Failed to reach Piston at ${PISTON_URL}: ${reason}`);
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes('unknown') || message.toLowerCase().includes('runtime')) {
+        const latestVersion = await fetchLatestRuntimeVersion(PISTON_URL, runtime.language);
+        if (latestVersion && latestVersion !== runtime.version) {
+          result = await executeOnce({ ...runtime, version: latestVersion });
+        } else {
+          throw new Error(`Piston API Error: ${message}`);
+        }
+      } else {
+        throw new Error(`Piston API Error: ${message}`);
+      }
     }
-    if (!response.ok) {
-      const errorDetail = await response.json(); // Piston usually sends a JSON error message
-      console.error("Piston Error Detail:", errorDetail);
-      throw new Error(`Piston API Error: ${errorDetail.message || response.status}`);
-    }
-    const result = await response.json();
 
     // Process the result
     // Compilation check
