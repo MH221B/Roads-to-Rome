@@ -125,11 +125,11 @@ export default function LessonCodeEditor({
   };
 
   return (
-    <Card className="flex h-full flex-col border-l border-slate-200 bg-white p-0 shadow-none">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <Card className="flex h-full flex-col gap-0 py-0 rounded-none border-l border-slate-200 bg-white p-0 shadow-none">
+      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1">
         <div className="flex min-w-0 flex-col">
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Interactive</span>
-          <p className="truncate text-sm font-semibold text-slate-900" title={title}>
+          <p className="m-0 truncate text-sm font-semibold text-slate-900" title={title}>
             {title}
           </p>
         </div>
@@ -148,13 +148,13 @@ export default function LessonCodeEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+      <div className="flex items-center gap-3 border-b border-slate-200 px-3 py-2">
+        <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
           <span className="uppercase tracking-wide text-slate-500">Language</span>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none"
+            className="rounded-md border border-slate-200 bg-transparent px-3 py-1 text-sm text-slate-700 min-w-[140px] shadow-sm focus:border-slate-400 focus:outline-none"
           >
             {languageOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -189,19 +189,19 @@ export default function LessonCodeEditor({
           role="separator"
           aria-orientation="horizontal"
           aria-label="Resize output pane"
-          className="h-1 w-full cursor-row-resize bg-slate-200 hover:bg-slate-300"
+          className="h-1 w-full cursor-row-resize bg-transparent hover:bg-slate-700/40"
           onMouseDown={handleResizeStart}
         />
 
         <div
-          className="border-t border-slate-200 bg-slate-900 px-4 py-3 text-slate-50"
+          className="border-t border-slate-800 bg-slate-900 text-slate-50 flex flex-col"
           style={{ flex: `0 0 ${outputHeight}px`, minHeight: 120, maxHeight: 640 }}
         >
-          <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-slate-400">
+          <div className="flex items-center justify-between px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-slate-400">
             <span>Output</span>
             <span className="text-slate-300">{languageLabel}</span>
           </div>
-          <pre className="mt-2 h-[calc(100%-18px)] overflow-auto rounded-md bg-black/50 px-3 py-2 text-xs text-slate-100">
+          <pre className="flex-1 overflow-auto rounded-b-md bg-black/50 px-3 py-2 text-xs text-slate-100">
             {output}
           </pre>
         </div>
