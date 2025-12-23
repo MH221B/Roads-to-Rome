@@ -4,6 +4,7 @@ import { deleteCourse } from '@/services/courseService';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface CourseCardCompactProps {
   course: Course;
@@ -75,7 +76,25 @@ const CourseCardCompact: React.FC<CourseCardCompactProps> = ({
       <img src={course.thumbnail} alt={course.title} className="h-20 w-32 shrink-0 object-cover" />
       <div className="min-w-0 flex-1 p-4">
         <h3 className="truncate text-lg font-medium">{course.title}</h3>
-        <p className="text-muted-foreground text-sm">{course.category}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-muted-foreground text-sm">{course.category}</p>
+          {(course as any).status && (
+            <Badge
+              variant={
+                (course as any).status === 'draft'
+                  ? 'outline'
+                  : (course as any).status === 'pending'
+                    ? 'secondary'
+                    : (course as any).status === 'rejected'
+                      ? 'destructive'
+                      : 'default'
+              }
+              className="text-xs"
+            >
+              {(course as any).status}
+            </Badge>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 pr-4">
         <Button type="button" size="sm" variant="outline" onClick={handleEdit}>

@@ -45,6 +45,8 @@ interface CourseFormProps {
   isLoading?: boolean;
   isEditMode?: boolean;
   existingThumbnailUrl?: string | null;
+  onSubmitForReview?: (data: CourseFormValues) => void;
+  isSubmittingForReview?: boolean;
 }
 
 const CourseForm: React.FC<CourseFormProps> = ({
@@ -54,6 +56,8 @@ const CourseForm: React.FC<CourseFormProps> = ({
   isLoading,
   isEditMode,
   existingThumbnailUrl,
+  onSubmitForReview,
+  isSubmittingForReview,
 }) => {
   const navigate = useNavigate();
   const defaultHandleCancel = () => navigate('/');
@@ -341,25 +345,6 @@ const CourseForm: React.FC<CourseFormProps> = ({
                       )}
                     />
                   </div>
-
-                  <div>
-                    <Label className="mb-1 block text-sm font-medium">Status</Label>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value as string}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -376,6 +361,16 @@ const CourseForm: React.FC<CourseFormProps> = ({
                     ? 'Save'
                     : 'Create'}
               </Button>
+              {isEditMode && onSubmitForReview && defaultValues?.status === 'draft' && (
+                <Button
+                  type="button"
+                  onClick={() => onSubmitForReview(watch() as CourseFormValues)}
+                  disabled={Boolean(isSubmittingForReview)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isSubmittingForReview ? 'Submitting...' : 'Submit for Review'}
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
