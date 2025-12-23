@@ -5,7 +5,6 @@ import AdminPage from '@/components/AdminPage';
 import RequireRole from '@/components/RequireRole';
 import Forbidden from '@/components/Forbidden';
 import AdminCoursesPage from '@/components/AdminCoursesPage';
-import AdminCourseReview from '@/components/AdminCourseReview';
 import RequireAuth from '@/components/RequireAuth';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ForgotPassword from './components/ForgotPassword';
@@ -47,7 +46,7 @@ function App() {
             path="/course/:id"
             element={
               <RequireRole roles="ADMIN">
-                <AdminCourseReview />
+                <CourseDetail adminReviewMode />
               </RequireRole>
             }
           />

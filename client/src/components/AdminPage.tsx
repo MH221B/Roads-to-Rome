@@ -12,12 +12,17 @@ import type { User } from '@/types/user';
 
 const AdminPage: React.FC = () => {
   const { accessToken } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [activeTab, setActiveTab] = React.useState(searchParams.get('tab') || 'users');
 
   // Get initial tab from URL query params, default to "users"
-  const initialTab = searchParams.get('tab') || 'users';
+  // keep tab in URL so back/forward preserves current tab
+  React.useEffect(() => {
+    const next = searchParams.get('tab') || 'users';
+    setActiveTab(next);
+  }, [searchParams]);
 
   React.useEffect(() => {
     if (!accessToken) return;
@@ -85,7 +90,17 @@ const AdminPage: React.FC = () => {
           </section>
 
           <div className="space-y-6">
-            <Tabs defaultValue={initialTab}>
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => {
+                setActiveTab(val);
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set('tab', val);
+                  return next;
+                });
+              }}
+            >
               <TabsList>
                 <TabsTrigger value="users">User Management</TabsTrigger>
                 <TabsTrigger value="courses">Course Review</TabsTrigger>
