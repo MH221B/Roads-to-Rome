@@ -1,8 +1,9 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useQueryClient } from '@tanstack/react-query'
-import { initAxios } from "../services/axiosClient";
-import api from "../services/axiosClient";
-import { broadcast, subscribe } from "../lib/broadcast";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { initAxios } from '../services/axiosClient';
+import api from '../services/axiosClient';
+import { broadcast, subscribe } from '../lib/broadcast';
+import Swal from 'sweetalert2';
 
 type AuthContextType = {
   accessToken: string | null;
@@ -19,10 +20,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function parseJwtExp(token: string | null): number | null {
   if (!token) return null;
   try {
-    const parts = token.split(".");
+    const parts = token.split('.');
     if (parts.length < 2) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    if (typeof payload.exp === "number") return payload.exp;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (typeof payload.exp === 'number') return payload.exp;
     return null;
   } catch (e) {
     return null;
@@ -34,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshTimer = useRef<number | null>(null);
   const queryClient = useQueryClient();
   const clientIdRef = useRef<string>(
-    typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
       ? (crypto as any).randomUUID()
       : Math.random().toString(36).slice(2)
   );
@@ -69,6 +70,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = res.data;
       // backend may return the access token in `token` or `accessToken`
       const token = data?.accessToken ?? null;
+
+      // Check if user is locked
+      if (data?.locked) {
+        isLoggedOutRef.current = true;
+        setAccessToken(null);
+        clearRefresh();
+        Swal.fire({
+          title: 'Account Locked',
+          text: 'Your account has been locked. Please contact support.',
+          icon: 'error',
+          confirmButtonText: 'OK',
+        });
+        return;
+      }
+
       if (!token) {
         setAccessToken(null);
         clearRefresh();
@@ -84,24 +100,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [scheduleRefresh]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      const res = await api.post(`/api/auth/login`, { email, password });
-      const data = res.data;
-      // backend may return the access token in `token` or `accessToken`
-      const token = data?.accessToken ?? null;
-      // clear logged-out flag when login succeeds
-      isLoggedOutRef.current = false;
-      setAccessToken(token);
-      scheduleRefresh(token);
-      // notify other tabs that a login occurred so they can attempt
-      // a background silent refresh to obtain an access token.
-      // mark that we should broadcast the login after state flush
-      pendingLoginBroadcast.current = true;
-    } catch (err) {
-      throw new Error("Login failed");
-    }
-  }, [scheduleRefresh]);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        const res = await api.post(`/api/auth/login`, { email, password });
+        const data = res.data;
+
+        // Check if user is locked
+        if (data?.locked) {
+          isLoggedOutRef.current = true;
+          throw new Error('Your account has been locked. Please contact support.');
+        }
+
+        // backend may return the access token in `token` or `accessToken`
+        const token = data?.accessToken ?? null;
+        // clear logged-out flag when login succeeds
+        isLoggedOutRef.current = false;
+        setAccessToken(token);
+        scheduleRefresh(token);
+        // notify other tabs that a login occurred so they can attempt
+        // a background silent refresh to obtain an access token.
+        // mark that we should broadcast the login after state flush
+        pendingLoginBroadcast.current = true;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error('Login failed');
+      }
+    },
+    [scheduleRefresh]
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -110,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // mark explicit logout so background refresh attempts are skipped
       isLoggedOutRef.current = true;
       try {
-        broadcast("logout", clientIdRef.current);
+        broadcast('logout', clientIdRef.current);
       } catch (e) {
         // ignore
       }
@@ -169,14 +195,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // subscribe to cross-tab auth events
     const unsub = subscribe((action) => {
-      if (action === "login") {
+      if (action === 'login') {
         // another tab logged in; clear logged-out marker
         isLoggedOutRef.current = false;
         // another tab logged in; if we don't have a token try to silently refresh
         if (!accessToken && !isLoggedOutRef.current) {
           silentRefresh().catch(() => {});
         }
-      } else if (action === "logout") {
+      } else if (action === 'logout') {
         // another tab logged out; mark logged-out so we skip background refresh
         isLoggedOutRef.current = true;
         // another tab logged out; clear immediately
@@ -203,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (pendingLoginBroadcast.current) {
       try {
-        broadcast("login", clientIdRef.current);
+        broadcast('login', clientIdRef.current);
       } catch (e) {
         // ignore errors
       } finally {
@@ -226,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
 

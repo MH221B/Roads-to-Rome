@@ -23,9 +23,6 @@ import QuizPage from './components/QuizPage';
 import QuizCreator from './components/QuizCreator';
 import QuizEditor from './components/QuizEditor';
 import AIQuizCreator from './components/AIQuizCreator';
-import { decodeJwtPayload } from './lib/utils';
-import { useAuth } from './contexts/AuthProvider';
-import { useState, useMemo, useEffect } from 'react';
 
 const AdminCourseLegacyRedirect = () => {
   const { id } = useParams();
@@ -33,20 +30,6 @@ const AdminCourseLegacyRedirect = () => {
 };
 
 function App() {
-  const { accessToken } = useAuth();
-  const [roles, setRoles] = useState<string[] | null>(null);
-  const [isInstructor, setIsInstructor] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const payload = useMemo(() => decodeJwtPayload(accessToken), [accessToken]);
-  useEffect(() => {
-    const rawRoles = payload?.roles ?? payload?.role;
-    const userRoles: string[] = (
-      Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []
-    ).map((r) => String(r).toUpperCase());
-    setIsInstructor(userRoles.includes('INSTRUCTOR'));
-    setIsAdmin(userRoles.includes('ADMIN'));
-    setRoles(userRoles);
-  }, [payload, setIsInstructor, setIsAdmin, setRoles]);
   return (
     <Router>
       <div className="flex grow flex-col">

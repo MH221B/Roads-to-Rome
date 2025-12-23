@@ -8,7 +8,10 @@ import { User } from '../models/user.model';
 const saltRounds = process.env.NODE_ENV === 'test' ? 1 : 15;
 
 interface IAuthService {
-  Login(email: string, password: string): Promise<{ accessToken: string; refreshToken: string }>;
+  Login(
+    email: string,
+    password: string
+  ): Promise<{ accessToken: string; refreshToken: string; locked: boolean }>;
   Register(
     email: string,
     password: string,
@@ -16,13 +19,15 @@ interface IAuthService {
     username?: string,
     fullName?: string
   ): Promise<{ message: string }>;
-  RefreshToken(token: string): Promise<{ accessToken: string }>;
+  RefreshToken(token: string): Promise<{ accessToken: string; locked: boolean }>;
   // logout currently just clears cookie client-side, but placeholder for future server-side token invalidation with Redis
   Logout(userId: string): Promise<{ message: string }>;
   ForgotPassword(email: string): Promise<{ message: string }>;
   ResetPassword(token: string, newPassword: string): Promise<{ message: string }>;
   GetGithubOAuthUrl(): string;
-  GithubLogin(code: string): Promise<{ accessToken: string; refreshToken: string }>;
+  GithubLogin(
+    code: string
+  ): Promise<{ accessToken: string; refreshToken: string; locked: boolean }>;
   GetProfile(userId: string): Promise<{
     id: string;
     email: string;
@@ -38,7 +43,7 @@ const authService: IAuthService = {
   async Login(
     email: string,
     password: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string; locked: boolean }> {
     //check if user exists
     const user = await User.findOne({ email });
     if (!user) {
@@ -62,7 +67,7 @@ const authService: IAuthService = {
     );
 
     // NOTE: Do not log tokens in production. If needed, log only non-sensitive info for debugging.
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, locked: user.locked || false };
   },
 
   async Register(
@@ -102,7 +107,7 @@ const authService: IAuthService = {
     return { message: 'Logged out successfully' };
   },
 
-  async RefreshToken(token: string): Promise<{ accessToken: string }> {
+  async RefreshToken(token: string): Promise<{ accessToken: string; locked: boolean }> {
     const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET as string) as {
       userId: string;
     };
@@ -118,7 +123,7 @@ const authService: IAuthService = {
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: '1h' } as SignOptions
     );
-    return { accessToken };
+    return { accessToken, locked: user.locked || false };
   },
 
   async ForgotPassword(email: string): Promise<{ message: string }> {
@@ -174,7 +179,9 @@ const authService: IAuthService = {
     return `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=user:email`;
   },
 
-  async GithubLogin(code: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async GithubLogin(
+    code: string
+  ): Promise<{ accessToken: string; refreshToken: string; locked: boolean }> {
     const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
     const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
@@ -293,7 +300,7 @@ const authService: IAuthService = {
       { expiresIn: '7d' } as SignOptions
     );
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, locked: user.locked || false };
   },
 
   async GetProfile(userId: string) {
@@ -309,7 +316,7 @@ const authService: IAuthService = {
       fullName: (user as any).fullName,
       role: user.role as Role,
       budget: typeof (user as any).budget === 'number' ? (user as any).budget : 0,
-      createdAt: (user as any).createdAt
+      createdAt: (user as any).createdAt,
     };
   },
 };

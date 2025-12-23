@@ -17,7 +17,7 @@ const authController: IAuthController = {
   Login: async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password } = req.body;
-      const { accessToken, refreshToken } = await authService.Login(email, password);
+      const { accessToken, refreshToken, locked } = await authService.Login(email, password);
 
       // Set refresh token in httpOnly cookie
       res.cookie('refreshToken', refreshToken, {
@@ -27,7 +27,7 @@ const authController: IAuthController = {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      res.status(200).json({ accessToken });
+      res.status(200).json({ accessToken, locked });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -58,8 +58,8 @@ const authController: IAuthController = {
       if (!refreshToken) {
         throw new Error('Refresh token not found');
       }
-      const token = await authService.RefreshToken(refreshToken);
-      res.status(200).json(token);
+      const { accessToken, locked } = await authService.RefreshToken(refreshToken);
+      res.status(200).json({ accessToken, locked });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
