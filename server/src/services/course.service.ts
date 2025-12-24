@@ -55,7 +55,7 @@ export function validateCourseStatusTransition(from: CourseStatus, to: CourseSta
     [CourseStatus.PENDING]: [CourseStatus.PUBLISHED, CourseStatus.REJECTED],
     [CourseStatus.PUBLISHED]: [CourseStatus.HIDDEN],
     [CourseStatus.REJECTED]: [],
-    [CourseStatus.HIDDEN]: [],
+    [CourseStatus.HIDDEN]: [CourseStatus.PUBLISHED],
   };
 
   return allowed[from]?.includes(to) ?? false;
@@ -305,16 +305,17 @@ const courseService: ICourseService = {
 
     const normalizeInterests = (values: string[] | undefined) =>
       Array.isArray(values)
-        ? values
-            .map((v) => (typeof v === 'string' ? v.trim().toLowerCase() : ''))
-            .filter(Boolean)
+        ? values.map((v) => (typeof v === 'string' ? v.trim().toLowerCase() : '')).filter(Boolean)
         : [];
 
     const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     const providedInterests = normalizeInterests(options.interests);
 
-    const enrollments = await Enrollment.find({ studentId: options.userId }).select('courseId').lean().exec();
+    const enrollments = await Enrollment.find({ studentId: options.userId })
+      .select('courseId')
+      .lean()
+      .exec();
     const enrolledCourseIds = Array.from(
       new Set((enrollments || []).map((e: any) => String(e.courseId)).filter(Boolean))
     );
@@ -347,7 +348,9 @@ const courseService: ICourseService = {
     const userDoc = await User.findById(options.userId).select('interests').lean().exec();
     const storedInterests = normalizeInterests((userDoc as any)?.interests);
 
-    const interestTokens = Array.from(new Set([...historyTokens, ...storedInterests, ...providedInterests]));
+    const interestTokens = Array.from(
+      new Set([...historyTokens, ...storedInterests, ...providedInterests])
+    );
 
     const baseFilter: Record<string, any> = { status: CourseStatus.PUBLISHED };
     if (enrolledCourseIds.length) {
@@ -359,13 +362,12 @@ const courseService: ICourseService = {
 
     const candidateLimit = limit * 3;
 
-    const interestRegexes = interestTokens.map((token) => new RegExp(`^${escapeRegex(token)}$`, 'i'));
+    const interestRegexes = interestTokens.map(
+      (token) => new RegExp(`^${escapeRegex(token)}$`, 'i')
+    );
     const interestFilter = interestTokens.length
       ? {
-          $or: [
-            { tags: { $in: interestRegexes } },
-            { category: { $in: interestRegexes } },
-          ],
+          $or: [{ tags: { $in: interestRegexes } }, { category: { $in: interestRegexes } }],
         }
       : {};
 
@@ -391,7 +393,9 @@ const courseService: ICourseService = {
     const scoringSet = interestTokens.length ? new Set(interestTokens) : historyTokens;
 
     const scored = candidates.map((c: any) => {
-      const tagsLower = Array.isArray(c.tags) ? c.tags.map((t: any) => String(t).toLowerCase()) : [];
+      const tagsLower = Array.isArray(c.tags)
+        ? c.tags.map((t: any) => String(t).toLowerCase())
+        : [];
       const categoryLower = typeof c.category === 'string' ? c.category.toLowerCase() : null;
       let score = 0;
       tagsLower.forEach((t: string) => {
@@ -412,7 +416,9 @@ const courseService: ICourseService = {
       return bTime - aTime;
     });
 
-    const top = (scored.length ? scored : candidates.map((c: any) => ({ course: c, score: 0 }))).slice(0, limit);
+    const top = (
+      scored.length ? scored : candidates.map((c: any) => ({ course: c, score: 0 }))
+    ).slice(0, limit);
 
     const normalized = top.map(({ course }) => {
       const { _id, instructor, ...rest } = course || {};
@@ -612,7 +618,7 @@ const courseService: ICourseService = {
         : { id: null, name: rest.instructor || 'Unknown Instructor', email: null };
       return { id: String(_id), ...rest, instructor: instr };
     });
-  }
+  },
 };
 
 export default courseService;

@@ -67,6 +67,9 @@ interface Course {
   lessons: Lesson[]; // Joined data
   comments: Comment[]; // Joined data
   image?: string;
+  reviewNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: Date | null;
 }
 
 interface CommentFormData {
@@ -444,6 +447,23 @@ export default function CourseDetail({
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Main Content */}
           <div className="space-y-8 lg:w-2/3">
+            {/* Admin Review Note for Rejected Courses */}
+            {isInstructorOwner && course.status === 'rejected' && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-6">
+                <h3 className="mb-3 text-lg font-semibold text-red-900">Rejection Notice</h3>
+                <p className="mb-4 text-sm text-red-800">
+                  Your course has been rejected. Please review the admin's feedback below:
+                </p>
+                <div className="rounded bg-white p-4 text-sm text-red-900">
+                  {course.reviewNote ? (
+                    <p className="whitespace-pre-line">{course.reviewNote}</p>
+                  ) : (
+                    <p className="text-red-600 italic">No feedback provided by admin</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Description</h2>
@@ -679,6 +699,7 @@ export default function CourseDetail({
                         value={reviewNote}
                         onChange={(e) => setReviewNote(e.target.value)}
                         disabled={actionLoading}
+                        className="resize-none"
                       />
                       {actionError && (
                         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

@@ -396,16 +396,18 @@ const CourseForm: React.FC<CourseFormProps> = ({
                     ? 'Save'
                     : 'Create'}
               </Button>
-              {isEditMode && onSubmitForReview && defaultValues?.status === 'draft' && (
-                <Button
-                  type="button"
-                  onClick={() => onSubmitForReview(watch() as CourseFormValues)}
-                  disabled={Boolean(isSubmittingForReview)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {isSubmittingForReview ? 'Submitting...' : 'Submit for Review'}
-                </Button>
-              )}
+              {isEditMode &&
+                onSubmitForReview &&
+                (defaultValues?.status === 'draft' || defaultValues?.status === 'rejected') && (
+                  <Button
+                    type="button"
+                    onClick={() => onSubmitForReview(watch() as CourseFormValues)}
+                    disabled={Boolean(isSubmittingForReview)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isSubmittingForReview ? 'Submitting...' : 'Submit for Review'}
+                  </Button>
+                )}
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>

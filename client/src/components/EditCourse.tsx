@@ -65,7 +65,7 @@ const EditCourse: React.FC = () => {
         confirmButtonText: 'OK',
         confirmButtonColor: '#10b981',
       }).then(() => {
-        navigate(`/courses/${id}`);
+        navigate('/');
       });
     },
     onError: (err: any) => {
