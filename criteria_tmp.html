@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>criteria.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="final-project-self-assessment-report">Final project Self-assessment report</h1>
+<p>Team: 22127095-22127123-22127131</p>
+<p>GitHub repo URL: <a href="https://github.com/MH221B/Roads-to-Rome">Roads-to-Rome</a></p>
+<h1 id="team-information"><strong>TEAM INFORMATION</strong></h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Student ID</th>
+<th style="text-align:left">Full name</th>
+<th style="text-align:left">Git account</th>
+<th style="text-align:left">Contribution</th>
+<th style="text-align:left">Contribution percentage (100% total)</th>
+<th style="text-align:left">Expected total points</th>
+<th style="text-align:left">Final total points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">22127095</td>
+<td style="text-align:left">Do Dinh Hai</td>
+<td style="text-align:left">Seapeas290904</td>
+<td style="text-align:left">Implemented lesson UI and quiz creation/editing, built the instructor dashboard, integrated the Piston/Monaco code editor and AI quiz generator, implemented password reset and backend authentication/authorization, and set up testing/CI.</td>
+<td style="text-align:left">33%</td>
+<td style="text-align:left">10</td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">22127123</td>
+<td style="text-align:left">Tran Nguyen Minh Hoang</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">Implemented core course &amp; lesson management (create/edit/list/pagination), course-related integrations and admin utilities, and key UI/UX improvements.</td>
+<td style="text-align:left">34%</td>
+<td style="text-align:left">10</td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">22127131</td>
+<td style="text-align:left">Le Ho Phi Hoang</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">Implemented enrollment &amp; budget features, quiz UI and flows, admin dashboard enhancements, and search/commenting/recommendation features.</td>
+<td style="text-align:left">33%</td>
+<td style="text-align:left">10</td>
+<td style="text-align:left"></td>
+</tr>
+</tbody>
+</table>
+<h1 id="feature-list"><strong>FEATURE LIST</strong></h1>
+<p><strong>Project:</strong> Learnix - Online Learning Platform</p>
+<p>Students must input minus points to every uncompleted feature in the SE column.</p>
+<p>*SE: Self-evaluation</p>
+<p>*TR: Teacher review</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th style="text-align:left">Features</th>
+<th>Grade</th>
+<th style="text-align:left"></th>
+<th style="text-align:left"></th>
+<th style="text-align:left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td style="text-align:left"></td>
+<td><strong>Point</strong></td>
+<td style="text-align:left"><strong>SE*</strong></td>
+<td style="text-align:left"><strong>TR*</strong></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td style="text-align:left"><strong>Overall requirements</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">User-centered design</td>
+<td>-5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Built with user experience in mind. Focus on solving real learning problems: intuitive course browsing, interactive lessons, progress tracking, and seamless enrollment</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Database design</td>
+<td>-1</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Database with tables: <code>users</code>, <code>courses</code>, <code>lessons</code>, <code>enrollments</code>, <code>quizzes</code>, <code>questions</code>, <code>progress</code>, <code>submissions</code>, <code>reviews</code></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Database mock data</td>
+<td>-1</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Sample courses, lessons, categories, users, quizzes, and test enrollments</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Website layout</td>
+<td>-2</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">AppShell with header, sidebar, content area. Role-based layouts for Guest, Student, Instructor, Admin</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Website architect</td>
+<td>-3</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Based on MVC architecture. Clear separation of concerns with controllers, services, repositories. Client-side validation, Input validation, Business rule validation</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Website stability and compatibility</td>
+<td>-4</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Responsive design, tested on Chrome, Safari, Firefox, and Edge</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Document</td>
+<td>-2</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Clear documentation for developers and users: setup guide, API endpoints, database design, system architecture, user guide</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Demo video</td>
+<td>-5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Video demonstrating all features: auth, guest browse/search, student enroll/lessons/quiz, instructor create course/lesson/quiz, admin approve/reject</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Publish to public hosts</td>
+<td>-1</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Deployed FE/BE to a public hosting service with accessible URL</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Development progress is recorded in Github</td>
+<td>-7</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Git history with meaningful commits, branches for features, pull requests</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td style="text-align:left"><strong>Guest features (Public Browsing)</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Homepage (Public)</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Display latest courses, categories, and trending tags - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Public Navigation</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Navbar with Home, Courses, Login/Signup links - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">View list of courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Display course cards with title, instructor, difficulty level - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Filter courses by</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left">A combination of the criteria</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Category</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Filter by course categories - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Tag</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Filter by course tags - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Sort courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Sort available courses by various criteria - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Course paging</td>
+<td>-0.75</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Pagination or infinite scroll. URL updated on search/filter/paging - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">View course details</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Course overview, tags, instructor info, student count - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Lock lessons for guests</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Display popup requesting account subscription for locked content - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Fulltext search</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Full-text search across title, summary, and tags - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Theme System</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Global theme with colors, typography, spacing. Reusable components (Button, Card, FormField) - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Responsive design</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Responsive screens, loading/empty states, error messages - MH221B</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td style="text-align:left"><strong>Authentication and authorization</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Use a popular authentication library</td>
+<td>-1</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">JWT/Session-based authentication - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Registration (Sign Up)</td>
+<td>-0.5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">User registration with email/password - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Verify user input: password complexity, full name</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Password rules, required fields validation - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Login to the website (Sign In)</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Email/password authentication with token/session handling - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">GitHub OAuth</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">GitHub login flow, map GitHub account to Learnix user - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Authorize website features (Role-based)</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Roles: guest, student, instructor, admin. Route guards &amp; protected routes - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Hide/show UI elements based on permissions</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Restricted UI elements depending on user role - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Forgot password by email</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Password reset via email link - Seapeas</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td style="text-align:left"><strong>Features for Students</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Student Dashboard</td>
+<td>-0.5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">List enrolled courses, course status (in-progress/completed), completion percentage - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Dashboard widgets</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Summary cards, progress overview, activity list - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Suggested courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Course recommendations based on previous courses and interests - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Enrollment</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Enroll in courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Allow enrollment based on student's budget - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Unenroll from courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Unenroll from &quot;My Courses&quot; - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Learning Experience</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› View lesson list</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Show lesson list after enrollment - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Lesson Viewer (text)</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Render text lessons, paper material, PDF slides - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Lesson Viewer (video)</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Embedded video lessons - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Track learning progress</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Completion % = completed lessons / total lessons - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Quizzes</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Take quiz</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Answer MCQ questions (A/B/C/D) - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Instant scoring</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Submit answers → auto-grade → view score - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› View quiz results</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Score display with correct/incorrect answers - HoangRory</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td style="text-align:left"><strong>Features for Instructors</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Instructor Dashboard</td>
+<td>-0.5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Show created courses, student enrollment count, average quiz scores - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Course Management</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Create course</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Add course with title, summary, tags, category, level, thumbnail - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Edit/Update course</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Edit existing course information - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Delete course</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Remove course - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Publish/Unpublish course</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Toggle between draft and published status - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Lesson Management</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Add lessons</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Create lessons with text content - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Edit lessons</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Update existing lesson content - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Attach video</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Attach video link/file to lessons - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Quiz Management (Manual)</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Create quiz</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Create quiz per course or lesson - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Add MCQ questions</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Add multiple choice questions (A/B/C/D + correct answer) - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Edit/Delete questions</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Manage quiz questions - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">AI Quiz Generator</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Generate MCQ from lesson text</td>
+<td>-0.5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Input lesson text/summary → Output 5-10 draft MCQs using AI - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Review &amp; edit AI questions</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Preview AI questions, edit answers, remove bad items - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Approve and save quiz</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Approve AI-generated quiz → save to database - Seapeas</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td style="text-align:left"><strong>Administration features (Admin)</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Admin Dashboard</td>
+<td>-0.5</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">System statistics: total users, courses, enrollments - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">User Management</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› View all users</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">List all users with filters and search - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Assign roles</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Change user roles (student, instructor, admin) - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Lock/Unlock accounts</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Suspend or reactivate user accounts - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Course Moderation</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Review submitted courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">View courses pending approval - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Approve/Reject courses</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Course states: draft → pending → approved/published → rejected/hidden - HoangRory</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Show interactive charts</td>
+<td>-0.25</td>
+<td style="text-align:left">-0</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Charts for system statistics (users, courses, enrollments) - HoangRory</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td style="text-align:left"><strong>Advanced features</strong></td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Embedded IDE</td>
+<td></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› IDE UI integration</td>
+<td>0.25</td>
+<td style="text-align:left">0.25</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Code editor, Run button, Output console attached to lesson - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">› Multi-language runtime</td>
+<td>0.25</td>
+<td style="text-align:left">0.25</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Support ≥2 languages (Python + JavaScript) - Seapeas</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Dockerize your project</td>
+<td>0.25</td>
+<td style="text-align:left">0.25</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Docker containers for backend, frontend, database Seapeas/MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">CI/CD</td>
+<td>0.25</td>
+<td style="text-align:left">0.25</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Automated testing and deployment pipeline (GitHub Actions, GitLab CI, Jenkins, etc.) - MH221B</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align:left">Test coverage</td>
+<td>0.25</td>
+<td style="text-align:left">0.25</td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Testing core flows: auth, browse/search (MH221B), enroll, lessons, quiz, admin (HoangRory)</td>
+</tr>
+</tbody>
+</table>
+<h1 id="git-history"><strong>GIT HISTORY</strong></h1>
+<h2 id="contributors"><strong>Contributors</strong></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Avatar</th>
+<th style="text-align:left">Username</th>
+<th style="text-align:left">Commits</th>
+<th style="text-align:left">Additions</th>
+<th style="text-align:left">Deletions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">139</td>
+<td style="text-align:left">29,327</td>
+<td style="text-align:left">9,526</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">Seapeas290904</td>
+<td style="text-align:left">34</td>
+<td style="text-align:left">20,884</td>
+<td style="text-align:left">1,638</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">26</td>
+<td style="text-align:left">7566</td>
+<td style="text-align:left">1536</td>
+</tr>
+</tbody>
+</table>
+<h2 id="commits"><strong>Commits</strong></h2>
+<p><em>List significant commits here with format:</em></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Date</th>
+<th style="text-align:left">Author</th>
+<th style="text-align:left">Commit Message</th>
+<th style="text-align:left">Files Changed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">2025-12-25</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: enhance course management with visibility toggle and review notes</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-23</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add support course status display and submission for review</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-23</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: integrate Piston API for code execution with support for Python and C++</td>
+<td style="text-align:left">10</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-22</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement budget top-up feature with mock payment processing</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement enrollment based on user budget and course pricing</td>
+<td style="text-align:left">9</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement user profile retrieval and budget display in dashboard</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: add budget management and course pricing features in admin panel</td>
+<td style="text-align:left">13</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement course suggestion feature based on user interests and history</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: refactor lesson and course models to support video content and handle deletions</td>
+<td style="text-align:left">18</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-21</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: enhance lesson management with video and attachment uploads</td>
+<td style="text-align:left">9</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-20</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add course status filtering for published courses based on user roles</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-20</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: add course and user course progress types, enhance enrollment functionality</td>
+<td style="text-align:left">15</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-18</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: Add quizzes to lesson details in LessonService</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-18</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: Enhance Admin Dashboard with Tabs and Statistics</td>
+<td style="text-align:left">9</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-17</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: add course management features for admin</td>
+<td style="text-align:left">18</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-16</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: add AI quiz generation feature</td>
+<td style="text-align:left">11</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-10</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add EditLesson component and integrate lesson editing functionality</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-10</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: implement draggable lesson list for reordering in CourseDetail</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-09</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: enhance lesson management with new features and improvements</td>
+<td style="text-align:left">9</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: update UI quiz</td>
+<td style="text-align:left">11</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add lesson creation functionality with video and attachment uploads</td>
+<td style="text-align:left">13</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat(quiz): implement full quiz UI components, services, models &amp; API (fetch quizzes, submit answers, disabled states) fix(course/enrollment): standardize courseId as string across models, services, and seed data</td>
+<td style="text-align:left">27</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: enhance instructor insights and course management</td>
+<td style="text-align:left">17</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add course editing functionality with CourseForm component and update API integration</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: implement quiz editing functionality and instructor course retrieval</td>
+<td style="text-align:left">10</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: add quiz functionality with creation, submission, and grading features</td>
+<td style="text-align:left">13</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-07</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: implement CourseCardCompact component; add delete course functionality</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-06</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: update instructor field to support object structure and enhance course handling</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-06</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: extend user registration to include username and full name fields</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-06</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: highlight selected question button, add headerComponent, set TimeRamaining</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-06</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: Core Quiz Rendering QuizPage with QuestionList, QuestionCard, AnswerOption</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-06</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: implement course creation with thumbnail upload and Supabase integration</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-05</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add CreateCourse component and update routing</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-02</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: add enrollment update functionality with progress and rating tracking</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-02</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement course fetching and commenting functionality with user authentication</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-02</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: enhance ESLint configuration and add course router with health check endpoint</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-01</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: implement lesson management with CRUD operations and API integration</td>
+<td style="text-align:left">14</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-01</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: add enrollment management with CRUD operations and seeding script</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-01</td>
+<td style="text-align:left">HoangRory</td>
+<td style="text-align:left">feat: implement course list endpoint (controller, service, repo) and seed script for Course List</td>
+<td style="text-align:left">11</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-12-01</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat(client): Add CourseDetail, Enrolment, and LessonViewer components with API integration and UI enhancements</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-24</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add progress bar component and integrate into CourseCard and Dashboard</td>
+<td style="text-align:left">9</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-23</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add Dashboard component with CourseFilterBar and implement RequireAuth for protected routes</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-21</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add forgot and reset password functionality with routing</td>
+<td style="text-align:left">5</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-21</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add role selection to registration and update auth handling</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-21</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: add testing framework and MongoDB memory server for tests</td>
+<td style="text-align:left">7</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-21</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: initialize server with authentication and user management</td>
+<td style="text-align:left">8</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-21</td>
+<td style="text-align:left">Seapeas</td>
+<td style="text-align:left">feat: initialize server with authentication system</td>
+<td style="text-align:left">15</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-19</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add Radix UI aspect ratio and badge components; update HomePage with mock data and layout improvements</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-19</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat: add authentication context and user management components</td>
+<td style="text-align:left">26</td>
+</tr>
+<tr>
+<td style="text-align:left">2025-11-17</td>
+<td style="text-align:left">MH221B</td>
+<td style="text-align:left">feat(client): initialize React application with Vite, Tailwind CSS and shadcn</td>
+<td style="text-align:left">15</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1 id="project-summary"><strong>PROJECT SUMMARY</strong></h1>
+<h2 id="system-overview">System Overview</h2>
+<p><strong>Learnix</strong> is an online learning platform that enables:</p>
+<ul>
+<li><strong>Guests</strong> to browse courses, search by title/summary/tags, view course details</li>
+<li><strong>Students</strong> to enroll in courses, view lessons (text + video), track progress, take quizzes with instant scoring</li>
+<li><strong>Instructors</strong> to create/manage courses and lessons, create quizzes manually or using AI quiz generator</li>
+<li><strong>Admins</strong> to manage users, assign roles, moderate courses (approve/reject), view system statistics</li>
+</ul>
+<h2 id="technology-stack">Technology Stack</h2>
+<ul>
+<li><strong>Architecture:</strong> Single Page Application (SPA) with separate FE/BE repos</li>
+<li><strong>Frontend:</strong> React/Vue/Angular</li>
+<li><strong>Backend:</strong> NodeJS with Express/NestJS</li>
+<li><strong>Database:</strong> PostgreSQL / MongoDB</li>
+<li><strong>Authentication:</strong> JWT/Session + Google OAuth</li>
+<li><strong>AI Integration:</strong> OpenAI API for quiz generation</li>
+<li><strong>Infrastructure:</strong> Docker, CI/CD pipeline</li>
+<li><strong>Hosting:</strong> Cloud deployment (AWS/GCP/Vercel)</li>
+</ul>
+<h2 id="database-entities">Database Entities</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Entity</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>users</code></td>
+<td style="text-align:left">User accounts with roles (guest, student, instructor, admin)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>courses</code></td>
+<td style="text-align:left">Course information (title, summary, tags, category, level, status)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>lessons</code></td>
+<td style="text-align:left">Lesson content (text, video links)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>enrollments</code></td>
+<td style="text-align:left">Student-course enrollment records</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>quizzes</code></td>
+<td style="text-align:left">Quiz metadata per course/lesson</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>questions</code></td>
+<td style="text-align:left">MCQ questions (A/B/C/D + correct answer)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>progress</code></td>
+<td style="text-align:left">Student learning progress tracking</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>submissions</code></td>
+<td style="text-align:left">Quiz submission records with scores</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>reviews</code></td>
+<td style="text-align:left">Course reviews and ratings</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-user-flows">Key User Flows</h2>
+<ol>
+<li><strong>Guest Browsing:</strong> Homepage → Browse Courses → Filter/Search → View Course Details → Prompted to Sign Up</li>
+<li><strong>Student Learning:</strong> Sign Up/Login → Dashboard → Enroll in Course → View Lessons → Take Quiz → View Score</li>
+<li><strong>Instructor Workflow:</strong> Login → Dashboard → Create Course → Add Lessons → Create Quiz (Manual/AI) → Publish</li>
+<li><strong>Admin Moderation:</strong> Login → Dashboard → View Users → Manage Roles → Review Courses → Approve/Reject</li>
+</ol>
+<h2 id="development-timeline">Development Timeline</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Week</th>
+<th style="text-align:left">Focus</th>
+<th style="text-align:left">Key Deliverables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Week 1</td>
+<td style="text-align:left">Authentication, Authorization, Layout &amp; Dashboard</td>
+<td style="text-align:left">Auth (email + Google OAuth), role-based access, AppShell, dashboard prototype</td>
+</tr>
+<tr>
+<td style="text-align:left">Week 2</td>
+<td style="text-align:left">Guest Browsing + Student Learning MVP</td>
+<td style="text-align:left">Homepage, course list/details, search, enroll/unenroll, lesson viewer, student dashboard</td>
+</tr>
+<tr>
+<td style="text-align:left">Week 3</td>
+<td style="text-align:left">Instructor + Manual Quiz</td>
+<td style="text-align:left">Course/lesson management, instructor dashboard, manual quiz creation, quiz taking</td>
+</tr>
+<tr>
+<td style="text-align:left">Week 4</td>
+<td style="text-align:left">Admin Module + AI Quiz Generator MVP</td>
+<td style="text-align:left">User management, course moderation, system stats, AI quiz generator</td>
+</tr>
+<tr>
+<td style="text-align:left">Week 5</td>
+<td style="text-align:left">Embedded IDE + Testing + Final Release</td>
+<td style="text-align:left">IDE integration (optional), UI/UX polish, testing, deployment, demo</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>
