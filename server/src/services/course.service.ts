@@ -54,7 +54,7 @@ export function validateCourseStatusTransition(from: CourseStatus, to: CourseSta
     [CourseStatus.DRAFT]: [CourseStatus.PENDING],
     [CourseStatus.PENDING]: [CourseStatus.PUBLISHED, CourseStatus.REJECTED],
     [CourseStatus.PUBLISHED]: [CourseStatus.HIDDEN],
-    [CourseStatus.REJECTED]: [],
+    [CourseStatus.REJECTED]: [CourseStatus.PENDING],
     [CourseStatus.HIDDEN]: [CourseStatus.PUBLISHED],
   };
 

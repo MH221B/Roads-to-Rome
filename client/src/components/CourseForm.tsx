@@ -197,9 +197,15 @@ const CourseForm: React.FC<CourseFormProps> = ({
     onSubmit(out);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <form onSubmit={handleSubmit(submit)} encType="multipart/form-data">
+      <form onSubmit={handleSubmit(submit)} onKeyDown={handleKeyDown} encType="multipart/form-data">
         <Card>
           <CardHeader>
             <CardTitle>{isEditMode ? 'Edit Course' : 'Create Course'}</CardTitle>
