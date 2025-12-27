@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { api } from '@/services/axiosClient';
 import { getProfile } from '@/services/authService';
+import { updateCourseStatus } from '@/services/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Textarea } from '@/components/ui/textarea';
 import {
   FaSpinner,
   FaStar,
@@ -16,7 +18,7 @@ import {
   FaLock,
   FaUnlock,
   FaWallet,
-  FaMoneyBillWave
+  FaMoneyBillWave,
 } from 'react-icons/fa';
 
 import ReviewForm from './ReviewForm';
@@ -65,6 +67,9 @@ interface Course {
   lessons: Lesson[]; // Joined data
   comments: Comment[]; // Joined data
   image?: string;
+  reviewNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: Date | null;
 }
 
 interface CommentFormData {
@@ -148,7 +153,9 @@ const enrollCourse = async (courseId: string) => {
   return response.data;
 };
 
-export default function CourseDetail() {
+export default function CourseDetail({
+  adminReviewMode = false,
+}: { adminReviewMode?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -178,6 +185,13 @@ export default function CourseDetail() {
   const roles: string[] = (Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []).map(
     (r) => String(r).toUpperCase()
   );
+  const isAdmin = roles.includes('ADMIN');
+  const reviewMode = Boolean(adminReviewMode && isAdmin);
+
+  const [reviewNote, setReviewNote] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const currentUserId =
     payload?.sub ?? payload?.id ?? payload?.userId ?? (payload?.user && payload.user.id) ?? null;
@@ -239,6 +253,7 @@ export default function CourseDetail() {
   };
 
   const handleEnroll = async () => {
+    if (reviewMode) return;
     // Check if user is authenticated
     if (!accessToken) {
       showAuthAlert();
@@ -285,11 +300,30 @@ export default function CourseDetail() {
   };
 
   const handleLessonClick = (lessonId: string) => {
-    if (!accessToken) {
+    if (!accessToken && !reviewMode) {
       showAuthAlert();
       return;
     }
     navigate(`/courses/${course?.id}/lessons/${lessonId}`);
+  };
+
+  const handleReviewAction = async (nextStatus: string) => {
+    if (!id || !course || !reviewMode) return;
+    setActionError(null);
+    setActionSuccess(null);
+    setActionLoading(true);
+    try {
+      await updateCourseStatus(id, nextStatus, reviewNote || undefined);
+      await queryClient.invalidateQueries({ queryKey: ['course', id] });
+      setActionSuccess(nextStatus === 'published' ? 'Course approved' : 'Course rejected');
+      // Return to the previous page (admin review list)
+      setTimeout(() => navigate('/admin?tab=courses'), 300);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Failed to update course status';
+      setActionError(msg);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const isEnrolled = useMemo(() => {
@@ -413,6 +447,23 @@ export default function CourseDetail() {
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Main Content */}
           <div className="space-y-8 lg:w-2/3">
+            {/* Admin Review Note for Rejected Courses */}
+            {isInstructorOwner && course.status === 'rejected' && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-6">
+                <h3 className="mb-3 text-lg font-semibold text-red-900">Rejection Notice</h3>
+                <p className="mb-4 text-sm text-red-800">
+                  Your course has been rejected. Please review the admin's feedback below:
+                </p>
+                <div className="rounded bg-white p-4 text-sm text-red-900">
+                  {course.reviewNote ? (
+                    <p className="whitespace-pre-line">{course.reviewNote}</p>
+                  ) : (
+                    <p className="text-red-600 italic">No feedback provided by admin</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Description</h2>
@@ -486,16 +537,22 @@ export default function CourseDetail() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Reviews</h2>
 
-              <ReviewForm
-                onSubmit={onSubmitComment}
-                submitting={
-                  isSubmitting ||
-                  (commentMutation.status as string) === 'pending' ||
-                  (commentMutation.status as string) === 'loading'
-                }
-                readOnly={isInstructorOwner}
-                accessToken={accessToken}
-              />
+              {reviewMode ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  Admin review mode: course feedback is read-only.
+                </div>
+              ) : (
+                <ReviewForm
+                  onSubmit={onSubmitComment}
+                  submitting={
+                    isSubmitting ||
+                    (commentMutation.status as string) === 'pending' ||
+                    (commentMutation.status as string) === 'loading'
+                  }
+                  readOnly={isInstructorOwner}
+                  accessToken={accessToken}
+                />
+              )}
 
               {/* Reviews List */}
               <div className="mt-6 space-y-4">
@@ -551,7 +608,10 @@ export default function CourseDetail() {
                           <FaLock className="h-4 w-4" />
                           <span className="text-sm font-semibold">Premium course</span>
                         </div>
-                        <div className="text-2xl font-bold text-slate-900">{formatMoney(course.price)} <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" /></div>
+                        <div className="text-2xl font-bold text-slate-900">
+                          {formatMoney(course.price)}{' '}
+                          <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" />
+                        </div>
                       </>
                     ) : (
                       <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-green-800 ring-1 ring-green-100">
@@ -565,13 +625,25 @@ export default function CourseDetail() {
                       <FaWallet className="h-4 w-4 text-emerald-600" />
                       <span>
                         Your budget:&nbsp;
-                        <span className="font-semibold text-slate-900">{formatMoney(budget)} <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" /></span>
+                        <span className="font-semibold text-slate-900">
+                          {formatMoney(budget)}{' '}
+                          <FaMoneyBillWave className="inline h-6 w-6 text-emerald-600" />
+                        </span>
                       </span>
                     </div>
                   )}
 
                   <div className="space-y-3">
-                    {isEnrolled ? (
+                    {reviewMode ? (
+                      <Button
+                        className="h-12 w-full text-lg font-bold"
+                        variant="outline"
+                        onClick={() => firstLessonId && handleLessonClick(firstLessonId)}
+                        disabled={!firstLessonId}
+                      >
+                        Preview lessons
+                      </Button>
+                    ) : isEnrolled ? (
                       <Button
                         className="h-12 w-full text-lg font-bold"
                         variant="default"
@@ -618,6 +690,46 @@ export default function CourseDetail() {
                       </li>
                     </ul>
                   </div>
+
+                  {reviewMode && (
+                    <div className="space-y-3 border-t pt-4">
+                      <h4 className="text-sm font-bold">Admin review</h4>
+                      <Textarea
+                        placeholder="Leave a note for the instructor (optional)"
+                        value={reviewNote}
+                        onChange={(e) => setReviewNote(e.target.value)}
+                        disabled={actionLoading}
+                        className="resize-none"
+                      />
+                      {actionError && (
+                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                          {actionError}
+                        </div>
+                      )}
+                      {actionSuccess && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                          {actionSuccess}
+                        </div>
+                      )}
+                      <div className="flex gap-3">
+                        <Button
+                          className="flex-1"
+                          disabled={actionLoading}
+                          onClick={() => handleReviewAction('published')}
+                        >
+                          {actionLoading ? 'Working…' : 'Approve'}
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          variant="destructive"
+                          disabled={actionLoading}
+                          onClick={() => handleReviewAction('rejected')}
+                        >
+                          {actionLoading ? 'Working…' : 'Reject'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

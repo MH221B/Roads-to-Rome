@@ -46,7 +46,7 @@ const CreateCoursePage: React.FC = () => {
         confirmButtonText: 'Great!',
         confirmButtonColor: '#10b981',
       }).then(() => {
-        navigate('/courses');
+        navigate('/');
       });
     },
     onError: (error: any) => {

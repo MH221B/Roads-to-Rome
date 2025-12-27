@@ -7,7 +7,7 @@ import Quiz from './quiz.model';
 import { CourseStatus } from '../enums/course.enum';
 
 export interface ICourse extends Document {
-  courseId: string; // primary key
+  courseId: string;
   title: string;
   thumbnail?: string;
   category?: string;
@@ -25,7 +25,7 @@ export interface ICourse extends Document {
 
 const CourseSchema: Schema = new Schema(
   {
-    courseId: { type: String, required: true, unique: true },
+    courseId: { type: String, required: false, unique: false },
     title: { type: String, required: true },
     thumbnail: { type: String },
     category: { type: String },
@@ -90,5 +90,10 @@ CourseSchema.pre('deleteMany', { document: false, query: true }, async function 
 CourseSchema.plugin(paginate);
 
 const Course = mongoose.model<ICourse>('Course', CourseSchema);
+
+// Drop the old courseId unique index if it exists
+Course.collection.dropIndex('courseId_1').catch(() => {
+  // Index may not exist, which is fine
+});
 
 export default Course;
