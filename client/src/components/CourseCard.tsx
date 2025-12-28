@@ -120,8 +120,15 @@ const CourseCard: React.FC<Props> = ({
       </AspectRatio>
 
       <CardHeader className="p-0 px-3 pt-2 pb-0">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col">
+            {/* --- CATEGORY ADDED HERE --- */}
+            {course.category && (
+              <span className="text-primary/80 mb-1 text-xs font-semibold tracking-wider uppercase">
+                {course.category}
+              </span>
+            )}
+
             <CardTitle className="leading-tight">{course.title}</CardTitle>
             <CardDescription className="text-muted-foreground mt-1 text-sm">
               {typeof course.instructor === 'string'
@@ -129,8 +136,9 @@ const CourseCard: React.FC<Props> = ({
                 : ((course.instructor as any)?.name ?? '')}
             </CardDescription>
           </div>
+
           {course.difficulty && (
-            <div className="ml-3">
+            <div className="ml-1 shrink-0">
               <Badge>{course.difficulty}</Badge>
             </div>
           )}
@@ -171,13 +179,17 @@ const CourseCard: React.FC<Props> = ({
                 <div className="text-xs font-medium">Rating</div>
                 <RatingStars value={rating ?? 0} onRate={onRate} />
               </div>
-              <span className="text-muted-foreground text-xs">{typeof rating === 'number' ? rating.toFixed(1) : 'Not rated'}</span>
+              <span className="text-muted-foreground text-xs">
+                {typeof rating === 'number' ? rating.toFixed(1) : 'Not rated'}
+              </span>
             </div>
           )}
 
           <div className="flex flex-wrap gap-2">
             {course.tags.map((tag) => (
-              <Badge key={tag}>#{tag}</Badge>
+              <Badge key={tag} variant="secondary">
+                #{tag}
+              </Badge>
             ))}
           </div>
         </div>
