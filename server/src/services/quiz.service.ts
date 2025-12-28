@@ -6,7 +6,10 @@ import enrollmentService from './enrollment.service';
 
 interface IQuizService {
   GetQuizById(quizId: string): Promise<unknown>;
-  submitQuiz(quizId: string, answers: Array<{ questionId: string; answer: string }>): Promise<number>;
+  submitQuiz(
+    quizId: string,
+    answers: Array<{ questionId: string; answer: string }>
+  ): Promise<number>;
   checkUserAccessToQuiz(userId: string, quizId: string): Promise<boolean>;
   getAllQuizzes(): Promise<IQuiz[]>;
   getQuizzesByInstructor(instructorId: string): Promise<IQuiz[]>;
@@ -17,21 +20,22 @@ interface IQuizService {
 
 const quizService: IQuizService = {
   GetQuizById: async (quizId: string): Promise<unknown> => {
-    console.log("Fetching quiz:", quizId);
     const quiz = await quizModel.findOne({ id: quizId }).exec();
     if (!quiz) {
       throw new Error('Quiz not found in the specified course');
     }
     return quiz;
   },
-  submitQuiz: async (quizId: string, answers: Array<{ questionId: string; answer: string }>): Promise<number> => {
+  submitQuiz: async (
+    quizId: string,
+    answers: Array<{ questionId: string; answer: string }>
+  ): Promise<number> => {
     const quiz = await quizModel.findOne({ id: quizId }).exec();
     if (!quiz) {
       throw new Error('Quiz not found');
     }
     const totalQuestions = quiz.questions.length;
     let correctAnswers = 0;
-
 
     answers.forEach((ans) => {
       const question = quiz.questions.find((q: any) => q.id === ans.questionId);
@@ -47,12 +51,9 @@ const quizService: IQuizService = {
     return score;
   },
   checkUserAccessToQuiz: async (userId: string, quizId: string): Promise<boolean> => {
-    const quiz = await quizModel
-      .findOne({ id: quizId })
-      .select("lesson_id course_id")
-      .lean();
+    const quiz = await quizModel.findOne({ id: quizId }).select('lesson_id course_id').lean();
 
-    if (!quiz) throw new Error("Quiz not found");
+    if (!quiz) throw new Error('Quiz not found');
 
     // If the quiz is attached to a lesson, resolve its course via the lesson.
     // If it's attached to a course directly, use that course_id.
@@ -67,7 +68,7 @@ const quizService: IQuizService = {
     if (!courseId) throw new Error('Unable to determine course for quiz');
 
     const isEnrolled = await enrollmentService.checkUserEnrollmentInCourse(userId, courseId);
-    if (!isEnrolled) throw new Error("User is not enrolled in the course");
+    if (!isEnrolled) throw new Error('User is not enrolled in the course');
     return isEnrolled;
   },
   getAllQuizzes: async (): Promise<IQuiz[]> => {
@@ -82,7 +83,10 @@ const quizService: IQuizService = {
     try {
       // Find courses owned by the instructor
       // Request both `courseId` and `_id` to build robust course identifiers.
-      const courses = await Course.find({ instructor: instructorId }).select('courseId _id').lean().exec();
+      const courses = await Course.find({ instructor: instructorId })
+        .select('courseId _id')
+        .lean()
+        .exec();
       const courseIds = (courses || [])
         .map((course: any) => course.courseId ?? String(course._id ?? ''))
         .filter(Boolean);
@@ -90,7 +94,11 @@ const quizService: IQuizService = {
       if (courseIds.length === 0) return [];
 
       // Find lessons that belong to the instructor's courses
-      const lessons = await lessonModel.find({ course_id: { $in: courseIds } }).select('id').lean().exec();
+      const lessons = await lessonModel
+        .find({ course_id: { $in: courseIds } })
+        .select('id')
+        .lean()
+        .exec();
       const lessonIds = (lessons || []).map((l: any) => l.id);
 
       // Return quizzes for those lessons OR quizzes attached directly to the course via course_id

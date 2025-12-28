@@ -27,18 +27,17 @@ const quizController: IquizController = {
       const userId = req.user?.id as string;
       const quizId = req.params.quizId;
       const hasAccess = await quizService.checkUserAccessToQuiz(userId, quizId);
-      console.log("Submit Quiz Payload:", req.user, req.params, req.body);
       if (!hasAccess) {
         res.status(403).json({ error: 'Forbidden' });
         return;
       }
-      
+
       const answers = req.body.answers;
       const score = await quizService.submitQuiz(quizId, answers);
       if (score === null) {
         throw new Error('Error calculating score');
       }
-      
+
       const duration = req.body.duration;
       const result = await submitQuizService.submitQuiz(quizId, userId, answers, score, duration);
       if (result === null) {
@@ -49,26 +48,33 @@ const quizController: IquizController = {
       res.status(400).json({ error: (error as Error).message });
     }
   },
-    async getAllQuizzes(req, res) {
+  async getAllQuizzes(req, res) {
     try {
       const quizzes = await quizService.getAllQuizzes();
       res.status(200).json(quizzes);
     } catch (error) {
       const err = error as Error & { message?: string };
-      res.status(500).json({ message: 'Error retrieving quizzes', error: err.message ?? String(err) });
+      res
+        .status(500)
+        .json({ message: 'Error retrieving quizzes', error: err.message ?? String(err) });
     }
   },
-    async getQuizzesByInstructor(req, res) {
+  async getQuizzesByInstructor(req, res) {
     try {
       const instructorId = req.params.instructorId;
       const quizzes = await quizService.getQuizzesByInstructor(instructorId);
       res.status(200).json(quizzes);
     } catch (error) {
       const err = error as Error & { message?: string };
-      res.status(500).json({ message: 'Error retrieving quizzes by instructor', error: err.message ?? String(err) });
+      res
+        .status(500)
+        .json({
+          message: 'Error retrieving quizzes by instructor',
+          error: err.message ?? String(err),
+        });
     }
   },
-    async createQuiz(req, res) {
+  async createQuiz(req, res) {
     try {
       const newQuiz = await quizService.createQuiz(req.body);
       res.status(201).json(newQuiz);
