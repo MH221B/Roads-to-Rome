@@ -25,7 +25,7 @@ const fetchLatestRuntimeVersion = async (
   language: string
 ): Promise<string | null> => {
   try {
-    const resp = await fetch(`${pistonUrl}/api/v2/piston/runtimes`);
+    const resp = await fetch(`${pistonUrl}/api/v2/runtimes`);
     if (!resp.ok) return null;
     const runtimes: RuntimeSpec[] = await resp.json();
     const matches = runtimes.filter((rt) => rt.language.toLowerCase() === language.toLowerCase());
@@ -75,7 +75,7 @@ const codeService: ICodeService = {
 
       let response;
       try {
-        response = await fetch(`${PISTON_URL}/api/v2/piston/execute`, {
+        response = await fetch(`${PISTON_URL}/api/v2/execute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
