@@ -148,7 +148,7 @@ export default function Enrolment() {
                       >
                         {enrollment.course.is_premium ? 'Premium' : 'Free'}
                       </Badge>
-                      <Badge variant="outline">{enrollment.course.level}</Badge>
+                      <Badge variant="outline">{enrollment.course.difficulty.charAt(0).toUpperCase() + enrollment.course.difficulty.slice(1)}</Badge>
                     </div>
                     <CardTitle className="line-clamp-2 text-xl" title={enrollment.course.title}>
                       {enrollment.course.title}
