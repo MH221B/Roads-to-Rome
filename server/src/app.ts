@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import MongoDBSession from 'connect-mongodb-session';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth.route';
 import { adminRouter } from './routes/admin.route';
@@ -32,11 +33,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Initialize MongoDB session store
+const MongoStore = MongoDBSession(session);
+const sessionStore = new MongoStore({
+  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/roads-to-rome',
+  collection: 'sessions',
+});
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'defaultsecret',
     resave: false,
     saveUninitialized: false,
+    store: sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,

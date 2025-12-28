@@ -1,5 +1,9 @@
 interface ICodeService {
-  runCode(code: string, language: string, stdin?: string): Promise<{ message: string; output?: string }>;
+  runCode(
+    code: string,
+    language: string,
+    stdin?: string
+  ): Promise<{ message: string; output?: string }>;
 }
 
 type RuntimeSpec = { language: string; version: string };
@@ -16,9 +20,12 @@ const RUNTIMES: Record<string, RuntimeSpec> = {
   sqlite3: { language: 'sqlite3', version: '3.36.0' },
 };
 
-const fetchLatestRuntimeVersion = async (pistonUrl: string, language: string): Promise<string | null> => {
+const fetchLatestRuntimeVersion = async (
+  pistonUrl: string,
+  language: string
+): Promise<string | null> => {
   try {
-    const resp = await fetch(`${pistonUrl}/api/v2/runtimes`);
+    const resp = await fetch(`${pistonUrl}/api/v2/piston/runtimes`);
     if (!resp.ok) return null;
     const runtimes: RuntimeSpec[] = await resp.json();
     const matches = runtimes.filter((rt) => rt.language.toLowerCase() === language.toLowerCase());
@@ -42,16 +49,16 @@ const codeService: ICodeService = {
     // PISTON API is either self-hosted or a third-party service(cloud of Judge0)
     // we are currently self-hosting it using Docker
     const PISTON_URL = process.env.PISTON_URL || 'http://localhost:2000';
-    
+
     language = language.toLowerCase();
     const runtime = RUNTIMES[language];
     if (!runtime) {
       throw new Error(`Unsupported language: ${language}`);
     }
-    if(timeLimit <= 0 || timeLimit > 3) {
+    if (timeLimit <= 0 || timeLimit > 3) {
       timeLimit = 3; // enforce max time limit of 3 seconds
     }
-    if(memoryLimit <= 0 || memoryLimit > 128000) {
+    if (memoryLimit <= 0 || memoryLimit > 128000) {
       memoryLimit = 128000; // enforce max memory limit of 128 MB
     }
     const executeOnce = async (runtimeSpec: RuntimeSpec) => {
@@ -68,7 +75,7 @@ const codeService: ICodeService = {
 
       let response;
       try {
-        response = await fetch(`${PISTON_URL}/api/v2/execute`, {
+        response = await fetch(`${PISTON_URL}/api/v2/piston/execute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -109,7 +116,10 @@ const codeService: ICodeService = {
       if (result.compile.status === 'TO') {
         return { message: 'Compilation Time Limit Exceeded' };
       }
-      return { message: 'Compilation Error', output: result.compile.stderr || result.compile.message };
+      return {
+        message: 'Compilation Error',
+        output: result.compile.stderr || result.compile.message,
+      };
     }
     // Execution check
     if (result.run) {
@@ -120,13 +130,16 @@ const codeService: ICodeService = {
           return { message: 'Time Limit Exceeded' };
         }
         if (result.run.signal === 'SIGKILL') {
-            return { message: 'Runtime Error (Process Killed)', output: 'Process killed. Possible Memory Limit Exceeded.' };
+          return {
+            message: 'Runtime Error (Process Killed)',
+            output: 'Process killed. Possible Memory Limit Exceeded.',
+          };
         }
         return { message: `Runtime Error`, output: result.run.stderr || result.run.message };
       }
     }
     throw new Error('Unexpected response from Piston');
-  }
+  },
 };
 
 export default codeService;
