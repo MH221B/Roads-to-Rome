@@ -47,8 +47,7 @@ const codeService: ICodeService = {
   ) {
     // we will interact with PISTON API here to run the code
     // PISTON API is either self-hosted or a third-party service(cloud of Judge0)
-    // we are currently self-hosting it using Docker
-    const PISTON_URL = process.env.PISTON_URL || 'http://localhost:2000';
+    const PISTON_URL = process.env.PISTON_URL || 'https://emkc.org';
 
     language = language.toLowerCase();
     const runtime = RUNTIMES[language];
@@ -75,7 +74,10 @@ const codeService: ICodeService = {
 
       let response;
       try {
-        response = await fetch(`${PISTON_URL}/api/v2/execute`, {
+        // Use different endpoint for public vs self-hosted Piston API
+        const isPublicAPI = PISTON_URL.includes('emkc.org');
+        const endpoint = isPublicAPI ? '/api/v2/piston/execute' : '/api/v2/execute';
+        response = await fetch(`${PISTON_URL}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
