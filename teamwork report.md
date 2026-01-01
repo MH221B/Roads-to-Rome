@@ -67,6 +67,16 @@ Assigned tasks and critical project information are centralized in **Notion**, s
 5. **Daily Communication**: Progress and challenges are shared via Messenger
 6. **Weekly Review**: Team reflects on the sprint, discusses learnings, and plans the next week
 
+## Commit History
+
+This section showcases the commit history of our project, reflecting the active contribution of all team members and the progression of our development sprints.
+
+![Commit History 1](images/commits/Screenshot%202026-01-01%20201028.png)
+![Commit History 2](images/commits/Screenshot%202026-01-01%20201157.png)
+![Commit History 3](images/commits/Screenshot%202026-01-01%20201334.png)
+![Commit History 4](images/commits/Screenshot%202026-01-01%20201350.png)
+![Commit History 5](images/commits/Screenshot%202026-01-01%20201401.png)
+
 ## Benefits of This Approach
 
 - **Fairness**: AI + randomization ensures no one bears disproportionate workload
