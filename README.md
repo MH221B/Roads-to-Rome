@@ -71,8 +71,6 @@ Roads to Rome follows a modern **client-server architecture** with clear separat
 - **Data Layer**: MongoDB for persistent storage
 - **External Services**: Supabase (file storage), Piston (code execution), Gemini (AI), GitHub (OAuth)
 
-![Architecture Design](./Roads%20to%20Rome%20Learning%20Architecture%20Design.png)
-
 ---
 
 # 2. Team Information
