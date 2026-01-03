@@ -75,10 +75,16 @@ export async function updateLesson(
   return resp.data;
 }
 
+export async function deleteLesson(courseId: string, lessonId: string): Promise<any> {
+  const resp = await api.delete(`/api/courses/${courseId}/lessons/${lessonId}`);
+  return resp.data;
+}
+
 export default {
   getLessonsByCourse,
   getLesson,
   uploadFile,
   createLesson,
   updateLesson,
+  deleteLesson,
 };

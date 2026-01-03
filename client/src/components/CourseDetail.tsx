@@ -19,6 +19,7 @@ import {
   FaUnlock,
   FaWallet,
   FaMoneyBillWave,
+  FaClipboardList,
 } from 'react-icons/fa';
 
 import ReviewForm from './ReviewForm';
@@ -46,6 +47,17 @@ interface Lesson {
   order?: number;
 }
 
+interface Quiz {
+  id: string;
+  lesson_id?: string;
+  course_id: string;
+  title: string;
+  description?: string;
+  timelimit?: number;
+  questions?: Array<any>;
+  order?: number;
+}
+
 interface Comment {
   id: string;
   course_id: string;
@@ -65,6 +77,7 @@ interface Course {
   status: string;
   price?: number;
   lessons: Lesson[]; // Joined data
+  quizzes?: Quiz[]; // Joined data - course-level quizzes
   comments: Comment[]; // Joined data
   image?: string;
   reviewNote?: string | null;
@@ -206,8 +219,10 @@ export default function CourseDetail({
     enabled: !!id,
   });
 
+  const isInstructor = roles.includes('INSTRUCTOR');
+
   const isInstructorOwner = Boolean(
-    roles.includes('INSTRUCTOR') &&
+    isInstructor &&
       currentUserId &&
       // course may provide joined instructor object or instructor_id field
       course &&
@@ -307,6 +322,14 @@ export default function CourseDetail({
     navigate(`/courses/${course?.id}/lessons/${lessonId}`);
   };
 
+  const handleQuizClick = (quizId: string) => {
+    if (!accessToken && !reviewMode) {
+      showAuthAlert();
+      return;
+    }
+    navigate(`/courses/${course?.id}/quiz/${quizId}`);
+  };
+
   const handleReviewAction = async (nextStatus: string) => {
     if (!id || !course || !reviewMode) return;
     setActionError(null);
@@ -333,6 +356,11 @@ export default function CourseDetail({
       return String(cid) === String(course.id);
     });
   }, [course?.id, enrollmentsQuery.data]);
+
+  const hasUserReviewed = useMemo(() => {
+    if (!currentUserId || !course?.comments) return false;
+    return course.comments.some((comment) => String(comment.user?.id) === String(currentUserId));
+  }, [currentUserId, course?.comments]);
 
   const firstLessonId = useMemo(() => {
     return course?.lessons && course.lessons.length > 0 ? course.lessons[0].id : null;
@@ -494,21 +522,67 @@ export default function CourseDetail({
 
               <div className="text-muted-foreground mb-4 text-sm">
                 {course.lessons?.length || 0} lessons
+                {course.quizzes && course.quizzes.length > 0 && (
+                  <span className="ml-1">
+                    · {course.quizzes.length} quiz{course.quizzes.length !== 1 ? 'zes' : ''}
+                  </span>
+                )}
                 {isInstructorOwner && <span className="ml-2">(drag to reorder)</span>}
               </div>
               <Card>
-                {course.lessons && course.lessons.length > 0 ? (
-                  <LessonListDraggable
-                    lessons={course.lessons}
-                    isInstructor={isInstructorOwner}
-                    courseId={id!}
-                    onOrderChange={() => {
-                      // Optionally refetch the course data to ensure sync
-                      queryClient.invalidateQueries({ queryKey: ['course', id] });
-                    }}
-                  />
+                {(course.lessons && course.lessons.length > 0) ||
+                (course.quizzes && course.quizzes.length > 0) ? (
+                  <div className="divide-y">
+                    {/* Lessons Section */}
+                    {course.lessons && course.lessons.length > 0 && (
+                      <LessonListDraggable
+                        lessons={course.lessons}
+                        isInstructor={isInstructorOwner}
+                        courseId={id!}
+                        onOrderChange={() => {
+                          // Optionally refetch the course data to ensure sync
+                          queryClient.invalidateQueries({ queryKey: ['course', id] });
+                        }}
+                      />
+                    )}
+
+                    {/* Course-level Quizzes */}
+                    {course.quizzes && course.quizzes.length > 0 && (
+                      <div className="space-y-2 p-4">
+                        {course.quizzes.map((quiz) => (
+                          <div
+                            key={quiz.id}
+                            className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 p-4 transition-colors hover:bg-slate-50"
+                            onClick={() => handleQuizClick(quiz.id)}
+                          >
+                            <div className="flex flex-1 items-center gap-3">
+                              <FaClipboardList className="h-5 w-5 shrink-0 text-blue-500" />
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-slate-900">{quiz.title}</h3>
+                                {quiz.description && (
+                                  <p className="mt-1 text-sm text-slate-600">{quiz.description}</p>
+                                )}
+                                <div className="mt-2 flex gap-3 text-xs text-slate-500">
+                                  {quiz.timelimit && (
+                                    <span>⏱ {Math.floor(quiz.timelimit / 60)} min</span>
+                                  )}
+                                  {quiz.questions && (
+                                    <span>
+                                      📝 {quiz.questions.length} question
+                                      {quiz.questions.length !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <FaPlayCircle className="ml-4 h-5 w-5 shrink-0 text-slate-400" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div className="p-4 text-center text-gray-500">No lessons yet</div>
+                  <div className="p-4 text-center text-gray-500">No lessons or quizzes yet</div>
                 )}
               </Card>
             </div>
@@ -549,7 +623,8 @@ export default function CourseDetail({
                     (commentMutation.status as string) === 'pending' ||
                     (commentMutation.status as string) === 'loading'
                   }
-                  readOnly={isInstructorOwner}
+                  readOnly={isInstructor || hasUserReviewed}
+                  alreadyReviewed={hasUserReviewed}
                   accessToken={accessToken}
                 />
               )}
@@ -656,10 +731,14 @@ export default function CourseDetail({
                       <Button
                         className="h-12 w-full text-lg font-bold"
                         onClick={handleEnroll}
-                        disabled={isEnrollLoading || isInstructorOwner}
+                        disabled={isInstructor || isEnrollLoading}
                       >
-                        {isInstructorOwner ? (
-                          'Owner — View Only'
+                        {isInstructor ? (
+                          isInstructorOwner ? (
+                            'Owner — View Only'
+                          ) : (
+                            'Instructors Cannot Enroll'
+                          )
                         ) : isEnrollLoading ? (
                           <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -676,6 +755,14 @@ export default function CourseDetail({
                         <FaPlayCircle className="h-4 w-4" />
                         <span>{course.lessons?.length || 0} lessons</span>
                       </li>
+                      {course.quizzes && course.quizzes.length > 0 && (
+                        <li className="flex items-center gap-2">
+                          <FaClipboardList className="h-4 w-4" />
+                          <span>
+                            {course.quizzes.length} quiz{course.quizzes.length !== 1 ? 'zes' : ''}
+                          </span>
+                        </li>
+                      )}
                       <li className="flex items-center gap-2">
                         {course.is_premium ? (
                           <FaLock className="h-4 w-4" />

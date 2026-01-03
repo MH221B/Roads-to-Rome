@@ -42,6 +42,8 @@ interface LessonFormProps {
   isEditMode?: boolean;
   existingVideoUrl?: string | null;
   existingAttachments?: Array<{ name: string; url: string }>;
+  onDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 const LessonForm: React.FC<LessonFormProps> = ({
@@ -52,6 +54,8 @@ const LessonForm: React.FC<LessonFormProps> = ({
   isEditMode,
   existingVideoUrl,
   existingAttachments,
+  onDelete,
+  isDeleting,
 }) => {
   const { register, handleSubmit, control, setValue, watch } = useForm<{
     title: string;
@@ -364,6 +368,16 @@ const LessonForm: React.FC<LessonFormProps> = ({
                 disabled={Boolean(isLoading)}
               >
                 Cancel
+              </Button>
+            )}
+            {onDelete && isEditMode && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onDelete}
+                disabled={Boolean(isDeleting || isLoading)}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
             )}
           </CardFooter>

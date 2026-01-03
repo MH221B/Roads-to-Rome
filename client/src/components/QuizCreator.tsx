@@ -51,7 +51,7 @@ type QuizFormValues = {
 };
 
 type Lesson = {
-  _id: string;
+  id: string;
   title: string;
 };
 
@@ -67,7 +67,10 @@ async function fetchLessons(courseId: string): Promise<Lesson[]> {
 
 async function createQuiz(payload: QuizFormValues) {
   // server expects quiz schema with id, lesson_id, questions array etc.
-  const genId = typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : `quiz_${Date.now()}`;
+  const genId =
+    typeof crypto !== 'undefined' && (crypto as any).randomUUID
+      ? (crypto as any).randomUUID()
+      : `quiz_${Date.now()}`;
   const quizPayload: any = {
     id: genId,
     lesson_id: payload.lessonId ?? '',
@@ -77,7 +80,11 @@ async function createQuiz(payload: QuizFormValues) {
     timelimit: payload.timelimit,
     order: payload.order ?? 1,
     questions: (payload.questions || []).map((q: QuizQuestion, index: number) => {
-      const qId = q.id ?? (typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : `q_${Date.now()}_${index}`);
+      const qId =
+        q.id ??
+        (typeof crypto !== 'undefined' && (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : `q_${Date.now()}_${index}`);
       const options = [q.optionA, q.optionB, q.optionC, q.optionD].filter(Boolean);
       const type = q.type ?? 'single';
       let corectAnswers: string[] = [];
@@ -86,10 +93,12 @@ async function createQuiz(payload: QuizFormValues) {
         corectAnswers = options[letterIndex] ? [options[letterIndex]] : [];
       } else if (type === 'multiple') {
         const selected = q.multiCorrect || [];
-        corectAnswers = selected.map((letter) => {
-          const idx = { A: 0, B: 1, C: 2, D: 3 }[letter];
-          return options[idx];
-        }).filter(Boolean);
+        corectAnswers = selected
+          .map((letter) => {
+            const idx = { A: 0, B: 1, C: 2, D: 3 }[letter];
+            return options[idx];
+          })
+          .filter(Boolean);
       } else if (type === 'dragdrop') {
         corectAnswers = options.slice(0, q.slotCount ?? options.length);
       }
@@ -124,7 +133,7 @@ export default function QuizCreator() {
     reset,
     register,
     formState: { isSubmitting },
-    } = useForm<QuizFormValues>({
+  } = useForm<QuizFormValues>({
     defaultValues: {
       title: '',
       targetType: 'course',
@@ -190,7 +199,11 @@ export default function QuizCreator() {
         questions: pre.questions?.length ? pre.questions : [blankQuestion()],
       });
       // Clear the history state so reloading doesn't reapply
-      try { window.history.replaceState({}, document.title); } catch (e) { /* ignore */ }
+      try {
+        window.history.replaceState({}, document.title);
+      } catch (e) {
+        /* ignore */
+      }
     }
   }, [location.state, reset]);
 
@@ -240,11 +253,7 @@ export default function QuizCreator() {
     // value is acceptable when a course has no lessons.
     let selectedLessonId = data.lessonId;
     if (data.targetType === 'course') {
-      // If the course has lessons, prefer the first lesson as the attached lesson id.
-      // Otherwise allow creating a quiz attached to the course with no lesson (lessonId remains undefined).
-      if (lessonsQuery.data && lessonsQuery.data.length > 0) {
-        selectedLessonId = lessonsQuery.data[0]._id;
-      }
+      selectedLessonId = undefined;
     }
     const sanitized: QuizFormValues = { ...data, lessonId: selectedLessonId };
     createMutation.mutate(sanitized);
@@ -378,7 +387,7 @@ export default function QuizCreator() {
                         </SelectItem>
                       )}
                       {lessonsQuery.data?.map((lesson) => (
-                        <SelectItem key={lesson._id} value={lesson._id}>
+                        <SelectItem key={lesson.id} value={lesson.id}>
                           {lesson.title}
                         </SelectItem>
                       ))}
@@ -439,7 +448,9 @@ export default function QuizCreator() {
                             <Label>Question type</Label>
                             <Select
                               value={watch(`questions.${index}.type` as const) ?? 'single'}
-                              onValueChange={(val) => setValue(`questions.${index}.type`, val as any)}
+                              onValueChange={(val) =>
+                                setValue(`questions.${index}.type`, val as any)
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
@@ -512,7 +523,10 @@ export default function QuizCreator() {
                             <Select
                               value={watch(`questions.${index}.correctAnswer` as const)}
                               onValueChange={(val) =>
-                                setValue(`questions.${index}.correctAnswer`, val as 'A' | 'B' | 'C' | 'D')
+                                setValue(
+                                  `questions.${index}.correctAnswer`,
+                                  val as 'A' | 'B' | 'C' | 'D'
+                                )
                               }
                             >
                               <SelectTrigger>
@@ -527,18 +541,19 @@ export default function QuizCreator() {
                             </Select>
                           )}
                           {watch(`questions.${index}.type` as any) === 'multiple' && (
-                            <div className="flex gap-4 mt-2 items-center">
+                            <div className="mt-2 flex items-center gap-4">
                               {(['A', 'B', 'C', 'D'] as const).map((letter) => (
                                 <label key={letter} className="inline-flex items-center gap-2">
                                   <input
                                     type="checkbox"
-                                    checked={
-                                      (watch(`questions.${index}.multiCorrect` as const) || []).includes(
-                                        letter as any
-                                      )
-                                    }
+                                    checked={(
+                                      watch(`questions.${index}.multiCorrect` as const) || []
+                                    ).includes(letter as any)}
                                     onChange={(e) => {
-                                      const arr = [...(watch(`questions.${index}.multiCorrect` as const) || [])];
+                                      const arr = [
+                                        ...(watch(`questions.${index}.multiCorrect` as const) ||
+                                          []),
+                                      ];
                                       if (e.currentTarget.checked) arr.push(letter as any);
                                       else {
                                         const idx = arr.indexOf(letter as any);

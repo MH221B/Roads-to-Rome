@@ -147,6 +147,7 @@ const lessonService: ILessonService = {
     }
 
     // Delete the lesson record from database
+    // (Cascade deletion of related quizzes and enrollment references is handled by the Lesson model hooks)
     const result = await lessonModel.deleteOne({ course_id: courseId, id: lessonId }).exec();
     if (result.deletedCount === 0) {
       throw new Error('Failed to delete lesson');
