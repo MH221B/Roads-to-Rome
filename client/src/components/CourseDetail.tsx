@@ -334,6 +334,11 @@ export default function CourseDetail({
     });
   }, [course?.id, enrollmentsQuery.data]);
 
+  const hasUserReviewed = useMemo(() => {
+    if (!currentUserId || !course?.comments) return false;
+    return course.comments.some((comment) => String(comment.user?.id) === String(currentUserId));
+  }, [currentUserId, course?.comments]);
+
   const firstLessonId = useMemo(() => {
     return course?.lessons && course.lessons.length > 0 ? course.lessons[0].id : null;
   }, [course?.lessons]);
@@ -549,7 +554,8 @@ export default function CourseDetail({
                     (commentMutation.status as string) === 'pending' ||
                     (commentMutation.status as string) === 'loading'
                   }
-                  readOnly={isInstructorOwner}
+                  readOnly={isInstructorOwner || hasUserReviewed}
+                  alreadyReviewed={hasUserReviewed}
                   accessToken={accessToken}
                 />
               )}
