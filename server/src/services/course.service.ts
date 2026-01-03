@@ -3,6 +3,7 @@ import Course, { ICourse } from '../models/course.model';
 import Lesson from '../models/lesson.model';
 import Comment from '../models/comment.model';
 import Enrollment from '../models/enrollment.model';
+import Quiz from '../models/quiz.model';
 import { User } from '../models/user.model';
 import { CourseStatus } from '../enums/course.enum';
 
@@ -180,6 +181,20 @@ const courseService: ICourseService = {
     const courseIdStr = course.courseId || (course._id ? String((course as any)._id) : id);
     const lessons = await Lesson.find({ course_id: courseIdStr }).sort({ order: 1 }).lean().exec();
 
+    // quizzes: match by course_id and filter for those without lesson_id (course-level quizzes)
+    // lesson_id can be empty string "", null, or not exist at all
+    const quizzes = await Quiz.find({ 
+      course_id: courseIdStr, 
+      $or: [
+        { lesson_id: "" },
+        { lesson_id: null },
+        { lesson_id: { $exists: false } }
+      ]
+    })
+      .sort({ order: 1 })
+      .lean()
+      .exec();
+
     // comments: stored with courseId as course identifier string
     const commentsRaw = await Comment.find({
       courseId: course.courseId || String((course as any)._id),
@@ -221,6 +236,7 @@ const courseService: ICourseService = {
       ...course,
       instructor,
       lessons,
+      quizzes,
       comments,
     };
   },

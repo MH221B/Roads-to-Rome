@@ -51,7 +51,7 @@ type QuizFormValues = {
 };
 
 type Lesson = {
-  _id: string;
+  id: string;
   title: string;
 };
 
@@ -240,11 +240,7 @@ export default function QuizCreator() {
     // value is acceptable when a course has no lessons.
     let selectedLessonId = data.lessonId;
     if (data.targetType === 'course') {
-      // If the course has lessons, prefer the first lesson as the attached lesson id.
-      // Otherwise allow creating a quiz attached to the course with no lesson (lessonId remains undefined).
-      if (lessonsQuery.data && lessonsQuery.data.length > 0) {
-        selectedLessonId = lessonsQuery.data[0]._id;
-      }
+      selectedLessonId = undefined;
     }
     const sanitized: QuizFormValues = { ...data, lessonId: selectedLessonId };
     createMutation.mutate(sanitized);
@@ -378,7 +374,7 @@ export default function QuizCreator() {
                         </SelectItem>
                       )}
                       {lessonsQuery.data?.map((lesson) => (
-                        <SelectItem key={lesson._id} value={lesson._id}>
+                        <SelectItem key={lesson.id} value={lesson.id}>
                           {lesson.title}
                         </SelectItem>
                       ))}
