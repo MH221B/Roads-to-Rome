@@ -198,6 +198,10 @@ async function deleteCourse(courseId: string): Promise<void> {
   await api.delete(`/api/courses/${courseId}`);
 }
 
+async function deleteQuiz(quizId: string): Promise<void> {
+  await api.delete(`/api/quiz/${quizId}`);
+}
+
 export default function InstructorDashboard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -262,6 +266,27 @@ export default function InstructorDashboard() {
     },
   });
 
+  const deleteQuizMutation = useMutation({
+    mutationFn: deleteQuiz,
+    onSuccess: () => {
+      Swal.fire({
+        icon: 'success',
+        title: 'Quiz deleted',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ['instructor-quizzes'] });
+      queryClient.invalidateQueries({ queryKey: ['instructor-insights'] });
+    },
+    onError: (err: any) => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Delete failed',
+        text: err?.message ?? 'Unexpected error',
+      });
+    },
+  });
+
   const onApplyFilters = (data: FilterForm) => {
     setFilters(data);
   };
@@ -276,6 +301,19 @@ export default function InstructorDashboard() {
       confirmButtonText: 'Delete',
     }).then((result) => {
       if (result.isConfirmed) deleteMutation.mutate(courseId);
+    });
+  };
+
+  const confirmDeleteQuiz = (quizId: string) => {
+    Swal.fire({
+      title: 'Delete quiz?',
+      text: 'This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Delete',
+    }).then((result) => {
+      if (result.isConfirmed) deleteQuizMutation.mutate(quizId);
     });
   };
 
@@ -549,18 +587,31 @@ export default function InstructorDashboard() {
                             <CardTitle className="text-lg">{quiz.title}</CardTitle>
                             <CardDescription>{quiz.courseTitle || 'No course'}</CardDescription>
                           </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // preserve existing edit route (quizzes/:id/edit) when courseId not present
-                              navigate(`/quizzes/${quiz.id ?? quiz._id}/edit`);
-                            }}
-                            aria-label="Edit quiz"
-                          >
-                            <FiEdit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // preserve existing edit route (quizzes/:id/edit) when courseId not present
+                                navigate(`/quizzes/${quiz.id ?? quiz._id}/edit`);
+                              }}
+                              aria-label="Edit quiz"
+                            >
+                              <FiEdit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmDeleteQuiz(quiz.id ?? quiz._id);
+                              }}
+                              aria-label="Delete quiz"
+                            >
+                              <FiTrash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                     </Card>
