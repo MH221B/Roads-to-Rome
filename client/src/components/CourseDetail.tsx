@@ -206,8 +206,10 @@ export default function CourseDetail({
     enabled: !!id,
   });
 
+  const isInstructor = roles.includes('INSTRUCTOR');
+
   const isInstructorOwner = Boolean(
-    roles.includes('INSTRUCTOR') &&
+    isInstructor &&
       currentUserId &&
       // course may provide joined instructor object or instructor_id field
       course &&
@@ -554,7 +556,7 @@ export default function CourseDetail({
                     (commentMutation.status as string) === 'pending' ||
                     (commentMutation.status as string) === 'loading'
                   }
-                  readOnly={isInstructorOwner || hasUserReviewed}
+                  readOnly={isInstructor || hasUserReviewed}
                   alreadyReviewed={hasUserReviewed}
                   accessToken={accessToken}
                 />
@@ -662,10 +664,14 @@ export default function CourseDetail({
                       <Button
                         className="h-12 w-full text-lg font-bold"
                         onClick={handleEnroll}
-                        disabled={isEnrollLoading || isInstructorOwner}
+                        disabled={isInstructor || isEnrollLoading}
                       >
-                        {isInstructorOwner ? (
-                          'Owner — View Only'
+                        {isInstructor ? (
+                          isInstructorOwner ? (
+                            'Owner — View Only'
+                          ) : (
+                            'Instructors Cannot Enroll'
+                          )
                         ) : isEnrollLoading ? (
                           <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
