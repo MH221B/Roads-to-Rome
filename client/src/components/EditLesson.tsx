@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
-import { getLesson, updateLesson, uploadFile } from '@/services/lessonService';
+import { getLesson, updateLesson, uploadFile, deleteLesson } from '@/services/lessonService';
 import LessonForm from '@/components/LessonForm';
 import type { LessonFormValues } from '@/components/LessonForm';
 
@@ -96,6 +96,54 @@ const EditLesson: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!courseId || !lessonId) throw new Error('Missing course or lesson id');
+      return await deleteLesson(courseId, lessonId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lesson', courseId, lessonId] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      Swal.fire({
+        title: 'Deleted',
+        text: 'Lesson has been deleted successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#10b981',
+      }).then(() => {
+        navigate(`/courses/${courseId}`);
+      });
+    },
+    onError: (err: any) => {
+      console.error('Failed to delete', err);
+      const msg = err?.response?.data?.error ?? err?.message ?? 'Failed to delete lesson.';
+      Swal.fire({
+        title: 'Error',
+        text: msg,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#ef4444',
+      });
+    },
+  });
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: 'Delete Lesson?',
+      text: 'This action cannot be undone. Are you sure you want to delete this lesson?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      deleteMutation.mutate();
+    }
+  };
+
   if (isLoading) return <div className="p-6">Loading lesson...</div>;
   if (!lesson) return <div className="p-6">Lesson not found.</div>;
 
@@ -115,15 +163,26 @@ const EditLesson: React.FC = () => {
     })) ?? [];
 
   return (
-    <LessonForm
-      defaultValues={defaultValues}
-      existingVideoUrl={existingVideoUrl}
-      existingAttachments={existingAttachments}
-      isEditMode
-      isLoading={updateMutation.isPending}
-      onSubmit={(data) => updateMutation.mutate(data)}
-      onCancel={() => navigate(`/courses/${courseId}/lessons/${lessonId}`)}
-    />
+    <div className="space-y-4">
+      <LessonForm
+        defaultValues={defaultValues}
+        existingVideoUrl={existingVideoUrl}
+        existingAttachments={existingAttachments}
+        isEditMode
+        isLoading={updateMutation.isPending}
+        onSubmit={(data) => updateMutation.mutate(data)}
+        onCancel={() => navigate(`/courses/${courseId}/lessons/${lessonId}`)}
+      />
+      <div className="px-6">
+        <button
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+          className="rounded bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleteMutation.isPending ? 'Deleting...' : 'Delete Lesson'}
+        </button>
+      </div>
+    </div>
   );
 };
 

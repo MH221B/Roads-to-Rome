@@ -1,5 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { LessonType } from '../enums/lesson.enum';
+import Quiz from './quiz.model';
+import Enrollment from './enrollment.model';
 
 export interface ILesson extends Document {
   id: string; // primary key
@@ -27,6 +29,46 @@ const LessonSchema: Schema = new Schema({
   attachments: [{ type: String }], // array of attachment URLs
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
+});
+
+// When a single Lesson document is removed, cascade the deletion to related Quiz documents
+// and clean up references in Enrollment documents.
+LessonSchema.post('findOneAndDelete', async function (doc: any) {
+  if (!doc) return;
+  const lessonId = doc.id;
+  await Promise.all([
+    Quiz.deleteMany({ lesson_id: lessonId }).exec(),
+    Enrollment.updateMany({ lastLessonId: lessonId }, { $set: { lastLessonId: null } }).exec(),
+    Enrollment.updateMany(
+      { completedLessons: lessonId },
+      { $pull: { completedLessons: lessonId } }
+    ).exec(),
+  ]);
+});
+
+// For bulk deletions (deleteMany), find affected lesson ids first and remove related docs.
+LessonSchema.pre('deleteMany', { document: false, query: true }, async function (next) {
+  try {
+    const filter = this.getFilter();
+    const lessonDocs = await this.model.find(filter).select('id').lean().exec();
+    const lessonIds = (lessonDocs || []).map((d: any) => d.id);
+    if (lessonIds.length > 0) {
+      await Promise.all([
+        Quiz.deleteMany({ lesson_id: { $in: lessonIds } }).exec(),
+        Enrollment.updateMany(
+          { lastLessonId: { $in: lessonIds } },
+          { $set: { lastLessonId: null } }
+        ).exec(),
+        Enrollment.updateMany(
+          { completedLessons: { $in: lessonIds } },
+          { $pullAll: { completedLessons: lessonIds } }
+        ).exec(),
+      ]);
+    }
+  } catch (err) {
+    return next(err as any);
+  }
+  next();
 });
 
 export default mongoose.model<ILesson>('Lesson', LessonSchema);
