@@ -24,6 +24,9 @@ const CreateCoursePage: React.FC = () => {
       if (typeof data.is_premium !== 'undefined') {
         form.append('is_premium', String(Boolean(data.is_premium)));
       }
+      if (data.price !== undefined && data.price !== null) {
+        form.append('price', String(data.price));
+      }
       // Auto-set status to 'draft' for new courses
       form.append('status', 'draft');
 

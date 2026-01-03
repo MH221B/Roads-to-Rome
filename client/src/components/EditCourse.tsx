@@ -36,6 +36,9 @@ const EditCourse: React.FC = () => {
 
       if (typeof data.is_premium !== 'undefined')
         form.append('is_premium', String(Boolean(data.is_premium)));
+      if (data.price !== undefined && data.price !== null) {
+        form.append('price', String(data.price));
+      }
       // Keep the existing status on update
       form.append('status', course?.status || 'draft');
 
@@ -96,6 +99,9 @@ const EditCourse: React.FC = () => {
 
       if (typeof data.is_premium !== 'undefined')
         form.append('is_premium', String(Boolean(data.is_premium)));
+      if (data.price !== undefined && data.price !== null) {
+        form.append('price', String(data.price));
+      }
       // Set status to 'pending' when submitting for review
       form.append('status', 'pending');
 
