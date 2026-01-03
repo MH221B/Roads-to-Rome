@@ -163,26 +163,17 @@ const EditLesson: React.FC = () => {
     })) ?? [];
 
   return (
-    <div className="space-y-4">
-      <LessonForm
-        defaultValues={defaultValues}
-        existingVideoUrl={existingVideoUrl}
-        existingAttachments={existingAttachments}
-        isEditMode
-        isLoading={updateMutation.isPending}
-        onSubmit={(data) => updateMutation.mutate(data)}
-        onCancel={() => navigate(`/courses/${courseId}/lessons/${lessonId}`)}
-      />
-      <div className="px-6">
-        <button
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          className="rounded bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {deleteMutation.isPending ? 'Deleting...' : 'Delete Lesson'}
-        </button>
-      </div>
-    </div>
+    <LessonForm
+      defaultValues={defaultValues}
+      existingVideoUrl={existingVideoUrl}
+      existingAttachments={existingAttachments}
+      isEditMode
+      isLoading={updateMutation.isPending}
+      isDeleting={deleteMutation.isPending}
+      onSubmit={(data) => updateMutation.mutate(data)}
+      onCancel={() => navigate(`/courses/${courseId}/lessons/${lessonId}`)}
+      onDelete={handleDelete}
+    />
   );
 };
 
