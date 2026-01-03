@@ -190,7 +190,7 @@ export default function CourseDetail({
 
   const [reviewNote, setReviewNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoadingFor, setActionLoadingFor] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const currentUserId =
@@ -311,7 +311,7 @@ export default function CourseDetail({
     if (!id || !course || !reviewMode) return;
     setActionError(null);
     setActionSuccess(null);
-    setActionLoading(true);
+    setActionLoadingFor(nextStatus);
     try {
       await updateCourseStatus(id, nextStatus, reviewNote || undefined);
       await queryClient.invalidateQueries({ queryKey: ['course', id] });
@@ -322,7 +322,7 @@ export default function CourseDetail({
       const msg = err?.response?.data?.error || 'Failed to update course status';
       setActionError(msg);
     } finally {
-      setActionLoading(false);
+      setActionLoadingFor(null);
     }
   };
 
@@ -698,7 +698,7 @@ export default function CourseDetail({
                         placeholder="Leave a note for the instructor (optional)"
                         value={reviewNote}
                         onChange={(e) => setReviewNote(e.target.value)}
-                        disabled={actionLoading}
+                        disabled={!!actionLoadingFor}
                         className="resize-none"
                       />
                       {actionError && (
@@ -714,18 +714,18 @@ export default function CourseDetail({
                       <div className="flex gap-3">
                         <Button
                           className="flex-1"
-                          disabled={actionLoading}
+                          disabled={!!actionLoadingFor}
                           onClick={() => handleReviewAction('published')}
                         >
-                          {actionLoading ? 'Working…' : 'Approve'}
+                          {actionLoadingFor === 'published' ? 'Working…' : 'Approve'}
                         </Button>
                         <Button
                           className="flex-1"
                           variant="destructive"
-                          disabled={actionLoading}
+                          disabled={!!actionLoadingFor}
                           onClick={() => handleReviewAction('rejected')}
                         >
-                          {actionLoading ? 'Working…' : 'Reject'}
+                          {actionLoadingFor === 'rejected' ? 'Working…' : 'Reject'}
                         </Button>
                       </div>
                     </div>

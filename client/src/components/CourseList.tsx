@@ -154,6 +154,10 @@ export default function CourseList() {
   const resetFilters = () => {
     setSelectedCategory(null);
     setSelectedTags([]);
+    setSearchQuery('');
+    setSelectedSort('newest');
+    setTagQuery('');
+    setSearchParams(new URLSearchParams());
   };
 
   return (
@@ -230,7 +234,10 @@ export default function CourseList() {
                   onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
                   className="w-full rounded-r-none border-r-0 focus-visible:ring-0 focus-visible:ring-offset-0 md:w-64"
                 />
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-l-none px-4">
+                <Button
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-l-none px-4"
+                  onClick={() => setSearchQuery((prev) => prev.trim())}
+                >
                   <FaSearch className="h-4 w-4" />
                 </Button>
               </div>

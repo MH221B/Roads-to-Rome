@@ -128,6 +128,19 @@ export default function LessonViewer() {
     return enrollmentForCourse?.completed_lessons || [];
   }, [enrollmentForCourse]);
 
+  const [localCompletedLessons, setLocalCompletedLessons] = useState<string[]>([]);
+
+  useEffect(() => {
+    setLocalCompletedLessons((prev) => {
+      const combined = new Set([...(completedLessons || []), ...prev]);
+      return Array.from(combined);
+    });
+  }, [completedLessons]);
+
+  const mergedCompletedLessons = useMemo(() => {
+    return Array.from(new Set([...(completedLessons || []), ...localCompletedLessons]));
+  }, [completedLessons, localCompletedLessons]);
+
   const isEnrolled = Boolean(enrollmentForCourse);
 
   // Resizable Editor Logic
@@ -254,6 +267,11 @@ export default function LessonViewer() {
       await api.post(`/api/courses/${courseId}/lessons/${lessonId}/complete`);
     },
     onSuccess: () => {
+      setLocalCompletedLessons((prev) => {
+        if (!lessonId) return prev;
+        const combined = new Set([...prev, lessonId]);
+        return Array.from(combined);
+      });
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['course', courseId] });
     },
@@ -352,22 +370,32 @@ export default function LessonViewer() {
             <div className="space-y-2">
               {course.lessons.map((l, index) => {
                 const isActive = l.id === lessonId;
-                const isCompleted = completedLessons.includes(l.id);
-                const baseClass = isActive
-                  ? 'bg-primary/10 border-primary/20 border text-primary'
-                  : isCompleted
-                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
-                    : 'border border-transparent hover:bg-slate-100';
-                const iconClass = isActive
-                  ? 'text-primary'
-                  : isCompleted
-                    ? 'text-emerald-600'
-                    : 'text-slate-400';
-                const titleClass = isActive
-                  ? 'text-primary'
-                  : isCompleted
-                    ? 'text-emerald-700'
-                    : 'text-slate-700';
+                const isCompleted = mergedCompletedLessons.includes(l.id);
+                const isActiveCompleted = isActive && isCompleted;
+
+                const baseClass = isActiveCompleted
+                  ? 'bg-emerald-100 border border-emerald-200 text-emerald-800'
+                  : isActive
+                    ? 'bg-primary/10 border-primary/20 border text-primary'
+                    : isCompleted
+                      ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+                      : 'border border-transparent hover:bg-slate-100';
+
+                const iconClass = isActiveCompleted
+                  ? 'text-emerald-700'
+                  : isActive
+                    ? 'text-primary'
+                    : isCompleted
+                      ? 'text-emerald-600'
+                      : 'text-slate-400';
+
+                const titleClass = isActiveCompleted
+                  ? 'text-emerald-800'
+                  : isActive
+                    ? 'text-primary'
+                    : isCompleted
+                      ? 'text-emerald-700'
+                      : 'text-slate-700';
 
                 return (
                   <div
@@ -384,8 +412,16 @@ export default function LessonViewer() {
                       </p>
                       <p className="mt-1 text-xs text-slate-500">{l.lessonType || 'lesson'}</p>
                     </div>
-                    {isCompleted && !isActive && (
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                    {isCompleted && (
+                      <Badge
+                        variant="secondary"
+                        className={
+                          isActiveCompleted
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }
+                        title="Completed lesson"
+                      >
                         Done
                       </Badge>
                     )}

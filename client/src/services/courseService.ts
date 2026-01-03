@@ -26,7 +26,10 @@ export async function getCourses(
 
   if (params?.category) query.category = params.category;
   if (params?.tags && params.tags.length) query.tags = params.tags.join(',');
-  if (params?.search) query.search = params.search;
+  if (params?.search) {
+    // Backend expects `q` for keyword search
+    query.q = params.search;
+  }
   if (params?.sort) query.sort = params.sort;
   if (params?.status) query.status = params.status;
 
