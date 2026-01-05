@@ -292,7 +292,7 @@ export default function QuizPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(`/courses/${courseId}/lessons/${openLesson}`)}
+            onClick={() => navigate(-1)}
             className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             title="Back to course details"
           >
