@@ -295,7 +295,7 @@ export default function InstructorDashboard() {
     Swal.fire({
       title: 'Delete course?',
       text: 'This cannot be undone.',
-      icon: 'warning',
+      icon: 'warning', 
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Delete',

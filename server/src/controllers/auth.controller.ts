@@ -117,7 +117,7 @@ const authController: IAuthController = {
         sameSite: 'strict', // Prevent CSRF
         maxAge: 60 * 60 * 1000, // 1 hour
       });
-      res.redirect(process.env.CLIENT_URL || 'http://localhost:3000');
+      res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
     } catch (error) {
       res.redirect(`${process.env.CLIENT_URL}?error=${(error as Error).message}`);
     }
