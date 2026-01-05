@@ -12,17 +12,26 @@ const createTransporter = async () => {
 };
 
 const sendEmail = async (to: string, subject: string, text: string, html?: string) => {
-  const transporter = await createTransporter();
+  try {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      throw new Error('Gmail credentials not configured');
+    }
 
-  const info = await transporter.sendMail({
-    from: '"R2RSupport"<noreply@R2R.com>',
-    to,
-    subject,
-    text,
-    html,
-  });
+    const transporter = await createTransporter();
 
-  console.log('Message sent: %s', info.messageId);
+    const info = await transporter.sendMail({
+      from: '"R2RSupport"<noreply@R2R.com>',
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    console.log('Message sent: %s', info.messageId);
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    throw error;
+  }
 };
 
 export default sendEmail;
